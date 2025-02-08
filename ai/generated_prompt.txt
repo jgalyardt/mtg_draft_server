@@ -1,0 +1,716 @@
+
+
+Project Structure:
+
+├── .formatter.exs
+├── config
+│   ├── config.exs
+│   ├── dev.exs
+│   ├── prod.exs
+│   ├── runtime.exs
+│   └── test.exs
+├── lib
+│   ├── mtg_draft_server
+│   │   ├── application.ex
+│   │   └── repo.ex
+│   ├── mtg_draft_server.ex
+│   ├── mtg_draft_server_web
+│   │   ├── controllers
+│   │   │   └── error_json.ex
+│   │   ├── endpoint.ex
+│   │   ├── gettext.ex
+│   │   ├── router.ex
+│   │   └── telemetry.ex
+│   └── mtg_draft_server_web.ex
+├── mix.exs
+├── mix.lock
+├── priv
+│   ├── gettext
+│   │   ├── en
+│   │   │   └── LC_MESSAGES
+│   │   │       └── errors.po
+│   │   └── errors.pot
+│   ├── repo
+│   │   ├── migrations
+│   │   │   └── .formatter.exs
+│   │   └── seeds.exs
+│   └── static
+│       ├── favicon.ico
+│       └── robots.txt
+├── README.md
+└── test
+    ├── mtg_draft_server_web
+    │   └── controllers
+    │       └── error_json_test.exs
+    ├── support
+    │   ├── conn_case.ex
+    │   └── data_case.ex
+    └── test_helper.exs
+
+
+File Contents:
+
+
+=== File: lib/mtg_draft_server/application.ex ===
+
+defmodule MtgDraftServer.Application do
+  # See https://hexdocs.pm/elixir/Application.html
+  # for more information on OTP Applications
+  @moduledoc false
+
+  use Application
+
+  @impl true
+  def start(_type, _args) do
+    children = [
+      MtgDraftServerWeb.Telemetry,
+      MtgDraftServer.Repo,
+      {DNSCluster, query: Application.get_env(:mtg_draft_server, :dns_cluster_query) || :ignore},
+      {Phoenix.PubSub, name: MtgDraftServer.PubSub},
+      # Start the Finch HTTP client for sending emails
+      {Finch, name: MtgDraftServer.Finch},
+      # Start a worker by calling: MtgDraftServer.Worker.start_link(arg)
+      # {MtgDraftServer.Worker, arg},
+      # Start to serve requests, typically the last entry
+      MtgDraftServerWeb.Endpoint
+    ]
+
+    # See https://hexdocs.pm/elixir/Supervisor.html
+    # for other strategies and supported options
+    opts = [strategy: :one_for_one, name: MtgDraftServer.Supervisor]
+    Supervisor.start_link(children, opts)
+  end
+
+  # Tell Phoenix to update the endpoint configuration
+  # whenever the application is updated.
+  @impl true
+  def config_change(changed, _new, removed) do
+    MtgDraftServerWeb.Endpoint.config_change(changed, removed)
+    :ok
+  end
+end
+
+=== File: lib/mtg_draft_server/repo.ex ===
+
+defmodule MtgDraftServer.Repo do
+  use Ecto.Repo,
+    otp_app: :mtg_draft_server,
+    adapter: Ecto.Adapters.Postgres
+end
+
+=== File: lib/mtg_draft_server.ex ===
+
+defmodule MtgDraftServer do
+  @moduledoc """
+  MtgDraftServer keeps the contexts that define your domain
+  and business logic.
+
+  Contexts are also responsible for managing your data, regardless
+  if it comes from the database, an external API or others.
+  """
+end
+
+=== File: lib/mtg_draft_server_web/controllers/error_json.ex ===
+
+defmodule MtgDraftServerWeb.ErrorJSON do
+  @moduledoc """
+  This module is invoked by your endpoint in case of errors on JSON requests.
+
+  See config/config.exs.
+  """
+
+  # If you want to customize a particular status code,
+  # you may add your own clauses, such as:
+  #
+  # def render("500.json", _assigns) do
+  #   %{errors: %{detail: "Internal Server Error"}}
+  # end
+
+  # By default, Phoenix returns the status message from
+  # the template name. For example, "404.json" becomes
+  # "Not Found".
+  def render(template, _assigns) do
+    %{errors: %{detail: Phoenix.Controller.status_message_from_template(template)}}
+  end
+end
+
+=== File: lib/mtg_draft_server_web/endpoint.ex ===
+
+defmodule MtgDraftServerWeb.Endpoint do
+  use Phoenix.Endpoint, otp_app: :mtg_draft_server
+
+  # The session will be stored in the cookie and signed,
+  # this means its contents can be read but not tampered with.
+  # Set :encryption_salt if you would also like to encrypt it.
+  @session_options [
+    store: :cookie,
+    key: "_mtg_draft_server_key",
+    signing_salt: "WOTNq3DB",
+    same_site: "Lax"
+  ]
+
+  # socket "/live", Phoenix.LiveView.Socket,
+  #   websocket: [connect_info: [session: @session_options]],
+  #   longpoll: [connect_info: [session: @session_options]]
+
+  # Serve at "/" the static files from "priv/static" directory.
+  #
+  # You should set gzip to true if you are running phx.digest
+  # when deploying your static files in production.
+  plug Plug.Static,
+    at: "/",
+    from: :mtg_draft_server,
+    gzip: false,
+    only: MtgDraftServerWeb.static_paths()
+
+  # Code reloading can be explicitly enabled under the
+  # :code_reloader configuration of your endpoint.
+  if code_reloading? do
+    plug Phoenix.CodeReloader
+    plug Phoenix.Ecto.CheckRepoStatus, otp_app: :mtg_draft_server
+  end
+
+  plug Plug.RequestId
+  plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
+
+  plug Plug.Parsers,
+    parsers: [:urlencoded, :multipart, :json],
+    pass: ["*/*"],
+    json_decoder: Phoenix.json_library()
+
+  plug Plug.MethodOverride
+  plug Plug.Head
+  plug Plug.Session, @session_options
+  plug MtgDraftServerWeb.Router
+end
+
+=== File: lib/mtg_draft_server_web/gettext.ex ===
+
+defmodule MtgDraftServerWeb.Gettext do
+  @moduledoc """
+  A module providing Internationalization with a gettext-based API.
+
+  By using [Gettext](https://hexdocs.pm/gettext),
+  your module gains a set of macros for translations, for example:
+
+      import MtgDraftServerWeb.Gettext
+
+      # Simple translation
+      gettext("Here is the string to translate")
+
+      # Plural translation
+      ngettext("Here is the string to translate",
+               "Here are the strings to translate",
+               3)
+
+      # Domain-based translation
+      dgettext("errors", "Here is the error message to translate")
+
+  See the [Gettext Docs](https://hexdocs.pm/gettext) for detailed usage.
+  """
+  use Gettext, otp_app: :mtg_draft_server
+end
+
+=== File: lib/mtg_draft_server_web/router.ex ===
+
+defmodule MtgDraftServerWeb.Router do
+  use MtgDraftServerWeb, :router
+
+  pipeline :api do
+    plug :accepts, ["json"]
+  end
+
+  scope "/api", MtgDraftServerWeb do
+    pipe_through :api
+  end
+
+  # Enable Swoosh mailbox preview in development
+  if Application.compile_env(:mtg_draft_server, :dev_routes) do
+
+    scope "/dev" do
+      pipe_through [:fetch_session, :protect_from_forgery]
+
+      forward "/mailbox", Plug.Swoosh.MailboxPreview
+    end
+  end
+end
+
+=== File: lib/mtg_draft_server_web/telemetry.ex ===
+
+defmodule MtgDraftServerWeb.Telemetry do
+  use Supervisor
+  import Telemetry.Metrics
+
+  def start_link(arg) do
+    Supervisor.start_link(__MODULE__, arg, name: __MODULE__)
+  end
+
+  @impl true
+  def init(_arg) do
+    children = [
+      # Telemetry poller will execute the given period measurements
+      # every 10_000ms. Learn more here: https://hexdocs.pm/telemetry_metrics
+      {:telemetry_poller, measurements: periodic_measurements(), period: 10_000}
+      # Add reporters as children of your supervision tree.
+      # {Telemetry.Metrics.ConsoleReporter, metrics: metrics()}
+    ]
+
+    Supervisor.init(children, strategy: :one_for_one)
+  end
+
+  def metrics do
+    [
+      # Phoenix Metrics
+      summary("phoenix.endpoint.start.system_time",
+        unit: {:native, :millisecond}
+      ),
+      summary("phoenix.endpoint.stop.duration",
+        unit: {:native, :millisecond}
+      ),
+      summary("phoenix.router_dispatch.start.system_time",
+        tags: [:route],
+        unit: {:native, :millisecond}
+      ),
+      summary("phoenix.router_dispatch.exception.duration",
+        tags: [:route],
+        unit: {:native, :millisecond}
+      ),
+      summary("phoenix.router_dispatch.stop.duration",
+        tags: [:route],
+        unit: {:native, :millisecond}
+      ),
+      summary("phoenix.socket_connected.duration",
+        unit: {:native, :millisecond}
+      ),
+      summary("phoenix.channel_joined.duration",
+        unit: {:native, :millisecond}
+      ),
+      summary("phoenix.channel_handled_in.duration",
+        tags: [:event],
+        unit: {:native, :millisecond}
+      ),
+
+      # Database Metrics
+      summary("mtg_draft_server.repo.query.total_time",
+        unit: {:native, :millisecond},
+        description: "The sum of the other measurements"
+      ),
+      summary("mtg_draft_server.repo.query.decode_time",
+        unit: {:native, :millisecond},
+        description: "The time spent decoding the data received from the database"
+      ),
+      summary("mtg_draft_server.repo.query.query_time",
+        unit: {:native, :millisecond},
+        description: "The time spent executing the query"
+      ),
+      summary("mtg_draft_server.repo.query.queue_time",
+        unit: {:native, :millisecond},
+        description: "The time spent waiting for a database connection"
+      ),
+      summary("mtg_draft_server.repo.query.idle_time",
+        unit: {:native, :millisecond},
+        description:
+          "The time the connection spent waiting before being checked out for the query"
+      ),
+
+      # VM Metrics
+      summary("vm.memory.total", unit: {:byte, :kilobyte}),
+      summary("vm.total_run_queue_lengths.total"),
+      summary("vm.total_run_queue_lengths.cpu"),
+      summary("vm.total_run_queue_lengths.io")
+    ]
+  end
+
+  defp periodic_measurements do
+    [
+      # A module, function and arguments to be invoked periodically.
+      # This function must call :telemetry.execute/3 and a metric must be added above.
+      # {MtgDraftServerWeb, :count_users, []}
+    ]
+  end
+end
+
+=== File: lib/mtg_draft_server_web.ex ===
+
+defmodule MtgDraftServerWeb do
+  @moduledoc """
+  The entrypoint for defining your web interface, such
+  as controllers, components, channels, and so on.
+
+  This can be used in your application as:
+
+      use MtgDraftServerWeb, :controller
+      use MtgDraftServerWeb, :html
+
+  The definitions below will be executed for every controller,
+  component, etc, so keep them short and clean, focused
+  on imports, uses and aliases.
+
+  Do NOT define functions inside the quoted expressions
+  below. Instead, define additional modules and import
+  those modules here.
+  """
+
+  def static_paths, do: ~w(assets fonts images favicon.ico robots.txt)
+
+  def router do
+    quote do
+      use Phoenix.Router, helpers: false
+
+      # Import common connection and controller functions to use in pipelines
+      import Plug.Conn
+      import Phoenix.Controller
+    end
+  end
+
+  def channel do
+    quote do
+      use Phoenix.Channel
+    end
+  end
+
+  def controller do
+    quote do
+      use Phoenix.Controller,
+        formats: [:html, :json],
+        layouts: [html: MtgDraftServerWeb.Layouts]
+
+      import Plug.Conn
+      import MtgDraftServerWeb.Gettext
+
+      unquote(verified_routes())
+    end
+  end
+
+  def verified_routes do
+    quote do
+      use Phoenix.VerifiedRoutes,
+        endpoint: MtgDraftServerWeb.Endpoint,
+        router: MtgDraftServerWeb.Router,
+        statics: MtgDraftServerWeb.static_paths()
+    end
+  end
+
+  @doc """
+  When used, dispatch to the appropriate controller/live_view/etc.
+  """
+  defmacro __using__(which) when is_atom(which) do
+    apply(__MODULE__, which, [])
+  end
+end
+
+=== File: mix.exs ===
+
+defmodule MtgDraftServer.MixProject do
+  use Mix.Project
+
+  def project do
+    [
+      app: :mtg_draft_server,
+      version: "0.1.0",
+      elixir: "~> 1.14",
+      elixirc_paths: elixirc_paths(Mix.env()),
+      start_permanent: Mix.env() == :prod,
+      aliases: aliases(),
+      deps: deps()
+    ]
+  end
+
+  # Configuration for the OTP application.
+  #
+  # Type `mix help compile.app` for more information.
+  def application do
+    [
+      mod: {MtgDraftServer.Application, []},
+      extra_applications: [:logger, :runtime_tools]
+    ]
+  end
+
+  # Specifies which paths to compile per environment.
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
+
+  # Specifies your project dependencies.
+  #
+  # Type `mix help deps` for examples and options.
+  defp deps do
+    [
+      {:phoenix, "~> 1.7.14"},
+      {:phoenix_ecto, "~> 4.5"},
+      {:ecto_sql, "~> 3.10"},
+      {:postgrex, ">= 0.0.0"},
+      {:swoosh, "~> 1.5"},
+      {:finch, "~> 0.13"},
+      {:telemetry_metrics, "~> 1.0"},
+      {:telemetry_poller, "~> 1.0"},
+      {:gettext, "~> 0.20"},
+      {:jason, "~> 1.2"},
+      {:dns_cluster, "~> 0.1.1"},
+      {:bandit, "~> 1.5"}
+    ]
+  end
+
+  # Aliases are shortcuts or tasks specific to the current project.
+  # For example, to install project dependencies and perform other setup tasks, run:
+  #
+  #     $ mix setup
+  #
+  # See the documentation for `Mix` for more info on aliases.
+  defp aliases do
+    [
+      setup: ["deps.get", "ecto.setup"],
+      "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
+      "ecto.reset": ["ecto.drop", "ecto.setup"],
+      test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"]
+    ]
+  end
+end
+
+=== File: priv/gettext/en/LC_MESSAGES/errors.po ===
+
+## `msgid`s in this file come from POT (.pot) files.
+##
+## Do not add, change, or remove `msgid`s manually here as
+## they're tied to the ones in the corresponding POT file
+## (with the same domain).
+##
+## Use `mix gettext.extract --merge` or `mix gettext.merge`
+## to merge POT files into PO files.
+msgid ""
+msgstr ""
+"Language: en\n"
+
+## From Ecto.Changeset.cast/4
+msgid "can't be blank"
+msgstr ""
+
+## From Ecto.Changeset.unique_constraint/3
+msgid "has already been taken"
+msgstr ""
+
+## From Ecto.Changeset.put_change/3
+msgid "is invalid"
+msgstr ""
+
+## From Ecto.Changeset.validate_acceptance/3
+msgid "must be accepted"
+msgstr ""
+
+## From Ecto.Changeset.validate_format/3
+msgid "has invalid format"
+msgstr ""
+
+## From Ecto.Changeset.validate_subset/3
+msgid "has an invalid entry"
+msgstr ""
+
+## From Ecto.Changeset.validate_exclusion/3
+msgid "is reserved"
+msgstr ""
+
+## From Ecto.Changeset.validate_confirmation/3
+msgid "does not match confirmation"
+msgstr ""
+
+## From Ecto.Changeset.no_assoc_constraint/3
+msgid "is still associated with this entry"
+msgstr ""
+
+msgid "are still associated with this entry"
+msgstr ""
+
+## From Ecto.Changeset.validate_length/3
+msgid "should have %{count} item(s)"
+msgid_plural "should have %{count} item(s)"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "should be %{count} character(s)"
+msgid_plural "should be %{count} character(s)"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "should be %{count} byte(s)"
+msgid_plural "should be %{count} byte(s)"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "should have at least %{count} item(s)"
+msgid_plural "should have at least %{count} item(s)"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "should be at least %{count} character(s)"
+msgid_plural "should be at least %{count} character(s)"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "should be at least %{count} byte(s)"
+msgid_plural "should be at least %{count} byte(s)"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "should have at most %{count} item(s)"
+msgid_plural "should have at most %{count} item(s)"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "should be at most %{count} character(s)"
+msgid_plural "should be at most %{count} character(s)"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "should be at most %{count} byte(s)"
+msgid_plural "should be at most %{count} byte(s)"
+msgstr[0] ""
+msgstr[1] ""
+
+## From Ecto.Changeset.validate_number/3
+msgid "must be less than %{number}"
+msgstr ""
+
+msgid "must be greater than %{number}"
+msgstr ""
+
+msgid "must be less than or equal to %{number}"
+msgstr ""
+
+msgid "must be greater than or equal to %{number}"
+msgstr ""
+
+msgid "must be equal to %{number}"
+msgstr ""
+
+=== File: priv/gettext/errors.pot ===
+
+## This is a PO Template file.
+##
+## `msgid`s here are often extracted from source code.
+## Add new translations manually only if they're dynamic
+## translations that can't be statically extracted.
+##
+## Run `mix gettext.extract` to bring this file up to
+## date. Leave `msgstr`s empty as changing them here has no
+## effect: edit them in PO (`.po`) files instead.
+## From Ecto.Changeset.cast/4
+msgid "can't be blank"
+msgstr ""
+
+## From Ecto.Changeset.unique_constraint/3
+msgid "has already been taken"
+msgstr ""
+
+## From Ecto.Changeset.put_change/3
+msgid "is invalid"
+msgstr ""
+
+## From Ecto.Changeset.validate_acceptance/3
+msgid "must be accepted"
+msgstr ""
+
+## From Ecto.Changeset.validate_format/3
+msgid "has invalid format"
+msgstr ""
+
+## From Ecto.Changeset.validate_subset/3
+msgid "has an invalid entry"
+msgstr ""
+
+## From Ecto.Changeset.validate_exclusion/3
+msgid "is reserved"
+msgstr ""
+
+## From Ecto.Changeset.validate_confirmation/3
+msgid "does not match confirmation"
+msgstr ""
+
+## From Ecto.Changeset.no_assoc_constraint/3
+msgid "is still associated with this entry"
+msgstr ""
+
+msgid "are still associated with this entry"
+msgstr ""
+
+## From Ecto.Changeset.validate_length/3
+msgid "should have %{count} item(s)"
+msgid_plural "should have %{count} item(s)"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "should be %{count} character(s)"
+msgid_plural "should be %{count} character(s)"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "should be %{count} byte(s)"
+msgid_plural "should be %{count} byte(s)"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "should have at least %{count} item(s)"
+msgid_plural "should have at least %{count} item(s)"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "should be at least %{count} character(s)"
+msgid_plural "should be at least %{count} character(s)"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "should be at least %{count} byte(s)"
+msgid_plural "should be at least %{count} byte(s)"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "should have at most %{count} item(s)"
+msgid_plural "should have at most %{count} item(s)"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "should be at most %{count} character(s)"
+msgid_plural "should be at most %{count} character(s)"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "should be at most %{count} byte(s)"
+msgid_plural "should be at most %{count} byte(s)"
+msgstr[0] ""
+msgstr[1] ""
+
+## From Ecto.Changeset.validate_number/3
+msgid "must be less than %{number}"
+msgstr ""
+
+msgid "must be greater than %{number}"
+msgstr ""
+
+msgid "must be less than or equal to %{number}"
+msgstr ""
+
+msgid "must be greater than or equal to %{number}"
+msgstr ""
+
+msgid "must be equal to %{number}"
+msgstr ""
+
+=== File: priv/repo/seeds.exs ===
+
+# Script for populating the database. You can run it as:
+#
+#     mix run priv/repo/seeds.exs
+#
+# Inside the script, you can read and write to any of your
+# repositories directly:
+#
+#     MtgDraftServer.Repo.insert!(%MtgDraftServer.SomeSchema{})
+#
+# We recommend using the bang functions (`insert!`, `update!`
+# and so on) as they will fail if something goes wrong.
+
+=== File: priv/static/robots.txt ===
+
+# See https://www.robotstxt.org/robotstxt.html for documentation on how to use the robots.txt file
+#
+# To ban all spiders from the entire site uncomment the next two lines:
+# User-agent: *
+# Disallow: /

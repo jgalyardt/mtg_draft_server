@@ -1,0 +1,3 @@
+I am building an elixir game server with Phoenix.
+Eventually, this will be connected to a Vue3 front end, but for now I want to focus on the game logic.
+Firebase will handle the hosting. Only authenticated users should be able to call any endpoint.
