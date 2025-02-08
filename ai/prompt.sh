@@ -111,12 +111,10 @@ echo
 
 # Create or clear the output file
 cp "$CONTEXT_FILE" "$OUTPUT_FILE"
-echo -e "\n\nProject Structure:\n" >> "$OUTPUT_FILE"
+#echo -e "\n\nProject Structure:\n" >> "$OUTPUT_FILE"
 
 # Generate and append tree structure using our built-in function
-print_tree "$PROJECT_ROOT" "" 'node_modules|_build|deps|.git|*.beam|*.ez|ai' >> "$OUTPUT_FILE"
-
-echo -e "\n\nFile Contents:\n" >> "$OUTPUT_FILE"
+#print_tree "$PROJECT_ROOT" "" 'node_modules|_build|deps|.git|*.beam|*.ez|ai' >> "$OUTPUT_FILE"
 
 # Function to check if path should be included
 should_process_path() {
