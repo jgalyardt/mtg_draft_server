@@ -1,10 +1,7 @@
-I am building an elixir mtg_draft_server with Phoenix.
-Eventually, this will be connected to a Vue3 front end, but for now I want to focus on the game logic.
+I am building an elixir Magic: The Gathering draft server with Phoenix.
 Firebase will handle the hosting. Only authenticated users should be able to call any endpoint.
 
-I would like the draft server to always maintain at least one gen server representing a draft. 
-Once it hits 8 players, that draft starts and the server will create a new gen server to direct incoming traffic. 
-If a player reconnects, they should re-join the same draft.
+I need help adding CORS. My web app is running on port 5173.
 
 Here are the project files:
 === File: lib/mtg_draft_server/application.ex ===
@@ -28,7 +25,10 @@ defmodule MtgDraftServer.Application do
       # Start a worker by calling: MtgDraftServer.Worker.start_link(arg)
       # {MtgDraftServer.Worker, arg},
       # Start to serve requests, typically the last entry
-      MtgDraftServerWeb.Endpoint
+      MtgDraftServerWeb.Endpoint,
+      # Add the Registry and Dynamic Supervisor for draft sessions:
+      {Registry, keys: :unique, name: MtgDraftServer.DraftRegistry},
+      MtgDraftServer.DraftSessionSupervisor
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
@@ -242,6 +242,47 @@ defmodule MtgDraftServer.Drafts do
         error -> Repo.rollback(error)
       end
     end)
+  end
+
+  @doc """
+  Creates a new draft, starts its draft-session GenServer,
+  and joins the creator (if provided).
+  """
+  @spec create_and_join_draft(map()) :: {:ok, Draft.t()} | {:error, any()}
+  def create_and_join_draft(attrs \\ %{}) do
+    Repo.transaction(fn ->
+      with {:ok, draft} <- do_create_draft(attrs),
+           {:ok, _player} <- maybe_create_player(draft, attrs[:creator]) do
+        # Start a new draft session process for this draft.
+        {:ok, _pid} = MtgDraftServer.DraftSessionSupervisor.start_new_session(draft.id)
+        # Have the creator join the session.
+        if attrs[:creator] do
+          :ok = MtgDraftServer.DraftSession.join(draft.id, %{user_id: attrs[:creator], seat: 1})
+        end
+
+        draft
+      else
+        error -> Repo.rollback(error)
+      end
+    end)
+  end
+
+  @doc """
+  Retrieves the most recent active draft for a given user.
+  (An active draft is one whose status is either "pending" or "active".)
+  """
+  @spec get_active_draft_for_player(String.t()) :: DraftPlayer.t() | nil
+  def get_active_draft_for_player(user_id) do
+    query =
+      from dp in DraftPlayer,
+        join: d in Draft,
+        on: dp.draft_id == d.id,
+        where: dp.user_id == ^user_id and d.status in ["pending", "active"],
+        order_by: [desc: dp.inserted_at],
+        limit: 1,
+        preload: [:draft]
+
+    Repo.one(query)
   end
 
   @doc """
@@ -471,6 +512,124 @@ defmodule MtgDraftServer.Drafts do
   end
 end
 
+=== File: lib/mtg_draft_server/draft_session.ex ===
+
+defmodule MtgDraftServer.DraftSession do
+  use GenServer
+
+  @moduledoc """
+  A GenServer that represents a draft session.
+  """
+
+  ## Client API
+
+  @doc """
+  Starts a draft session for a given draft_id.
+  """
+  def start_link(draft_id) do
+    GenServer.start_link(__MODULE__, draft_id, name: via_tuple(draft_id))
+  end
+
+  @doc """
+  Allows a player to join a draft session.
+  """
+  def join(draft_id, player) do
+    GenServer.call(via_tuple(draft_id), {:join, player})
+  end
+
+  @doc """
+  Retrieve the current state of the draft session.
+  """
+  def get_state(draft_id) do
+    GenServer.call(via_tuple(draft_id), :get_state)
+  end
+
+  ## Helper for Registry lookup
+
+  defp via_tuple(draft_id) do
+    {:via, Registry, {MtgDraftServer.DraftRegistry, draft_id}}
+  end
+
+  ## Server Callbacks
+
+  @impl true
+  def init(draft_id) do
+    state = %{
+      draft_id: draft_id,
+      # a map of user_id => player info
+      players: %{},
+      status: :pending
+    }
+
+    {:ok, state}
+  end
+
+  @impl true
+  def handle_call({:join, player}, _from, state) do
+    new_players = Map.put(state.players, player.user_id, player)
+
+    new_state = %{state | players: new_players}
+
+    # If the draft has reached 8 players, update the state and trigger any side effects
+    new_state =
+      if map_size(new_players) >= 8 and state.status != :active do
+        # You might also want to persist this change to the DB
+        broadcast_draft_started(state.draft_id)
+        # Also trigger the creation of a new draft session so that new players aren’t
+        # forced into a draft that is already full.
+        spawn_new_draft()
+        %{new_state | status: :active}
+      else
+        new_state
+      end
+
+    {:reply, :ok, new_state}
+  end
+
+  @impl true
+  def handle_call(:get_state, _from, state) do
+    {:reply, state, state}
+  end
+
+  defp broadcast_draft_started(draft_id) do
+    Phoenix.PubSub.broadcast(
+      MtgDraftServer.PubSub,
+      "draft:#{draft_id}",
+      {:draft_started, draft_id}
+    )
+  end
+
+  defp spawn_new_draft do
+    # For example, generate a new UUID for the draft (or use your Ecto workflow)
+    new_draft_id = Ecto.UUID.generate()
+    # You can also create a record in the database here if desired.
+    MtgDraftServer.DraftSessionSupervisor.start_new_session(new_draft_id)
+  end
+end
+
+=== File: lib/mtg_draft_server/draft_session_supervisor.ex ===
+
+defmodule MtgDraftServer.DraftSessionSupervisor do
+  use DynamicSupervisor
+
+  def start_link(_args) do
+    DynamicSupervisor.start_link(__MODULE__, :ok, name: __MODULE__)
+  end
+
+  @impl true
+  def init(:ok) do
+    DynamicSupervisor.init(strategy: :one_for_one)
+  end
+
+  @doc """
+  Starts a new draft session.
+  """
+  def start_new_session(draft_id) do
+    spec = {MtgDraftServer.DraftSession, draft_id}
+    DynamicSupervisor.start_child(__MODULE__, spec)
+  end
+end
+
 === File: lib/mtg_draft_server/guardian.ex ===
 
 defmodule MtgDraftServer.Guardian do
@@ -557,7 +716,7 @@ defmodule MtgDraftServerWeb.DraftController do
         {:error, "Authentication required"}
 
       current_user ->
-        with {:ok, draft} <- Drafts.create_draft(%{creator: current_user.uid}) do
+        with {:ok, draft} <- Drafts.create_and_join_draft(%{creator: current_user.uid}) do
           conn
           |> put_status(:created)
           |> put_resp_header("location", "/api/drafts/#{draft.id}")
@@ -589,6 +748,7 @@ defmodule MtgDraftServerWeb.DraftController do
         "pick_number" => pick_number
       }) do
     with {:ok, current_user} <- fetch_current_user(conn),
+         {:ok, _} <- ensure_in_draft_session(draft_id, current_user.uid),
          {:ok, draft} <- Drafts.get_draft(draft_id),
          {:ok, _authorized} <- authorize_draft_action(draft, current_user),
          {:ok, pick} <-
@@ -599,6 +759,40 @@ defmodule MtgDraftServerWeb.DraftController do
       conn
       |> put_status(:created)
       |> json(%{pick: pick})
+    end
+  end
+
+  @doc """
+  Reconnect a user to their active draft session.
+  POST /api/drafts/reconnect
+
+  If a draft session exists, the user rejoins it. If no session exists but the user
+  has an active draft, a new session is started and the user joins it.
+  """
+  def reconnect(conn, _params) do
+    with {:ok, current_user} <- fetch_current_user(conn),
+         draft_player when not is_nil(draft_player) <-
+           Drafts.get_active_draft_for_player(current_user.uid) do
+      draft_id = draft_player.draft.id
+
+      case Registry.lookup(MtgDraftServer.DraftRegistry, draft_id) do
+        [{_pid, _}] ->
+          # The draft session exists; join the session.
+          :ok = MtgDraftServer.DraftSession.join(draft_id, %{user_id: current_user.uid})
+          json(conn, %{message: "Rejoined draft", draft_id: draft_id})
+
+        [] ->
+          # The draft session is not running; start it and then join.
+          {:ok, _pid} = MtgDraftServer.DraftSessionSupervisor.start_new_session(draft_id)
+          :ok = MtgDraftServer.DraftSession.join(draft_id, %{user_id: current_user.uid})
+          json(conn, %{message: "Draft session restarted and rejoined", draft_id: draft_id})
+      end
+    else
+      nil ->
+        conn |> put_status(:not_found) |> json(%{error: "No active draft found for user"})
+
+      {:error, reason} ->
+        conn |> put_status(:bad_request) |> json(%{error: reason})
     end
   end
 
@@ -616,6 +810,12 @@ defmodule MtgDraftServerWeb.DraftController do
   end
 
   # Helper functions
+  defp ensure_in_draft_session(draft_id, user_id) do
+    # Calling join/2 on the draft session is idempotent.
+    :ok = MtgDraftServer.DraftSession.join(draft_id, %{user_id: user_id})
+    {:ok, :joined}
+  end
+
   defp fetch_current_user(conn) do
     case Guardian.Plug.current_resource(conn) do
       nil -> {:error, "Authentication required"}
@@ -788,12 +988,14 @@ defmodule MtgDraftServerWeb.Router do
 
   scope "/api", MtgDraftServerWeb do
     pipe_through :api
-
+  
     post "/drafts", DraftController, :create
     post "/drafts/:id/start", DraftController, :start
     post "/drafts/:id/pick", DraftController, :pick
     get "/drafts/:id/picks", DraftController, :picked_cards
+    post "/drafts/reconnect", DraftController, :reconnect
   end
+  
 end
 
 === File: lib/mtg_draft_server_web/telemetry.ex ===

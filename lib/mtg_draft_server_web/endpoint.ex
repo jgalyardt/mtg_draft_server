@@ -48,5 +48,14 @@ defmodule MtgDraftServerWeb.Endpoint do
   plug Plug.MethodOverride
   plug Plug.Head
   plug Plug.Session, @session_options
+
+  plug CORSPlug,
+    origin: ["http://localhost:5173"],
+    methods: ["GET", "POST"],
+    headers: ["Authorization", "Content-Type", "Accept"],
+    expose: ["Authorization"],
+    credentials: true,
+    max_age: 86400
+
   plug MtgDraftServerWeb.Router
 end

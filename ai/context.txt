@@ -1,9 +1,6 @@
-I am building an elixir mtg_draft_server with Phoenix.
-Eventually, this will be connected to a Vue3 front end, but for now I want to focus on the game logic.
+I am building an elixir Magic: The Gathering draft server with Phoenix.
 Firebase will handle the hosting. Only authenticated users should be able to call any endpoint.
 
-I would like the draft server to always maintain at least one gen server representing a draft. 
-Once it hits 8 players, that draft starts and the server will create a new gen server to direct incoming traffic. 
-If a player reconnects, they should re-join the same draft.
+I need help adding CORS. My web app is running on port 5173.
 
 Here are the project files:
