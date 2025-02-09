@@ -1,8 +1,12 @@
 defmodule MtgDraftServer.Drafts do
   @moduledoc """
   Context for managing drafts, players, and picks.
-  This module handles all draft-related operations including creation,
-  starting drafts, making picks, and retrieving draft information.
+
+  In this Magic: The Gathering draft server:
+    - A draft is created independently of any player.
+    - When a player creates a draft, a corresponding draft_player record is created.
+    - A player may only be in one active (pending/active) draft at a time.
+    - Each draft supports a maximum of 8 players.
   """
 
   import Ecto.Query, warn: false
@@ -17,23 +21,11 @@ defmodule MtgDraftServer.Drafts do
   @type player_result :: {:ok, DraftPlayer.t()} | error
 
   @doc """
-  Creates a new draft with an optional creator.
-
-  ## Parameters
-    * `attrs` - Map of attributes which may include:
-      * `:creator` - User ID of the draft creator
-      
-  ## Returns
-    * `{:ok, draft}` on success
-    * `{:error, changeset}` on validation failure
-    * `{:error, reason}` on other failures
-
-  ## Examples
-      iex> create_draft(%{creator: "user123"})
-      {:ok, %Draft{}}
-
-      iex> create_draft(%{invalid: "params"})
-      {:error, %Ecto.Changeset{}}
+  Creates a new draft.
+  
+  Note that the draft itself is agnostic of a player.
+  If a creator is provided in the attrs (using key `:creator`), a corresponding
+  draft_player record is created.
   """
   @spec create_draft(map()) :: draft_result
   def create_draft(attrs \\ %{}) do
@@ -49,29 +41,46 @@ defmodule MtgDraftServer.Drafts do
 
   @doc """
   Creates a new draft, starts its draft-session GenServer,
-  and joins the creator (if provided).
+  and (if a creator is provided) joins the creator into the draft.
+
+  Before creating a new draft, it ensures that the player isn’t already
+  in an active (pending or active) draft.
   """
   @spec create_and_join_draft(map()) :: {:ok, Draft.t()} | {:error, any()}
   def create_and_join_draft(attrs \\ %{}) do
-    Repo.transaction(fn ->
-      with {:ok, draft} <- do_create_draft(attrs),
-           {:ok, _player} <- maybe_create_player(draft, attrs[:creator]) do
-        # Start a new draft session process for this draft.
-        {:ok, _pid} = MtgDraftServer.DraftSessionSupervisor.start_new_session(draft.id)
-        # Have the creator join the session.
-        if attrs[:creator] do
-          :ok = MtgDraftServer.DraftSession.join(draft.id, %{user_id: attrs[:creator], seat: 1})
-        end
-
-        draft
-      else
-        error -> Repo.rollback(error)
+    # If a creator is provided, ensure they are not already in an active draft.
+    if creator = attrs[:creator] do
+      case get_active_draft_for_player(creator) do
+        nil -> :ok
+        _   -> {:error, "Player already in an active draft"}
       end
-    end)
+    else
+      :ok
+    end
+    |> case do
+      :ok ->
+        Repo.transaction(fn ->
+          with {:ok, draft} <- do_create_draft(attrs),
+               {:ok, _player} <- maybe_create_player(draft, attrs[:creator]) do
+            # Start the draft session.
+            {:ok, _pid} = MtgDraftServer.DraftSessionSupervisor.start_new_session(draft.id)
+            # Have the creator join the draft session.
+            if attrs[:creator] do
+              :ok = MtgDraftServer.DraftSession.join(draft.id, %{user_id: attrs[:creator], seat: 1})
+            end
+            draft
+          else
+            error -> Repo.rollback(error)
+          end
+        end)
+
+      error ->
+        error
+    end
   end
 
   @doc """
-  Retrieves the most recent active draft for a given user.
+  Retrieves the most recent active draft for a given player.
   (An active draft is one whose status is either "pending" or "active".)
   """
   @spec get_active_draft_for_player(String.t()) :: DraftPlayer.t() | nil
@@ -90,14 +99,7 @@ defmodule MtgDraftServer.Drafts do
 
   @doc """
   Starts a draft by updating its status to "active".
-  Validates that the draft exists and has the required number of players.
-
-  ## Parameters
-    * `draft_id` - The ID of the draft to start
-
-  ## Returns
-    * `{:ok, draft}` on success
-    * `{:error, reason}` on failure
+  Validates that the draft exists and has at least 2 players.
   """
   @spec start_draft(binary()) :: draft_result
   def start_draft(draft_id) do
@@ -111,19 +113,7 @@ defmodule MtgDraftServer.Drafts do
 
   @doc """
   Records a card pick in the draft.
-  Validates the pick is legal and updates the draft state accordingly.
-
-  ## Parameters
-    * `draft_id` - The ID of the draft
-    * `user_id` - The ID of the user making the pick
-    * `card_id` - The ID of the picked card
-    * `extra_attrs` - Additional attributes including:
-      * `"pack_number"` - Current pack number
-      * `"pick_number"` - Current pick number within the pack
-
-  ## Returns
-    * `{:ok, pick}` on success
-    * `{:error, reason}` on failure
+  Validates that the pick is legal and updates the draft state accordingly.
   """
   @spec pick_card(binary(), binary(), binary(), map()) :: pick_result
   def pick_card(draft_id, user_id, card_id, extra_attrs \\ %{}) do
@@ -139,9 +129,8 @@ defmodule MtgDraftServer.Drafts do
         {:ok, pick}
       end
 
-    # Record telemetry
+    # Record telemetry for the pick action.
     end_time = System.monotonic_time()
-
     :telemetry.execute(
       [:mtg_draft_server, :drafts, :pick_card],
       %{duration: end_time - start_time},
@@ -152,15 +141,7 @@ defmodule MtgDraftServer.Drafts do
   end
 
   @doc """
-  Retrieves all picks for a given draft and user.
-
-  ## Parameters
-    * `draft_id` - The ID of the draft
-    * `user_id` - The ID of the user whose picks to retrieve
-
-  ## Returns
-    * List of picks ordered by insertion time
-    * Empty list if no picks found
+  Retrieves all picks for a given draft and player.
   """
   @spec get_picked_cards(binary(), binary()) :: [DraftPick.t()]
   def get_picked_cards(draft_id, user_id) do
@@ -178,9 +159,8 @@ defmodule MtgDraftServer.Drafts do
   end
 
   @doc """
-  Gets a draft by ID.
-
-  Returns `{:ok, draft}` if found, `{:error, "Draft not found"}` if not found.
+  Gets a draft by its ID.
+  Returns `{:ok, draft}` if found, or `{:error, "Draft not found"}` if not.
   """
   @spec get_draft(binary()) :: draft_result
   def get_draft(draft_id) do
@@ -200,7 +180,9 @@ defmodule MtgDraftServer.Drafts do
     end
   end
 
+  # ============================================================================
   # Private helper functions
+  # ============================================================================
 
   defp do_create_draft(attrs) do
     %Draft{}
@@ -231,7 +213,7 @@ defmodule MtgDraftServer.Drafts do
     |> Repo.insert()
   end
 
-  defp get_draft_player(draft_id, user_id) do
+  def get_draft_player(draft_id, user_id) do
     case Repo.one(
            from dp in DraftPlayer,
              where: dp.draft_id == ^draft_id and dp.user_id == ^user_id,
@@ -240,16 +222,25 @@ defmodule MtgDraftServer.Drafts do
       nil -> {:error, "Player not found in draft"}
       player -> {:ok, player}
     end
-  end
+  end  
 
+  # If no creator is provided, simply succeed.
   defp maybe_create_player(_draft, nil), do: {:ok, nil}
 
+  # When a creator is provided, first check that the draft is not already full.
   defp maybe_create_player(draft, creator) do
-    DraftPlayer.create_draft_player(%{
-      draft_id: draft.id,
-      user_id: creator,
-      seat: 1
-    })
+    player_count =
+      Repo.one(from dp in DraftPlayer, where: dp.draft_id == ^draft.id, select: count(dp.id))
+
+    if player_count < 8 do
+      DraftPlayer.create_draft_player(%{
+        draft_id: draft.id,
+        user_id: creator,
+        seat: 1
+      })
+    else
+      {:error, "Draft is full (max 8 players)"}
+    end
   end
 
   defp validate_draft_can_start(draft) do
@@ -301,8 +292,7 @@ defmodule MtgDraftServer.Drafts do
   defp validate_pick_number(_), do: {:error, "Invalid pick number"}
 
   defp validate_player_turn(_draft_player, _attrs) do
-    # Add logic to verify it's this player's turn to pick
-    # This would depend on your specific draft rules
+    # Implement turn-based validation here as needed.
     :ok
   end
 

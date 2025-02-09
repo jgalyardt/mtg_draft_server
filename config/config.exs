@@ -20,6 +20,10 @@ config :mtg_draft_server, MtgDraftServer.Guardian,
 config :mtg_draft_server,
   firebase_project_id: "draft-client"
 
+config :joken, JokenJwks.DefaultStrategyTemplate,
+  jwks_url:
+    "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"
+
 # Configures the endpoint
 config :mtg_draft_server, MtgDraftServerWeb.Endpoint,
   url: [host: "localhost"],

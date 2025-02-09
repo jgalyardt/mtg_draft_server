@@ -2,10 +2,6 @@
 === File: lib/mtg_draft_server/application.ex ===
 
 defmodule MtgDraftServer.Application do
-  # See https://hexdocs.pm/elixir/Application.html
-  # for more information on OTP Applications
-  @moduledoc false
-
   use Application
 
   @impl true
@@ -13,28 +9,18 @@ defmodule MtgDraftServer.Application do
     children = [
       MtgDraftServerWeb.Telemetry,
       MtgDraftServer.Repo,
-      MtgDraftServer.JWKSStrategy,
       {DNSCluster, query: Application.get_env(:mtg_draft_server, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: MtgDraftServer.PubSub},
-      # Start the Finch HTTP client for sending emails
       {Finch, name: MtgDraftServer.Finch},
-      # Start a worker by calling: MtgDraftServer.Worker.start_link(arg)
-      # {MtgDraftServer.Worker, arg},
-      # Start to serve requests, typically the last entry
       MtgDraftServerWeb.Endpoint,
-      # Add the Registry and Dynamic Supervisor for draft sessions:
       {Registry, keys: :unique, name: MtgDraftServer.DraftRegistry},
       MtgDraftServer.DraftSessionSupervisor
     ]
 
-    # See https://hexdocs.pm/elixir/Supervisor.html
-    # for other strategies and supported options
     opts = [strategy: :one_for_one, name: MtgDraftServer.Supervisor]
     Supervisor.start_link(children, opts)
   end
 
-  # Tell Phoenix to update the endpoint configuration
-  # whenever the application is updated.
   @impl true
   def config_change(changed, _new, removed) do
     MtgDraftServerWeb.Endpoint.config_change(changed, removed)
@@ -112,13 +98,12 @@ defmodule MtgDraftServer.Drafts.Draft do
   @primary_key {:id, :binary_id, autogenerate: true}
   schema "drafts" do
     field :status, :string, default: "pending"
-    field :creator, :string
     timestamps()
   end
 
   def changeset(draft, attrs) do
     draft
-    |> cast(attrs, [:status, :creator])
+    |> cast(attrs, [:status])
     |> validate_required([:status])
   end
 end
@@ -194,8 +179,12 @@ end
 defmodule MtgDraftServer.Drafts do
   @moduledoc """
   Context for managing drafts, players, and picks.
-  This module handles all draft-related operations including creation,
-  starting drafts, making picks, and retrieving draft information.
+
+  In this Magic: The Gathering draft server:
+    - A draft is created independently of any player.
+    - When a player creates a draft, a corresponding draft_player record is created.
+    - A player may only be in one active (pending/active) draft at a time.
+    - Each draft supports a maximum of 8 players.
   """
 
   import Ecto.Query, warn: false
@@ -210,23 +199,11 @@ defmodule MtgDraftServer.Drafts do
   @type player_result :: {:ok, DraftPlayer.t()} | error
 
   @doc """
-  Creates a new draft with an optional creator.
-
-  ## Parameters
-    * `attrs` - Map of attributes which may include:
-      * `:creator` - User ID of the draft creator
-      
-  ## Returns
-    * `{:ok, draft}` on success
-    * `{:error, changeset}` on validation failure
-    * `{:error, reason}` on other failures
-
-  ## Examples
-      iex> create_draft(%{creator: "user123"})
-      {:ok, %Draft{}}
-
-      iex> create_draft(%{invalid: "params"})
-      {:error, %Ecto.Changeset{}}
+  Creates a new draft.
+  
+  Note that the draft itself is agnostic of a player.
+  If a creator is provided in the attrs (using key `:creator`), a corresponding
+  draft_player record is created.
   """
   @spec create_draft(map()) :: draft_result
   def create_draft(attrs \\ %{}) do
@@ -242,29 +219,46 @@ defmodule MtgDraftServer.Drafts do
 
   @doc """
   Creates a new draft, starts its draft-session GenServer,
-  and joins the creator (if provided).
+  and (if a creator is provided) joins the creator into the draft.
+
+  Before creating a new draft, it ensures that the player isn’t already
+  in an active (pending or active) draft.
   """
   @spec create_and_join_draft(map()) :: {:ok, Draft.t()} | {:error, any()}
   def create_and_join_draft(attrs \\ %{}) do
-    Repo.transaction(fn ->
-      with {:ok, draft} <- do_create_draft(attrs),
-           {:ok, _player} <- maybe_create_player(draft, attrs[:creator]) do
-        # Start a new draft session process for this draft.
-        {:ok, _pid} = MtgDraftServer.DraftSessionSupervisor.start_new_session(draft.id)
-        # Have the creator join the session.
-        if attrs[:creator] do
-          :ok = MtgDraftServer.DraftSession.join(draft.id, %{user_id: attrs[:creator], seat: 1})
-        end
-
-        draft
-      else
-        error -> Repo.rollback(error)
+    # If a creator is provided, ensure they are not already in an active draft.
+    if creator = attrs[:creator] do
+      case get_active_draft_for_player(creator) do
+        nil -> :ok
+        _   -> {:error, "Player already in an active draft"}
       end
-    end)
+    else
+      :ok
+    end
+    |> case do
+      :ok ->
+        Repo.transaction(fn ->
+          with {:ok, draft} <- do_create_draft(attrs),
+               {:ok, _player} <- maybe_create_player(draft, attrs[:creator]) do
+            # Start the draft session.
+            {:ok, _pid} = MtgDraftServer.DraftSessionSupervisor.start_new_session(draft.id)
+            # Have the creator join the draft session.
+            if attrs[:creator] do
+              :ok = MtgDraftServer.DraftSession.join(draft.id, %{user_id: attrs[:creator], seat: 1})
+            end
+            draft
+          else
+            error -> Repo.rollback(error)
+          end
+        end)
+
+      error ->
+        error
+    end
   end
 
   @doc """
-  Retrieves the most recent active draft for a given user.
+  Retrieves the most recent active draft for a given player.
   (An active draft is one whose status is either "pending" or "active".)
   """
   @spec get_active_draft_for_player(String.t()) :: DraftPlayer.t() | nil
@@ -283,14 +277,7 @@ defmodule MtgDraftServer.Drafts do
 
   @doc """
   Starts a draft by updating its status to "active".
-  Validates that the draft exists and has the required number of players.
-
-  ## Parameters
-    * `draft_id` - The ID of the draft to start
-
-  ## Returns
-    * `{:ok, draft}` on success
-    * `{:error, reason}` on failure
+  Validates that the draft exists and has at least 2 players.
   """
   @spec start_draft(binary()) :: draft_result
   def start_draft(draft_id) do
@@ -304,19 +291,7 @@ defmodule MtgDraftServer.Drafts do
 
   @doc """
   Records a card pick in the draft.
-  Validates the pick is legal and updates the draft state accordingly.
-
-  ## Parameters
-    * `draft_id` - The ID of the draft
-    * `user_id` - The ID of the user making the pick
-    * `card_id` - The ID of the picked card
-    * `extra_attrs` - Additional attributes including:
-      * `"pack_number"` - Current pack number
-      * `"pick_number"` - Current pick number within the pack
-
-  ## Returns
-    * `{:ok, pick}` on success
-    * `{:error, reason}` on failure
+  Validates that the pick is legal and updates the draft state accordingly.
   """
   @spec pick_card(binary(), binary(), binary(), map()) :: pick_result
   def pick_card(draft_id, user_id, card_id, extra_attrs \\ %{}) do
@@ -332,9 +307,8 @@ defmodule MtgDraftServer.Drafts do
         {:ok, pick}
       end
 
-    # Record telemetry
+    # Record telemetry for the pick action.
     end_time = System.monotonic_time()
-
     :telemetry.execute(
       [:mtg_draft_server, :drafts, :pick_card],
       %{duration: end_time - start_time},
@@ -345,15 +319,7 @@ defmodule MtgDraftServer.Drafts do
   end
 
   @doc """
-  Retrieves all picks for a given draft and user.
-
-  ## Parameters
-    * `draft_id` - The ID of the draft
-    * `user_id` - The ID of the user whose picks to retrieve
-
-  ## Returns
-    * List of picks ordered by insertion time
-    * Empty list if no picks found
+  Retrieves all picks for a given draft and player.
   """
   @spec get_picked_cards(binary(), binary()) :: [DraftPick.t()]
   def get_picked_cards(draft_id, user_id) do
@@ -371,9 +337,8 @@ defmodule MtgDraftServer.Drafts do
   end
 
   @doc """
-  Gets a draft by ID.
-
-  Returns `{:ok, draft}` if found, `{:error, "Draft not found"}` if not found.
+  Gets a draft by its ID.
+  Returns `{:ok, draft}` if found, or `{:error, "Draft not found"}` if not.
   """
   @spec get_draft(binary()) :: draft_result
   def get_draft(draft_id) do
@@ -393,7 +358,9 @@ defmodule MtgDraftServer.Drafts do
     end
   end
 
+  # ============================================================================
   # Private helper functions
+  # ============================================================================
 
   defp do_create_draft(attrs) do
     %Draft{}
@@ -435,14 +402,23 @@ defmodule MtgDraftServer.Drafts do
     end
   end
 
+  # If no creator is provided, simply succeed.
   defp maybe_create_player(_draft, nil), do: {:ok, nil}
 
+  # When a creator is provided, first check that the draft is not already full.
   defp maybe_create_player(draft, creator) do
-    DraftPlayer.create_draft_player(%{
-      draft_id: draft.id,
-      user_id: creator,
-      seat: 1
-    })
+    player_count =
+      Repo.one(from dp in DraftPlayer, where: dp.draft_id == ^draft.id, select: count(dp.id))
+
+    if player_count < 8 do
+      DraftPlayer.create_draft_player(%{
+        draft_id: draft.id,
+        user_id: creator,
+        seat: 1
+      })
+    else
+      {:error, "Draft is full (max 8 players)"}
+    end
   end
 
   defp validate_draft_can_start(draft) do
@@ -494,8 +470,7 @@ defmodule MtgDraftServer.Drafts do
   defp validate_pick_number(_), do: {:error, "Invalid pick number"}
 
   defp validate_player_turn(_draft_player, _attrs) do
-    # Add logic to verify it's this player's turn to pick
-    # This would depend on your specific draft rules
+    # Implement turn-based validation here as needed.
     :ok
   end
 
@@ -631,54 +606,48 @@ end
 defmodule MtgDraftServer.FirebaseToken do
   use Joken.Config
 
-  @firebase_project_id Application.compile_env(:mtg_draft_server, :firebase_project_id)
+  @firebase_jwks_url "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"
 
-  add_hook(JokenJwks, strategy: MtgDraftServer.JWKSStrategy)
+  def verify_firebase_token(nil), do: {:error, :no_token_provided}
 
-  def token_config do
-    default_claims()
-    |> add_claim("aud", fn -> @firebase_project_id end, &(&1 == @firebase_project_id))
-    |> add_claim("iss", fn -> "https://securetoken.google.com/#{@firebase_project_id}" end,
-                      &(&1 == "https://securetoken.google.com/#{@firebase_project_id}"))
-  end
-end
-
-=== File: lib/mtg_draft_server/guardian.ex ===
-
-defmodule MtgDraftServer.Guardian do
-  use Guardian, otp_app: :mtg_draft_server
-
-  def subject_for_token(%{uid: uid}, _claims) do
-    {:ok, uid}
-  end
-
-  def subject_for_token(_, _) do
-    {:error, :invalid_resource}
-  end
-
-  def resource_from_claims(%{"sub" => uid}) do
-    {:ok, %{uid: uid}}
-  end
-
-  def resource_from_claims(_claims) do
-    {:error, :invalid_claims}
-  end
-
-  def build_claims(claims, _resource, _opts) do
-    {:ok, claims}
-  end
-end
-
-=== File: lib/mtg_draft_server/JWKSStrategy.ex ===
-
-defmodule MtgDraftServer.JWKSStrategy do
-    use JokenJwks.DefaultStrategyTemplate
-  
-    def init_opts(_) do
-      [jwks_url: "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"]
+  def verify_firebase_token(token) do
+    with {:ok, %{body: body}} <- Finch.build(:get, @firebase_jwks_url) |> Finch.request(MtgDraftServer.Finch),
+         {:ok, certs} <- Jason.decode(body),
+         {:ok, header} <- Joken.peek_header(token),
+         %{"kid" => kid} = header,
+         {:ok, jwk} <- get_jwk(certs, kid),
+         {true, jose_jwt, _} <- JOSE.JWT.verify(jwk, token),
+         {_, claims} <- JOSE.JWT.to_map(jose_jwt) do
+      {:ok, claims}
+    else
+      {:error, _} = err -> err
+      _ -> {:error, :invalid_token}
     end
   end
-  
+
+  defp get_jwk(%{"keys" => keys}, kid) do
+    keys
+    |> Enum.find(fn key -> key["kid"] == kid end)
+    |> case do
+      nil -> {:error, :invalid_kid}
+      key -> {:ok, JOSE.JWK.from_map(key)}
+    end
+  end
+end
+
+=== File: lib/mtg_draft_server/jwks_strategy.ex ===
+
+defmodule MtgDraftServer.JWKSStrategy do
+  use JokenJwks.DefaultStrategyTemplate
+
+  def init_opts(_) do
+    [
+      jwks_url:
+        "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"
+    ]
+  end
+end
+
 === File: lib/mtg_draft_server/repo.ex ===
 
 defmodule MtgDraftServer.Repo do
@@ -727,38 +696,45 @@ defmodule MtgDraftServerWeb.DraftController do
   use MtgDraftServerWeb, :controller
 
   alias MtgDraftServer.Drafts
-  alias MtgDraftServer.Guardian
 
   action_fallback MtgDraftServerWeb.FallbackController
 
   @doc """
-  Create a new draft. The current user (from Guardian) is recorded as the creator.
-  POST /api/drafts
+  Create a new draft using the Firebase authenticated user.
   """
   def create(conn, _params) do
-    case Guardian.Plug.current_resource(conn) do
-      nil ->
-        {:error, "Authentication required"}
-
-      current_user ->
-        with {:ok, draft} <- Drafts.create_and_join_draft(%{creator: current_user.uid}) do
+    case conn.assigns[:current_user] do
+      %{"uid" => uid} ->
+        with {:ok, draft} <- Drafts.create_and_join_draft(%{creator: uid}) do
           conn
           |> put_status(:created)
           |> put_resp_header("location", "/api/drafts/#{draft.id}")
           |> json(%{draft_id: draft.id, status: draft.status})
         end
+
+      _ ->
+        conn
+        |> put_status(:unauthorized)
+        |> json(%{"error" => "Authentication required"})
     end
   end
-
+  
   @doc """
   Start the draft by updating its status to "active".
   POST /api/drafts/:id/start
   """
   def start(conn, %{"id" => draft_id}) do
-    with {:ok, current_user} <- fetch_current_user(conn),
-         {:ok, draft} <- Drafts.start_draft(draft_id),
-         {:ok, _authorized} <- authorize_draft_action(draft, current_user) do
-      json(conn, %{draft_id: draft.id, status: draft.status})
+    case conn.assigns[:current_user] do
+      %{"uid" => uid} ->
+        with {:ok, draft} <- Drafts.start_draft(draft_id),
+             {:ok, _authorized} <- authorize_draft_action(draft, uid) do
+          json(conn, %{draft_id: draft.id, status: draft.status})
+        end
+
+      _ ->
+        conn
+        |> put_status(:unauthorized)
+        |> json(%{"error" => "Authentication required"})
     end
   end
 
@@ -772,18 +748,25 @@ defmodule MtgDraftServerWeb.DraftController do
         "pack_number" => pack_number,
         "pick_number" => pick_number
       }) do
-    with {:ok, current_user} <- fetch_current_user(conn),
-         {:ok, _} <- ensure_in_draft_session(draft_id, current_user.uid),
-         {:ok, draft} <- Drafts.get_draft(draft_id),
-         {:ok, _authorized} <- authorize_draft_action(draft, current_user),
-         {:ok, pick} <-
-           Drafts.pick_card(draft_id, current_user.uid, card_id, %{
-             "pack_number" => pack_number,
-             "pick_number" => pick_number
-           }) do
-      conn
-      |> put_status(:created)
-      |> json(%{pick: pick})
+    case conn.assigns[:current_user] do
+      %{"uid" => uid} ->
+        with {:ok, _} <- ensure_in_draft_session(draft_id, uid),
+             {:ok, draft} <- Drafts.get_draft(draft_id),
+             {:ok, _authorized} <- authorize_draft_action(draft, uid),
+             {:ok, pick} <-
+               Drafts.pick_card(draft_id, uid, card_id, %{
+                 "pack_number" => pack_number,
+                 "pick_number" => pick_number
+               }) do
+          conn
+          |> put_status(:created)
+          |> json(%{pick: pick})
+        end
+
+      _ ->
+        conn
+        |> put_status(:unauthorized)
+        |> json(%{"error" => "Authentication required"})
     end
   end
 
@@ -795,29 +778,35 @@ defmodule MtgDraftServerWeb.DraftController do
   has an active draft, a new session is started and the user joins it.
   """
   def reconnect(conn, _params) do
-    with {:ok, current_user} <- fetch_current_user(conn),
-         draft_player when not is_nil(draft_player) <-
-           Drafts.get_active_draft_for_player(current_user.uid) do
-      draft_id = draft_player.draft.id
+    case conn.assigns[:current_user] do
+      %{"uid" => uid} ->
+        case Drafts.get_active_draft_for_player(uid) do
+          nil ->
+            conn
+            |> put_status(:not_found)
+            |> json(%{error: "No active draft found for user"})
 
-      case Registry.lookup(MtgDraftServer.DraftRegistry, draft_id) do
-        [{_pid, _}] ->
-          # The draft session exists; join the session.
-          :ok = MtgDraftServer.DraftSession.join(draft_id, %{user_id: current_user.uid})
-          json(conn, %{message: "Rejoined draft", draft_id: draft_id})
+          draft_player ->
+            draft_id = draft_player.draft.id
 
-        [] ->
-          # The draft session is not running; start it and then join.
-          {:ok, _pid} = MtgDraftServer.DraftSessionSupervisor.start_new_session(draft_id)
-          :ok = MtgDraftServer.DraftSession.join(draft_id, %{user_id: current_user.uid})
-          json(conn, %{message: "Draft session restarted and rejoined", draft_id: draft_id})
-      end
-    else
-      nil ->
-        conn |> put_status(:not_found) |> json(%{error: "No active draft found for user"})
+            case Registry.lookup(MtgDraftServer.DraftRegistry, draft_id) do
+              [{_pid, _}] ->
+                # The draft session exists; join the session.
+                :ok = MtgDraftServer.DraftSession.join(draft_id, %{user_id: uid})
+                json(conn, %{message: "Rejoined draft", draft_id: draft_id})
 
-      {:error, reason} ->
-        conn |> put_status(:bad_request) |> json(%{error: reason})
+              [] ->
+                # The draft session is not running; start it and then join.
+                {:ok, _pid} = MtgDraftServer.DraftSessionSupervisor.start_new_session(draft_id)
+                :ok = MtgDraftServer.DraftSession.join(draft_id, %{user_id: uid})
+                json(conn, %{message: "Draft session restarted and rejoined", draft_id: draft_id})
+            end
+        end
+
+      _ ->
+        conn
+        |> put_status(:unauthorized)
+        |> json(%{"error" => "Authentication required"})
     end
   end
 
@@ -826,33 +815,34 @@ defmodule MtgDraftServerWeb.DraftController do
   GET /api/drafts/:id/picks
   """
   def picked_cards(conn, %{"id" => draft_id}) do
-    with {:ok, current_user} <- fetch_current_user(conn),
-         {:ok, draft} <- Drafts.get_draft(draft_id),
-         {:ok, _authorized} <- authorize_draft_action(draft, current_user) do
-      picks = Drafts.get_picked_cards(draft_id, current_user.uid)
-      json(conn, %{picks: picks})
+    case conn.assigns[:current_user] do
+      %{"uid" => uid} ->
+        with {:ok, draft} <- Drafts.get_draft(draft_id),
+             {:ok, _authorized} <- authorize_draft_action(draft, uid) do
+          picks = Drafts.get_picked_cards(draft_id, uid)
+          json(conn, %{picks: picks})
+        end
+
+      _ ->
+        conn
+        |> put_status(:unauthorized)
+        |> json(%{"error" => "Authentication required"})
     end
   end
 
-  # Helper functions
+  # ===================
+  # Helper Functions
+  # ===================
+
   defp ensure_in_draft_session(draft_id, user_id) do
-    # Calling join/2 on the draft session is idempotent.
     :ok = MtgDraftServer.DraftSession.join(draft_id, %{user_id: user_id})
     {:ok, :joined}
   end
 
-  defp fetch_current_user(conn) do
-    case Guardian.Plug.current_resource(conn) do
-      nil -> {:error, "Authentication required"}
-      user -> {:ok, user}
-    end
-  end
-
-  defp authorize_draft_action(draft, user) do
-    cond do
-      draft.creator == user.uid -> {:ok, true}
-      # Add more authorization conditions here
-      true -> {:error, "Unauthorized"}
+  defp authorize_draft_action(draft, user_id) do
+    case MtgDraftServer.Drafts.get_draft_player(draft.id, user_id) do
+      {:ok, _player} -> {:ok, true}
+      _ -> {:error, "Unauthorized"}
     end
   end
 end
@@ -991,45 +981,68 @@ defmodule MtgDraftServerWeb.Gettext do
   use Gettext.Backend, otp_app: :mtg_draft_server
 end
 
+=== File: lib/mtg_draft_server_web/plugs/auth_plug.ex ===
+
+defmodule MtgDraftServerWeb.AuthPlug do
+    import Plug.Conn
+    alias MtgDraftServer.FirebaseToken
+  
+    def init(default), do: default
+  
+    def call(conn, _opts) do
+      case get_req_header(conn, "authorization") do
+        ["Bearer " <> token] ->
+          verify_token(conn, token)
+  
+        _ ->
+          conn
+          |> send_resp(401, Jason.encode!(%{error: "Missing or invalid Authorization header"}))
+          |> halt()
+      end
+    end
+  
+    defp verify_token(conn, token) do
+      case FirebaseToken.verify_firebase_token(token) do
+        {:ok, claims} ->
+          IO.inspect(claims, label: "✅ Firebase Token Claims")
+          # Map "user_id" to "uid" so controllers can consistently use "uid"
+          claims = Map.put(claims, "uid", claims["user_id"])
+          assign(conn, :current_user, claims)
+  
+        {:error, reason} ->
+          IO.inspect(reason, label: "❌ Token Verification Failed")
+          conn
+          |> send_resp(401, Jason.encode!(%{error: "Invalid token"}))
+          |> halt()
+      end
+    end
+  end
+  
 === File: lib/mtg_draft_server_web/router.ex ===
 
 defmodule MtgDraftServerWeb.Router do
   use MtgDraftServerWeb, :router
 
+  alias MtgDraftServerWeb.AuthPlug  # Import the Auth Plug
+
   pipeline :api do
     plug :accepts, ["json"]
-
-    # Guardian pipeline
-    plug Guardian.Plug.Pipeline,
-      module: MtgDraftServer.Guardian,
-      error_handler: MtgDraftServer.AuthErrorHandler
-
-    plug Guardian.Plug.VerifyHeader, scheme: "Bearer"
-    plug Guardian.Plug.LoadResource, allow_blank: false
   end
 
-  # Add a new pipeline for public routes that don't need authentication
-  pipeline :public_api do
+  pipeline :auth_api do
     plug :accepts, ["json"]
-  end
-
-  # Add a public scope for routes that don't need authentication
-  scope "/", MtgDraftServerWeb do
-    pipe_through :public_api
-
-    get "/", DefaultController, :index
+    plug AuthPlug
   end
 
   scope "/api", MtgDraftServerWeb do
-    pipe_through :api
-  
+    pipe_through :auth_api
+
     post "/drafts", DraftController, :create
     post "/drafts/:id/start", DraftController, :start
     post "/drafts/:id/pick", DraftController, :pick
     get "/drafts/:id/picks", DraftController, :picked_cards
     post "/drafts/reconnect", DraftController, :reconnect
   end
-  
 end
 
 === File: lib/mtg_draft_server_web/telemetry.ex ===
