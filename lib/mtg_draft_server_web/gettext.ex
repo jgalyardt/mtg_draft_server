@@ -20,5 +20,5 @@ defmodule MtgDraftServerWeb.Gettext do
 
   See the [Gettext Docs](https://hexdocs.pm/gettext) for detailed usage.
   """
-  use Gettext, otp_app: :mtg_draft_server
+  use Gettext.Backend, otp_app: :mtg_draft_server
 end

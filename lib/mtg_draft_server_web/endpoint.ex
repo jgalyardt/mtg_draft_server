@@ -1,6 +1,11 @@
 defmodule MtgDraftServerWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :mtg_draft_server
 
+  # Force SSL in production if configured
+  if Application.compile_env(:mtg_draft_server, :force_ssl, false) do
+    plug Plug.SSL, rewrite_on: [:x_forwarded_proto]
+  end
+
   # The session will be stored in the cookie and signed,
   # this means its contents can be read but not tampered with.
   # Set :encryption_salt if you would also like to encrypt it.

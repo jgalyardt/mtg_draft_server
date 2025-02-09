@@ -11,6 +11,11 @@ config :mtg_draft_server,
   ecto_repos: [MtgDraftServer.Repo],
   generators: [timestamp_type: :utc_datetime, binary_id: true]
 
+config :mtg_draft_server, MtgDraftServer.Guardian,
+  issuer: "mtg_draft_server",
+  # generate a strong key for production!
+  secret_key: "YOUR_SECRET_KEY_HERE"
+
 # Configures the endpoint
 config :mtg_draft_server, MtgDraftServerWeb.Endpoint,
   url: [host: "localhost"],
