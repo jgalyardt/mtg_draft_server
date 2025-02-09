@@ -27,10 +27,12 @@ defmodule MtgDraftServerWeb.Router do
 
   scope "/api", MtgDraftServerWeb do
     pipe_through :api
-
+  
     post "/drafts", DraftController, :create
     post "/drafts/:id/start", DraftController, :start
     post "/drafts/:id/pick", DraftController, :pick
     get "/drafts/:id/picks", DraftController, :picked_cards
+    post "/drafts/reconnect", DraftController, :reconnect
   end
+  
 end

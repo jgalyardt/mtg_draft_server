@@ -48,6 +48,47 @@ defmodule MtgDraftServer.Drafts do
   end
 
   @doc """
+  Creates a new draft, starts its draft-session GenServer,
+  and joins the creator (if provided).
+  """
+  @spec create_and_join_draft(map()) :: {:ok, Draft.t()} | {:error, any()}
+  def create_and_join_draft(attrs \\ %{}) do
+    Repo.transaction(fn ->
+      with {:ok, draft} <- do_create_draft(attrs),
+           {:ok, _player} <- maybe_create_player(draft, attrs[:creator]) do
+        # Start a new draft session process for this draft.
+        {:ok, _pid} = MtgDraftServer.DraftSessionSupervisor.start_new_session(draft.id)
+        # Have the creator join the session.
+        if attrs[:creator] do
+          :ok = MtgDraftServer.DraftSession.join(draft.id, %{user_id: attrs[:creator], seat: 1})
+        end
+
+        draft
+      else
+        error -> Repo.rollback(error)
+      end
+    end)
+  end
+
+  @doc """
+  Retrieves the most recent active draft for a given user.
+  (An active draft is one whose status is either "pending" or "active".)
+  """
+  @spec get_active_draft_for_player(String.t()) :: DraftPlayer.t() | nil
+  def get_active_draft_for_player(user_id) do
+    query =
+      from dp in DraftPlayer,
+        join: d in Draft,
+        on: dp.draft_id == d.id,
+        where: dp.user_id == ^user_id and d.status in ["pending", "active"],
+        order_by: [desc: dp.inserted_at],
+        limit: 1,
+        preload: [:draft]
+
+    Repo.one(query)
+  end
+
+  @doc """
   Starts a draft by updating its status to "active".
   Validates that the draft exists and has the required number of players.
 

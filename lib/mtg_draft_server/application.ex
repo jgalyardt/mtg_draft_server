@@ -17,7 +17,10 @@ defmodule MtgDraftServer.Application do
       # Start a worker by calling: MtgDraftServer.Worker.start_link(arg)
       # {MtgDraftServer.Worker, arg},
       # Start to serve requests, typically the last entry
-      MtgDraftServerWeb.Endpoint
+      MtgDraftServerWeb.Endpoint,
+      # Add the Registry and Dynamic Supervisor for draft sessions:
+      {Registry, keys: :unique, name: MtgDraftServer.DraftRegistry},
+      MtgDraftServer.DraftSessionSupervisor
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
