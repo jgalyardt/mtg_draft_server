@@ -46,7 +46,9 @@ defmodule MtgDraftServer.MixProject do
       {:bandit, "~> 1.5"},
       {:guardian, "~> 2.3"},
       {:cachex, "~> 3.6"},
-      {:cors_plug, "~> 3.0"}
+      {:cors_plug, "~> 3.0"},
+      {:joken, "~> 2.5"},
+      {:joken_jwks, "~> 1.6"}
     ]
   end
 

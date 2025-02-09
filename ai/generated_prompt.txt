@@ -1,9 +1,4 @@
-I am building an elixir Magic: The Gathering draft server with Phoenix.
-Firebase will handle the hosting. Only authenticated users should be able to call any endpoint.
 
-I need help adding CORS. My web app is running on port 5173.
-
-Here are the project files:
 === File: lib/mtg_draft_server/application.ex ===
 
 defmodule MtgDraftServer.Application do
@@ -18,6 +13,7 @@ defmodule MtgDraftServer.Application do
     children = [
       MtgDraftServerWeb.Telemetry,
       MtgDraftServer.Repo,
+      MtgDraftServer.JWKSStrategy,
       {DNSCluster, query: Application.get_env(:mtg_draft_server, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: MtgDraftServer.PubSub},
       # Start the Finch HTTP client for sending emails
@@ -630,30 +626,59 @@ defmodule MtgDraftServer.DraftSessionSupervisor do
   end
 end
 
+=== File: lib/mtg_draft_server/firebase_token.ex ===
+
+defmodule MtgDraftServer.FirebaseToken do
+  use Joken.Config
+
+  @firebase_project_id Application.compile_env(:mtg_draft_server, :firebase_project_id)
+
+  add_hook(JokenJwks, strategy: MtgDraftServer.JWKSStrategy)
+
+  def token_config do
+    default_claims()
+    |> add_claim("aud", fn -> @firebase_project_id end, &(&1 == @firebase_project_id))
+    |> add_claim("iss", fn -> "https://securetoken.google.com/#{@firebase_project_id}" end,
+                      &(&1 == "https://securetoken.google.com/#{@firebase_project_id}"))
+  end
+end
+
 === File: lib/mtg_draft_server/guardian.ex ===
 
 defmodule MtgDraftServer.Guardian do
   use Guardian, otp_app: :mtg_draft_server
 
-  @doc """
-  Encode the resource into the token. In this example the resource is expected
-  to be a map with a `uid` key (such as coming from Firebase or your user table).
-  """
-  def subject_for_token(resource, _claims) do
-    sub = to_string(resource.uid)
-    {:ok, sub}
+  def subject_for_token(%{uid: uid}, _claims) do
+    {:ok, uid}
   end
 
-  @doc """
-  Given the claims, return the resource. Typically you’d query your database here.
-  For now we just return a dummy user with the uid.
-  """
-  def resource_from_claims(claims) do
-    uid = claims["sub"]
+  def subject_for_token(_, _) do
+    {:error, :invalid_resource}
+  end
+
+  def resource_from_claims(%{"sub" => uid}) do
     {:ok, %{uid: uid}}
+  end
+
+  def resource_from_claims(_claims) do
+    {:error, :invalid_claims}
+  end
+
+  def build_claims(claims, _resource, _opts) do
+    {:ok, claims}
   end
 end
 
+=== File: lib/mtg_draft_server/JWKSStrategy.ex ===
+
+defmodule MtgDraftServer.JWKSStrategy do
+    use JokenJwks.DefaultStrategyTemplate
+  
+    def init_opts(_) do
+      [jwks_url: "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"]
+    end
+  end
+  
 === File: lib/mtg_draft_server/repo.ex ===
 
 defmodule MtgDraftServer.Repo do
@@ -927,6 +952,15 @@ defmodule MtgDraftServerWeb.Endpoint do
   plug Plug.MethodOverride
   plug Plug.Head
   plug Plug.Session, @session_options
+
+  plug CORSPlug,
+    origin: ["http://localhost:5173"],
+    methods: ["GET", "POST"],
+    headers: ["Authorization", "Content-Type", "Accept"],
+    expose: ["Authorization"],
+    credentials: true,
+    max_age: 86400
+
   plug MtgDraftServerWeb.Router
 end
 
@@ -1211,7 +1245,10 @@ defmodule MtgDraftServer.MixProject do
       {:dns_cluster, "~> 0.1.1"},
       {:bandit, "~> 1.5"},
       {:guardian, "~> 2.3"},
-      {:cachex, "~> 3.6"}
+      {:cachex, "~> 3.6"},
+      {:cors_plug, "~> 3.0"},
+      {:joken, "~> 2.5"},
+      {:joken_jwks, "~> 1.6"}
     ]
   end
 

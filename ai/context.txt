@@ -1,6 +1,0 @@
-I am building an elixir Magic: The Gathering draft server with Phoenix.
-Firebase will handle the hosting. Only authenticated users should be able to call any endpoint.
-
-I need help adding CORS. My web app is running on port 5173.
-
-Here are the project files:

@@ -16,6 +16,10 @@ config :mtg_draft_server, MtgDraftServer.Guardian,
   # generate a strong key for production!
   secret_key: "YOUR_SECRET_KEY_HERE"
 
+# Firebase configuration
+config :mtg_draft_server,
+  firebase_project_id: "draft-client"
+
 # Configures the endpoint
 config :mtg_draft_server, MtgDraftServerWeb.Endpoint,
   url: [host: "localhost"],
