@@ -27,5 +27,9 @@ defmodule MtgDraftServerWeb.Router do
     post "/drafts/reconnect", DraftController, :reconnect
     post "/drafts/booster_packs", DraftController, :generate_booster_packs
     post "/drafts/:id/add_ai", DraftController, :add_ai
+
+    # NEW endpoints
+    get "/drafts/pending", DraftController, :pending_drafts
+    post "/drafts/:id/join", DraftController, :join
   end
 end

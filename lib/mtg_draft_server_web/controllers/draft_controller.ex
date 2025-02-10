@@ -66,38 +66,6 @@ defmodule MtgDraftServerWeb.DraftController do
   end
 
   @doc """
-  Reconnect a user to their active draft session.
-  """
-  def reconnect(conn, _params) do
-    case conn.assigns[:current_user] do
-      %{"uid" => uid} ->
-        case Drafts.get_active_draft_for_player(uid) do
-          nil ->
-            conn
-            |> put_status(:not_found)
-            |> json(%{error: "No active draft found for user"})
-
-          draft_player ->
-            draft_id = draft_player.draft.id
-            case Registry.lookup(MtgDraftServer.DraftRegistry, draft_id) do
-              [{_pid, _}] ->
-                :ok = DraftSession.join(draft_id, %{"user_id" => uid})
-                json(conn, %{message: "Rejoined draft", draft_id: draft_id})
-              [] ->
-                {:ok, _pid} = MtgDraftServer.DraftSessionSupervisor.start_new_session(draft_id)
-                :ok = DraftSession.join(draft_id, %{"user_id" => uid})
-                json(conn, %{message: "Draft session restarted and rejoined", draft_id: draft_id})
-            end
-        end
-
-      _ ->
-        conn
-        |> put_status(:unauthorized)
-        |> json(%{"error" => "Authentication required"})
-    end
-  end
-
-  @doc """
   Get all picks for the current user in a given draft.
   """
   def picked_cards(conn, %{"id" => draft_id}) do
@@ -144,6 +112,70 @@ defmodule MtgDraftServerWeb.DraftController do
       %{"uid" => _uid} ->
         :ok = DraftSession.join(draft_id, %{"user_id" => ai_id, "ai" => true})
         json(conn, %{message: "AI player #{ai_id} added to draft", draft_id: draft_id})
+      _ ->
+        conn
+        |> put_status(:unauthorized)
+        |> json(%{"error" => "Authentication required"})
+    end
+  end
+
+  @doc """
+  Lists pending drafts (those in "pending" status with fewer than 8 players).
+  """
+  def pending_drafts(conn, _params) do
+    drafts = Drafts.list_pending_drafts()
+    json(conn, %{drafts: drafts})
+  end
+
+  @doc """
+  Allows a user to join an existing pending draft.
+  """
+  def join(conn, %{"id" => draft_id}) do
+    case conn.assigns[:current_user] do
+      %{"uid" => uid} ->
+        with {:ok, draft} <- Drafts.get_draft(draft_id),
+             {:ok, player} <- Drafts.join_draft(draft, uid) do
+          # Join the draft session.
+          :ok = DraftSession.join(draft_id, %{"user_id" => uid})
+          json(conn, %{draft_id: draft.id, message: "Joined draft", player: player})
+        else
+          error -> conn |> put_status(:bad_request) |> json(%{error: error})
+        end
+
+      _ ->
+        conn
+        |> put_status(:unauthorized)
+        |> json(%{error: "Authentication required"})
+    end
+  end
+
+  @doc """
+  Reconnects the user to their active draft and returns lobby state.
+  """
+  def reconnect(conn, _params) do
+    case conn.assigns[:current_user] do
+      %{"uid" => uid} ->
+        case Drafts.get_active_draft_for_player(uid) do
+          nil ->
+            conn
+            |> put_status(:not_found)
+            |> json(%{error: "No active draft found for user"})
+
+          draft_player ->
+            draft_id = draft_player.draft.id
+            case Registry.lookup(MtgDraftServer.DraftRegistry, draft_id) do
+              [{_pid, _}] ->
+                :ok = DraftSession.join(draft_id, %{"user_id" => uid})
+                players = Drafts.get_draft_players(draft_id)
+                json(conn, %{message: "Rejoined draft", draft_id: draft_id, players: players})
+              [] ->
+                {:ok, _pid} = MtgDraftServer.DraftSessionSupervisor.start_new_session(draft_id)
+                :ok = DraftSession.join(draft_id, %{"user_id" => uid})
+                players = Drafts.get_draft_players(draft_id)
+                json(conn, %{message: "Draft session restarted and rejoined", draft_id: draft_id, players: players})
+            end
+        end
+
       _ ->
         conn
         |> put_status(:unauthorized)

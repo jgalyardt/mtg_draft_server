@@ -1,4 +1,29 @@
-I am building an elixir phoenix server to host Magic the Gathering drafts.
-Players can join, and once the draft hits 8 players, it will start.
-Review my project and create the logic to generate 8x3 packs of cards, with 15 cards in each.
-Make your best judgement on architectual questions, resolve any errors, and give me the full code output of any affected files.
+I have a few more warnings now. Take a look at my updated code.
+$ mix compile
+     warning: variable "draft_player" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 346 │   defp validate_can_pick(draft_player, attrs) do
+     │                          ~~~~~~~~~~~~
+     │
+     └─ lib/mtg_draft_server/drafts.ex:346:26: MtgDraftServer.Drafts.validate_can_pick/2
+
+     warning: function validate_draft_active/1 is unused        
+     │
+ 338 │   defp validate_draft_active(draft) do
+     │        ~
+     │
+     └─ lib/mtg_draft_server/drafts.ex:338:8: MtgDraftServer.Drafts (module)
+
+     warning: function validate_can_pick/2 is unused
+     │
+ 346 │   defp validate_can_pick(draft_player, attrs) do
+     │        ~
+     │
+     └─ lib/mtg_draft_server/drafts.ex:346:8: MtgDraftServer.Drafts (module)
+
+     warning: function do_create_pick/4 is unused
+     │
+ 276 │   defp do_create_pick(draft_id, draft_player, card_id, extra_attrs) do
+     │        ~
+     │
+     └─ lib/mtg_draft_server/drafts.ex:276:8: MtgDraftServer.Drafts (module)

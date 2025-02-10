@@ -117,22 +117,32 @@ defmodule MtgDraftServer.Drafts do
   Records a card pick in the draft.
   Validates that the pick is legal and updates the draft state accordingly.
   """
-  @spec pick_card(binary(), binary(), binary(), map()) :: {:ok, DraftPick.t()} | {:error, any()}
   def pick_card(draft_id, user_id, card_id, extra_attrs \\ %{}) do
+    # Obtain the draft_player record (this function already exists)
+    draft_player = get_draft_player!(draft_id, user_id)
+  
+    # Create the attributes
     now = DateTime.utc_now() |> DateTime.truncate(:second)
-    expires_at = DateTime.add(now, 86400, :second)
+    expires_at = DateTime.add(now, @one_day_in_seconds, :second)
     attrs =
       Map.merge(extra_attrs, %{
         "draft_id" => draft_id,
-        "draft_player_id" => get_draft_player!(draft_id, user_id).id,
+        "draft_player_id" => draft_player.id,
         "card_id" => card_id,
         "expires_at" => expires_at
       })
-
-    %DraftPick{}
-    |> DraftPick.changeset(attrs)
-    |> Repo.insert()
+  
+    # Validate the pick before inserting (this is just an example)
+    with :ok <- validate_pack_number(attrs["pack_number"]),
+         :ok <- validate_pick_number(attrs["pick_number"]) do
+      %DraftPick{}
+      |> DraftPick.changeset(attrs)
+      |> Repo.insert()
+    else
+      error -> error
+    end
   end
+  
 
   @doc """
   Retrieves all picks for a given draft and player.
@@ -204,6 +214,49 @@ defmodule MtgDraftServer.Drafts do
     end
   end
 
+  @doc """
+  Returns a list of pending drafts that have fewer than 8 players.
+  Each draft is returned as a map with keys: :id, :player_count, and :status.
+  """
+  def list_pending_drafts do
+    query =
+      from d in Draft,
+        where: d.status == "pending",
+        left_join: dp in DraftPlayer, on: dp.draft_id == d.id,
+        group_by: d.id,
+        having: count(dp.id) < 8,
+        select: %{id: d.id, player_count: count(dp.id), status: d.status}
+
+    Repo.all(query)
+  end
+
+  @doc """
+  Joins the given user to the specified draft if it is not full.
+  Assigns a seat number equal to the current player count + 1.
+  """
+  def join_draft(%Draft{} = draft, user_id) do
+    player_count =
+      Repo.one(from dp in DraftPlayer, where: dp.draft_id == ^draft.id, select: count(dp.id))
+
+    if player_count < 8 do
+      DraftPlayer.create_draft_player(%{
+        draft_id: draft.id,
+        user_id: user_id,
+        seat: player_count + 1
+      })
+    else
+      {:error, "Draft is full (max 8 players)"}
+    end
+  end
+
+  @doc """
+  Returns a list of user IDs for all players in the specified draft.
+  """
+  def get_draft_players(draft_id) do
+    from(dp in DraftPlayer, where: dp.draft_id == ^draft_id, select: dp.user_id)
+    |> Repo.all()
+  end
+
   # ============================================================================
   # Private helper functions
   # ============================================================================
@@ -218,23 +271,6 @@ defmodule MtgDraftServer.Drafts do
     draft
     |> Draft.changeset(%{status: "active"})
     |> Repo.update()
-  end
-
-  defp do_create_pick(draft_id, draft_player, card_id, extra_attrs) do
-    now = DateTime.utc_now() |> DateTime.truncate(:second)
-    expires_at = DateTime.add(now, @one_day_in_seconds, :second)
-
-    attrs =
-      Map.merge(extra_attrs, %{
-        "draft_id" => draft_id,
-        "draft_player_id" => draft_player.id,
-        "card_id" => card_id,
-        "expires_at" => expires_at
-      })
-
-    %DraftPick{}
-    |> DraftPick.changeset(attrs)
-    |> Repo.insert()
   end
 
   # If no creator is provided, simply succeed.
@@ -282,32 +318,11 @@ defmodule MtgDraftServer.Drafts do
     end
   end
 
-  defp validate_draft_active(draft) do
-    if draft.status == "active" do
-      :ok
-    else
-      {:error, "Draft is not active"}
-    end
-  end
-
-  defp validate_can_pick(draft_player, attrs) do
-    with :ok <- validate_pack_number(attrs["pack_number"]),
-         :ok <- validate_pick_number(attrs["pick_number"]),
-         :ok <- validate_player_turn(draft_player, attrs) do
-      :ok
-    end
-  end
-
   defp validate_pack_number(pack_number) when pack_number in 1..3, do: :ok
   defp validate_pack_number(_), do: {:error, "Invalid pack number"}
 
   defp validate_pick_number(pick_number) when pick_number in 1..15, do: :ok
   defp validate_pick_number(_), do: {:error, "Invalid pick number"}
-
-  defp validate_player_turn(_draft_player, _attrs) do
-    # Implement turn-based validation here as needed.
-    :ok
-  end
 
   defp broadcast_draft_update(draft_id, event) do
     Phoenix.PubSub.broadcast(

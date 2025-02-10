@@ -1,7 +1,33 @@
-I am building an elixir phoenix server to host Magic the Gathering drafts.
-Players can join, and once the draft hits 8 players, it will start.
-Review my project and create the logic to generate 8x3 packs of cards, with 15 cards in each.
-Make your best judgement on architectual questions, resolve any errors, and give me the full code output of any affected files.
+I have a few more warnings now. Take a look at my updated code.
+$ mix compile
+     warning: variable "draft_player" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 346 │   defp validate_can_pick(draft_player, attrs) do
+     │                          ~~~~~~~~~~~~
+     │
+     └─ lib/mtg_draft_server/drafts.ex:346:26: MtgDraftServer.Drafts.validate_can_pick/2
+
+     warning: function validate_draft_active/1 is unused        
+     │
+ 338 │   defp validate_draft_active(draft) do
+     │        ~
+     │
+     └─ lib/mtg_draft_server/drafts.ex:338:8: MtgDraftServer.Drafts (module)
+
+     warning: function validate_can_pick/2 is unused
+     │
+ 346 │   defp validate_can_pick(draft_player, attrs) do
+     │        ~
+     │
+     └─ lib/mtg_draft_server/drafts.ex:346:8: MtgDraftServer.Drafts (module)
+
+     warning: function do_create_pick/4 is unused
+     │
+ 276 │   defp do_create_pick(draft_id, draft_player, card_id, extra_attrs) do
+     │        ~
+     │
+     └─ lib/mtg_draft_server/drafts.ex:276:8: MtgDraftServer.Drafts (module)
+
 === File: lib/mtg_draft_server/application.ex ===
 
 defmodule MtgDraftServer.Application do
@@ -328,22 +354,32 @@ defmodule MtgDraftServer.Drafts do
   Records a card pick in the draft.
   Validates that the pick is legal and updates the draft state accordingly.
   """
-  @spec pick_card(binary(), binary(), binary(), map()) :: {:ok, DraftPick.t()} | {:error, any()}
   def pick_card(draft_id, user_id, card_id, extra_attrs \\ %{}) do
+    # Obtain the draft_player record (this function already exists)
+    draft_player = get_draft_player!(draft_id, user_id)
+  
+    # Create the attributes
     now = DateTime.utc_now() |> DateTime.truncate(:second)
-    expires_at = DateTime.add(now, 86400, :second)
+    expires_at = DateTime.add(now, @one_day_in_seconds, :second)
     attrs =
       Map.merge(extra_attrs, %{
         "draft_id" => draft_id,
-        "draft_player_id" => get_draft_player!(draft_id, user_id).id,
+        "draft_player_id" => draft_player.id,
         "card_id" => card_id,
         "expires_at" => expires_at
       })
-
-    %DraftPick{}
-    |> DraftPick.changeset(attrs)
-    |> Repo.insert()
+  
+    # Validate the pick before inserting (this is just an example)
+    with :ok <- validate_pack_number(attrs["pack_number"]),
+         :ok <- validate_pick_number(attrs["pick_number"]) do
+      %DraftPick{}
+      |> DraftPick.changeset(attrs)
+      |> Repo.insert()
+    else
+      error -> error
+    end
   end
+  
 
   @doc """
   Retrieves all picks for a given draft and player.
@@ -413,6 +449,49 @@ defmodule MtgDraftServer.Drafts do
       |> Draft.changeset(%{status: "complete"})
       |> Repo.update()
     end
+  end
+
+  @doc """
+  Returns a list of pending drafts that have fewer than 8 players.
+  Each draft is returned as a map with keys: :id, :player_count, and :status.
+  """
+  def list_pending_drafts do
+    query =
+      from d in Draft,
+        where: d.status == "pending",
+        left_join: dp in DraftPlayer, on: dp.draft_id == d.id,
+        group_by: d.id,
+        having: count(dp.id) < 8,
+        select: %{id: d.id, player_count: count(dp.id), status: d.status}
+
+    Repo.all(query)
+  end
+
+  @doc """
+  Joins the given user to the specified draft if it is not full.
+  Assigns a seat number equal to the current player count + 1.
+  """
+  def join_draft(%Draft{} = draft, user_id) do
+    player_count =
+      Repo.one(from dp in DraftPlayer, where: dp.draft_id == ^draft.id, select: count(dp.id))
+
+    if player_count < 8 do
+      DraftPlayer.create_draft_player(%{
+        draft_id: draft.id,
+        user_id: user_id,
+        seat: player_count + 1
+      })
+    else
+      {:error, "Draft is full (max 8 players)"}
+    end
+  end
+
+  @doc """
+  Returns a list of user IDs for all players in the specified draft.
+  """
+  def get_draft_players(draft_id) do
+    from(dp in DraftPlayer, where: dp.draft_id == ^draft_id, select: dp.user_id)
+    |> Repo.all()
   end
 
   # ============================================================================
@@ -503,8 +582,7 @@ defmodule MtgDraftServer.Drafts do
 
   defp validate_can_pick(draft_player, attrs) do
     with :ok <- validate_pack_number(attrs["pack_number"]),
-         :ok <- validate_pick_number(attrs["pick_number"]),
-         :ok <- validate_player_turn(draft_player, attrs) do
+         :ok <- validate_pick_number(attrs["pick_number"]) do
       :ok
     end
   end
@@ -514,11 +592,6 @@ defmodule MtgDraftServer.Drafts do
 
   defp validate_pick_number(pick_number) when pick_number in 1..15, do: :ok
   defp validate_pick_number(_), do: {:error, "Invalid pick number"}
-
-  defp validate_player_turn(_draft_player, _attrs) do
-    # Implement turn-based validation here as needed.
-    :ok
-  end
 
   defp broadcast_draft_update(draft_id, event) do
     Phoenix.PubSub.broadcast(
@@ -536,18 +609,19 @@ defmodule MtgDraftServer.DraftSession do
   A GenServer that represents a draft session and manages picking order.
 
   The session state includes:
-    - the current pack (a list of card IDs or card data)
+    - the current (simulation) pack (a list of card IDs or card data) used before the draft starts
     - the turn order (a list of user IDs)
     - the current turn index
-    - the current pack number (1, 2, or 3)
-    - the pick number within the current pack
+    - the pack number (1, 2, or 3) and pick number within the pack
 
-  When a pick is registered it is persisted via the context,
-  the card is removed from the pack, and the turn advances.
-  At the end of a pack:
-    - If it isn’t the third pack, a new pack is generated and the draft continues.
-    - If it is the third pack, the draft is marked complete, a complete message is broadcast,
-      and the session terminates.
+  **New behavior:** When a player joins the session and the total number of players reaches 8, the draft
+  automatically “starts” by generating 8×3 booster packs (24 packs total, each containing 15 cards)
+  via the `MtgDraftServer.Drafts.PackGenerator`. The resulting booster pack distribution (a map of
+  player ID to a list of 3 packs) is stored in the session state (in the `booster_packs` field) and a
+  broadcast is issued to notify connected clients that the draft has started.
+  
+  (Note: This example uses a simplified simulation for the picking process. You may later wish to
+  update the pick logic so that players draft from their distributed booster packs.)
   """
 
   use GenServer
@@ -579,17 +653,19 @@ defmodule MtgDraftServer.DraftSession do
 
   @impl true
   def init(draft_id) do
-    # For simulation, pack 1 is a list of numbers 1..15.
+    # For simulation, before the draft starts we use a simple pack of numbers 1..15.
     initial_pack = Enum.to_list(1..15)
     state = %{
       draft_id: draft_id,
       players: %{},            # map of user_id => player info (optionally includes "ai" flag)
       turn_order: [],          # list of user_ids in picking order
       current_turn_index: 0,   # index in turn_order that is picking
-      pack: initial_pack,      # the current pack (simulated)
+      pack: initial_pack,      # a simulation pack used before the full draft starts
       pack_number: 1,          # current pack number (1, 2, or 3)
       pick_number: 1,          # pick number within the current pack
-      status: :pending
+      status: :pending,
+      booster_packs: nil,      # will be populated once 8 players have joined
+      draft_started: false     # flag indicating whether the draft (booster generation) has started
     }
     {:ok, state}
   end
@@ -600,8 +676,33 @@ defmodule MtgDraftServer.DraftSession do
     new_players = Map.put(state.players, user_id, player)
     new_turn_order = state.turn_order ++ [user_id]
     new_state = %{state | players: new_players, turn_order: new_turn_order}
+
     IO.puts("Player #{user_id} joined (AI? #{inspect(Map.get(player, "ai") || Map.get(player, :ai) || false)})")
-    {:reply, :ok, new_state}
+
+    # If this is the 8th player and the draft has not yet started,
+    # generate 24 booster packs (8 players × 3 packs per player) and update the state.
+    if map_size(new_players) == 8 and not state.draft_started do
+      # Use default options (set_codes, allowed_rarities, distribution) as defined in the PackGenerator.
+      booster_packs = MtgDraftServer.Drafts.PackGenerator.generate_and_distribute_booster_packs(%{}, new_turn_order)
+      
+      updated_state =
+        new_state
+        |> Map.put(:booster_packs, booster_packs)
+        |> Map.put(:draft_started, true)
+        |> Map.put(:status, :active)
+
+      IO.puts("Draft reached 8 players. Booster packs generated and draft started.")
+      
+      Phoenix.PubSub.broadcast(
+        MtgDraftServer.PubSub,
+        "draft:#{state.draft_id}",
+        {:draft_started, booster_packs}
+      )
+
+      {:reply, :ok, updated_state}
+    else
+      {:reply, :ok, new_state}
+    end
   end
 
   @impl true
@@ -1066,38 +1167,6 @@ defmodule MtgDraftServerWeb.DraftController do
   end
 
   @doc """
-  Reconnect a user to their active draft session.
-  """
-  def reconnect(conn, _params) do
-    case conn.assigns[:current_user] do
-      %{"uid" => uid} ->
-        case Drafts.get_active_draft_for_player(uid) do
-          nil ->
-            conn
-            |> put_status(:not_found)
-            |> json(%{error: "No active draft found for user"})
-
-          draft_player ->
-            draft_id = draft_player.draft.id
-            case Registry.lookup(MtgDraftServer.DraftRegistry, draft_id) do
-              [{_pid, _}] ->
-                :ok = DraftSession.join(draft_id, %{"user_id" => uid})
-                json(conn, %{message: "Rejoined draft", draft_id: draft_id})
-              [] ->
-                {:ok, _pid} = MtgDraftServer.DraftSessionSupervisor.start_new_session(draft_id)
-                :ok = DraftSession.join(draft_id, %{"user_id" => uid})
-                json(conn, %{message: "Draft session restarted and rejoined", draft_id: draft_id})
-            end
-        end
-
-      _ ->
-        conn
-        |> put_status(:unauthorized)
-        |> json(%{"error" => "Authentication required"})
-    end
-  end
-
-  @doc """
   Get all picks for the current user in a given draft.
   """
   def picked_cards(conn, %{"id" => draft_id}) do
@@ -1144,6 +1213,70 @@ defmodule MtgDraftServerWeb.DraftController do
       %{"uid" => _uid} ->
         :ok = DraftSession.join(draft_id, %{"user_id" => ai_id, "ai" => true})
         json(conn, %{message: "AI player #{ai_id} added to draft", draft_id: draft_id})
+      _ ->
+        conn
+        |> put_status(:unauthorized)
+        |> json(%{"error" => "Authentication required"})
+    end
+  end
+
+  @doc """
+  Lists pending drafts (those in "pending" status with fewer than 8 players).
+  """
+  def pending_drafts(conn, _params) do
+    drafts = Drafts.list_pending_drafts()
+    json(conn, %{drafts: drafts})
+  end
+
+  @doc """
+  Allows a user to join an existing pending draft.
+  """
+  def join(conn, %{"id" => draft_id}) do
+    case conn.assigns[:current_user] do
+      %{"uid" => uid} ->
+        with {:ok, draft} <- Drafts.get_draft(draft_id),
+             {:ok, player} <- Drafts.join_draft(draft, uid) do
+          # Join the draft session.
+          :ok = DraftSession.join(draft_id, %{"user_id" => uid})
+          json(conn, %{draft_id: draft.id, message: "Joined draft", player: player})
+        else
+          error -> conn |> put_status(:bad_request) |> json(%{error: error})
+        end
+
+      _ ->
+        conn
+        |> put_status(:unauthorized)
+        |> json(%{error: "Authentication required"})
+    end
+  end
+
+  @doc """
+  Reconnects the user to their active draft and returns lobby state.
+  """
+  def reconnect(conn, _params) do
+    case conn.assigns[:current_user] do
+      %{"uid" => uid} ->
+        case Drafts.get_active_draft_for_player(uid) do
+          nil ->
+            conn
+            |> put_status(:not_found)
+            |> json(%{error: "No active draft found for user"})
+
+          draft_player ->
+            draft_id = draft_player.draft.id
+            case Registry.lookup(MtgDraftServer.DraftRegistry, draft_id) do
+              [{_pid, _}] ->
+                :ok = DraftSession.join(draft_id, %{"user_id" => uid})
+                players = Drafts.get_draft_players(draft_id)
+                json(conn, %{message: "Rejoined draft", draft_id: draft_id, players: players})
+              [] ->
+                {:ok, _pid} = MtgDraftServer.DraftSessionSupervisor.start_new_session(draft_id)
+                :ok = DraftSession.join(draft_id, %{"user_id" => uid})
+                players = Drafts.get_draft_players(draft_id)
+                json(conn, %{message: "Draft session restarted and rejoined", draft_id: draft_id, players: players})
+            end
+        end
+
       _ ->
         conn
         |> put_status(:unauthorized)
@@ -1371,6 +1504,10 @@ defmodule MtgDraftServerWeb.Router do
     post "/drafts/reconnect", DraftController, :reconnect
     post "/drafts/booster_packs", DraftController, :generate_booster_packs
     post "/drafts/:id/add_ai", DraftController, :add_ai
+
+    # NEW endpoints
+    get "/drafts/pending", DraftController, :pending_drafts
+    post "/drafts/:id/join", DraftController, :join
   end
 end
 
