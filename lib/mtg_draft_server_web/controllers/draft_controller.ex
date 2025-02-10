@@ -2,6 +2,7 @@ defmodule MtgDraftServerWeb.DraftController do
   use MtgDraftServerWeb, :controller
 
   alias MtgDraftServer.Drafts
+  alias MtgDraftServer.DraftSession
 
   action_fallback MtgDraftServerWeb.FallbackController
 
@@ -46,25 +47,15 @@ defmodule MtgDraftServerWeb.DraftController do
   @doc """
   Persist a card pick.
   """
-  def pick(conn, %{
-        "id" => draft_id,
-        "card_id" => card_id,
-        "pack_number" => pack_number,
-        "pick_number" => pick_number
-      }) do
+  def pick(conn, %{"id" => draft_id, "card_id" => card_id}) do
     case conn.assigns[:current_user] do
       %{"uid" => uid} ->
         with {:ok, _} <- ensure_in_draft_session(draft_id, uid),
              {:ok, draft} <- Drafts.get_draft(draft_id),
-             {:ok, _authorized} <- authorize_draft_action(draft, uid),
-             {:ok, pick} <-
-               Drafts.pick_card(draft_id, uid, card_id, %{
-                 "pack_number" => pack_number,
-                 "pick_number" => pick_number
-               }) do
-          conn
-          |> put_status(:created)
-          |> json(%{pick: pick})
+             {:ok, _authorized} <- authorize_draft_action(draft, uid) do
+          # Delegate the pick to the DraftSession.
+          DraftSession.pick(draft_id, uid, card_id)
+          json(conn, %{message: "Pick registered"})
         end
 
       _ ->
@@ -88,15 +79,13 @@ defmodule MtgDraftServerWeb.DraftController do
 
           draft_player ->
             draft_id = draft_player.draft.id
-
             case Registry.lookup(MtgDraftServer.DraftRegistry, draft_id) do
               [{_pid, _}] ->
-                :ok = MtgDraftServer.DraftSession.join(draft_id, %{user_id: uid})
+                :ok = DraftSession.join(draft_id, %{"user_id" => uid})
                 json(conn, %{message: "Rejoined draft", draft_id: draft_id})
-
               [] ->
                 {:ok, _pid} = MtgDraftServer.DraftSessionSupervisor.start_new_session(draft_id)
-                :ok = MtgDraftServer.DraftSession.join(draft_id, %{user_id: uid})
+                :ok = DraftSession.join(draft_id, %{"user_id" => uid})
                 json(conn, %{message: "Draft session restarted and rejoined", draft_id: draft_id})
             end
         end
@@ -129,43 +118,50 @@ defmodule MtgDraftServerWeb.DraftController do
 
   @doc """
   Generate booster packs and distribute them among players.
-
-  Expects a JSON payload with keys:
-    - "players": a list of player identifiers
-    - "set_codes": a list of set codes (e.g. ["mh3", "stx", "war"])
-    - Optionally, "allowed_rarities" and "distribution" can be provided.
   """
   def generate_booster_packs(conn, params) do
     players = Map.get(params, "players", [])
-
     opts = %{
       set_codes: Map.get(params, "set_codes", []),
       allowed_rarities:
         Map.get(params, "allowed_rarities", ["basic", "common", "uncommon", "rare", "mythic"]),
       distribution:
-        Map.get(params, "distribution", %{
-          "basic" => 1,
-          "common" => 10,
-          "uncommon" => 3,
-          "rare" => 1
-        })
+        Map.get(params, "distribution", %{"basic" => 1, "common" => 10, "uncommon" => 3, "rare" => 1})
     }
-
     packs_distribution = Drafts.PackGenerator.generate_and_distribute_booster_packs(opts, players)
     json(conn, packs_distribution)
   end
 
-  # ===================
+  @doc """
+  Add an AI player to an active draft.
+
+  Expects JSON with:
+    - "id": the draft id
+    - "ai_id": a unique identifier for the AI (e.g. "AI_1")
+  """
+  def add_ai(conn, %{"id" => draft_id, "ai_id" => ai_id}) do
+    case conn.assigns[:current_user] do
+      %{"uid" => _uid} ->
+        :ok = DraftSession.join(draft_id, %{"user_id" => ai_id, "ai" => true})
+        json(conn, %{message: "AI player #{ai_id} added to draft", draft_id: draft_id})
+      _ ->
+        conn
+        |> put_status(:unauthorized)
+        |> json(%{"error" => "Authentication required"})
+    end
+  end
+
+  # --------------------
   # Helper Functions
-  # ===================
+  # --------------------
 
   defp ensure_in_draft_session(draft_id, user_id) do
-    :ok = MtgDraftServer.DraftSession.join(draft_id, %{user_id: user_id})
+    :ok = DraftSession.join(draft_id, %{"user_id" => user_id})
     {:ok, :joined}
   end
 
   defp authorize_draft_action(draft, user_id) do
-    case MtgDraftServer.Drafts.get_draft_player(draft.id, user_id) do
+    case Drafts.get_draft_player(draft.id, user_id) do
       {:ok, _player} -> {:ok, true}
       _ -> {:error, "Unauthorized"}
     end

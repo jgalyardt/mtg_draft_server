@@ -14,7 +14,6 @@ defmodule MtgDraftServerWeb.Router do
 
   scope "/", MtgDraftServerWeb do
     pipe_through :api
-
     get "/", DefaultController, :index
   end
 
@@ -26,8 +25,7 @@ defmodule MtgDraftServerWeb.Router do
     post "/drafts/:id/pick", DraftController, :pick
     get "/drafts/:id/picks", DraftController, :picked_cards
     post "/drafts/reconnect", DraftController, :reconnect
-
-    # New route for booster pack generation
-    post "/drafts/booster-packs", DraftController, :generate_booster_packs
+    post "/drafts/booster_packs", DraftController, :generate_booster_packs
+    post "/drafts/:id/add_ai", DraftController, :add_ai
   end
 end

@@ -1,29 +1,32 @@
 defmodule MtgDraftServer.Cards.Card do
-  @derive {Jason.Encoder, only: [
-    :id,
-    :oracle_id,
-    :name,
-    :mana_cost,
-    :cmc,
-    :type_line,
-    :oracle_text,
-    :power,
-    :toughness,
-    :colors,
-    :color_identity,
-    :set_code,
-    :rarity,
-    :foil,
-    :image_uris,
-    :legalities,
-    :inserted_at,
-    :updated_at
-  ]}
+  @derive {Jason.Encoder,
+           only: [
+             :id,
+             :oracle_id,
+             :name,
+             :mana_cost,
+             :cmc,
+             :type_line,
+             :oracle_text,
+             :power,
+             :toughness,
+             :colors,
+             :color_identity,
+             :set_code,
+             :rarity,
+             :foil,
+             :image_uris,
+             :legalities,
+             :inserted_at,
+             :updated_at
+           ]}
   use Ecto.Schema
   import Ecto.Changeset
 
-  @primary_key {:id, :binary_id, autogenerate: true}  # Ensures id is binary_id
-  @foreign_key_type :binary_id  # Ensures foreign keys also use binary_id
+  # Ensures id is binary_id
+  @primary_key {:id, :binary_id, autogenerate: true}
+  # Ensures foreign keys also use binary_id
+  @foreign_key_type :binary_id
   schema "cards" do
     field :oracle_id, Ecto.UUID
     field :name, :string
@@ -48,7 +51,8 @@ defmodule MtgDraftServer.Cards.Card do
   def changeset(card, attrs) do
     card
     |> cast(attrs, [
-      :id,  # Keep id here to allow it to be cast
+      # Keep id here to allow it to be cast
+      :id,
       :oracle_id,
       :name,
       :mana_cost,

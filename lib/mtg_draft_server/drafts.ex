@@ -117,30 +117,21 @@ defmodule MtgDraftServer.Drafts do
   Records a card pick in the draft.
   Validates that the pick is legal and updates the draft state accordingly.
   """
-  @spec pick_card(binary(), binary(), binary(), map()) :: pick_result
+  @spec pick_card(binary(), binary(), binary(), map()) :: {:ok, DraftPick.t()} | {:error, any()}
   def pick_card(draft_id, user_id, card_id, extra_attrs \\ %{}) do
-    start_time = System.monotonic_time()
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+    expires_at = DateTime.add(now, 86400, :second)
+    attrs =
+      Map.merge(extra_attrs, %{
+        "draft_id" => draft_id,
+        "draft_player_id" => get_draft_player!(draft_id, user_id).id,
+        "card_id" => card_id,
+        "expires_at" => expires_at
+      })
 
-    result =
-      with {:ok, draft} <- get_draft(draft_id),
-           :ok <- validate_draft_active(draft),
-           {:ok, draft_player} <- get_draft_player(draft_id, user_id),
-           :ok <- validate_can_pick(draft_player, extra_attrs),
-           {:ok, pick} <- do_create_pick(draft_id, draft_player, card_id, extra_attrs) do
-        broadcast_draft_update(draft_id, {:pick_made, pick})
-        {:ok, pick}
-      end
-
-    # Record telemetry for the pick action.
-    end_time = System.monotonic_time()
-
-    :telemetry.execute(
-      [:mtg_draft_server, :drafts, :pick_card],
-      %{duration: end_time - start_time},
-      %{draft_id: draft_id, user_id: user_id}
-    )
-
-    result
+    %DraftPick{}
+    |> DraftPick.changeset(attrs)
+    |> Repo.insert()
   end
 
   @doc """
@@ -183,6 +174,36 @@ defmodule MtgDraftServer.Drafts do
     end
   end
 
+  def get_draft_player(draft_id, user_id) do
+    case Repo.one(
+           from dp in DraftPlayer,
+             where: dp.draft_id == ^draft_id and dp.user_id == ^user_id,
+             preload: [:draft]
+         ) do
+      nil -> {:error, "Player not found in draft"}
+      player -> {:ok, player}
+    end
+  end
+
+  defp get_draft_player!(draft_id, user_id) do
+    Repo.one!(
+      from dp in DraftPlayer,
+        where: dp.draft_id == ^draft_id and dp.user_id == ^user_id
+    )
+  end
+
+  @doc """
+  Marks the draft as complete by updating its status.
+  """
+  @spec complete_draft(binary()) :: {:ok, Draft.t()} | {:error, any()}
+  def complete_draft(draft_id) do
+    with {:ok, draft} <- get_draft(draft_id) do
+      draft
+      |> Draft.changeset(%{status: "complete"})
+      |> Repo.update()
+    end
+  end
+
   # ============================================================================
   # Private helper functions
   # ============================================================================
@@ -214,17 +235,6 @@ defmodule MtgDraftServer.Drafts do
     %DraftPick{}
     |> DraftPick.changeset(attrs)
     |> Repo.insert()
-  end
-
-  def get_draft_player(draft_id, user_id) do
-    case Repo.one(
-           from dp in DraftPlayer,
-             where: dp.draft_id == ^draft_id and dp.user_id == ^user_id,
-             preload: [:draft]
-         ) do
-      nil -> {:error, "Player not found in draft"}
-      player -> {:ok, player}
-    end
   end
 
   # If no creator is provided, simply succeed.
