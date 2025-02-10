@@ -1,3 +1,7 @@
-I am building an elixir game server with Phoenix.
-Eventually, this will be connected to a Vue3 front end, but for now I want to focus on the game logic.
-Firebase will handle the hosting. Only authenticated users should be able to call any endpoint.
+I am building an elixir phoenix server to host Magic the Gathering drafts.
+Players can join, and once the draft hits 8 players, it will start.
+Review my project and create the logic to generate 8x3 packs of cards, with 15 cards in each.
+
+Outline the steps I need to take to achieve. Separate the logic into distinct portions that we will tackle one at a time.
+
+I need to fix this error:

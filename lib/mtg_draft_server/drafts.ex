@@ -22,7 +22,7 @@ defmodule MtgDraftServer.Drafts do
 
   @doc """
   Creates a new draft.
-  
+
   Note that the draft itself is agnostic of a player.
   If a creator is provided in the attrs (using key `:creator`), a corresponding
   draft_player record is created.
@@ -52,7 +52,7 @@ defmodule MtgDraftServer.Drafts do
     if creator = attrs[:creator] do
       case get_active_draft_for_player(creator) do
         nil -> :ok
-        _   -> {:error, "Player already in an active draft"}
+        _ -> {:error, "Player already in an active draft"}
       end
     else
       :ok
@@ -66,8 +66,10 @@ defmodule MtgDraftServer.Drafts do
             {:ok, _pid} = MtgDraftServer.DraftSessionSupervisor.start_new_session(draft.id)
             # Have the creator join the draft session.
             if attrs[:creator] do
-              :ok = MtgDraftServer.DraftSession.join(draft.id, %{user_id: attrs[:creator], seat: 1})
+              :ok =
+                MtgDraftServer.DraftSession.join(draft.id, %{user_id: attrs[:creator], seat: 1})
             end
+
             draft
           else
             error -> Repo.rollback(error)
@@ -131,6 +133,7 @@ defmodule MtgDraftServer.Drafts do
 
     # Record telemetry for the pick action.
     end_time = System.monotonic_time()
+
     :telemetry.execute(
       [:mtg_draft_server, :drafts, :pick_card],
       %{duration: end_time - start_time},
@@ -222,7 +225,7 @@ defmodule MtgDraftServer.Drafts do
       nil -> {:error, "Player not found in draft"}
       player -> {:ok, player}
     end
-  end  
+  end
 
   # If no creator is provided, simply succeed.
   defp maybe_create_player(_draft, nil), do: {:ok, nil}

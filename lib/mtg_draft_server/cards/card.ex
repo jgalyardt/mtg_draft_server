@@ -1,9 +1,29 @@
 defmodule MtgDraftServer.Cards.Card do
+  @derive {Jason.Encoder, only: [
+    :id,
+    :oracle_id,
+    :name,
+    :mana_cost,
+    :cmc,
+    :type_line,
+    :oracle_text,
+    :power,
+    :toughness,
+    :colors,
+    :color_identity,
+    :set_code,
+    :rarity,
+    :foil,
+    :image_uris,
+    :legalities,
+    :inserted_at,
+    :updated_at
+  ]}
   use Ecto.Schema
   import Ecto.Changeset
 
-  # we use the Scryfall id as primary key
-  @primary_key {:id, :binary_id, autogenerate: false}
+  @primary_key {:id, :binary_id, autogenerate: true}  # Ensures id is binary_id
+  @foreign_key_type :binary_id  # Ensures foreign keys also use binary_id
   schema "cards" do
     field :oracle_id, Ecto.UUID
     field :name, :string
@@ -15,6 +35,9 @@ defmodule MtgDraftServer.Cards.Card do
     field :toughness, :string
     field :colors, {:array, :string}
     field :color_identity, {:array, :string}
+    field :set_code, :string
+    field :rarity, :string
+    field :foil, :boolean, default: false
     field :image_uris, :map
     field :legalities, :map
 
@@ -25,7 +48,7 @@ defmodule MtgDraftServer.Cards.Card do
   def changeset(card, attrs) do
     card
     |> cast(attrs, [
-      :id,
+      :id,  # Keep id here to allow it to be cast
       :oracle_id,
       :name,
       :mana_cost,
@@ -36,9 +59,12 @@ defmodule MtgDraftServer.Cards.Card do
       :toughness,
       :colors,
       :color_identity,
+      :set_code,
+      :rarity,
+      :foil,
       :image_uris,
       :legalities
     ])
-    |> validate_required([:id, :oracle_id, :name])
+    |> validate_required([:oracle_id, :name, :set_code, :rarity])
   end
 end

@@ -6,7 +6,8 @@ defmodule MtgDraftServer.FirebaseToken do
   def verify_firebase_token(nil), do: {:error, :no_token_provided}
 
   def verify_firebase_token(token) do
-    with {:ok, %{body: body}} <- Finch.build(:get, @firebase_jwks_url) |> Finch.request(MtgDraftServer.Finch),
+    with {:ok, %{body: body}} <-
+           Finch.build(:get, @firebase_jwks_url) |> Finch.request(MtgDraftServer.Finch),
          {:ok, certs} <- Jason.decode(body),
          {:ok, header} <- Joken.peek_header(token),
          %{"kid" => kid} = header,

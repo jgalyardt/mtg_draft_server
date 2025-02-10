@@ -12,7 +12,6 @@ defmodule MtgDraftServerWeb.Router do
     plug AuthPlug
   end
 
-  # Public (unauthenticated) routes for the root path.
   scope "/", MtgDraftServerWeb do
     pipe_through :api
 
@@ -27,5 +26,8 @@ defmodule MtgDraftServerWeb.Router do
     post "/drafts/:id/pick", DraftController, :pick
     get "/drafts/:id/picks", DraftController, :picked_cards
     post "/drafts/reconnect", DraftController, :reconnect
+
+    # New route for booster pack generation
+    post "/drafts/booster-packs", DraftController, :generate_booster_packs
   end
 end

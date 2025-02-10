@@ -1,3 +1,77 @@
+Based on this error:
+
+Changeset
+
+    #Ecto.Changeset<
+      action: :insert,
+      changes: %{
+        id: "a471b306-4941-4e46-a0cb-d92895c16f8a",
+        name: "Nissa, Worldsoul Speaker",
+        colors: ["G"],
+        oracle_id: "00037840-6089-42ec-8c5c-281f9f474504",
+        mana_cost: "{3}{G}",
+        cmc: 4.0,
+        type_line: "Legendary Creature — Elf Druid",
+        oracle_text: "Landfall — Whenever a land you control enters, you get {E}{E} (two energy counters).\nYou may pay eight {E} rather than pay the mana cost for permanent spells you cast.",
+        power: "3",
+        toughness: "3",
+        color_identity: ["G"],
+        rarity: "rare",
+        image_uris: %{
+          "art_crop" => "https://cards.scryfall.io/art_crop/front/a/4/a471b306-4941-4e46-a0cb-d92895c16f8a.jpg?1738355341",
+          "border_crop" => "https://cards.scryfall.io/border_crop/front/a/4/a471b306-4941-4e46-a0cb-d92895c16f8a.jpg?1738355341",
+          "large" => "https://cards.scryfall.io/large/front/a/4/a471b306-4941-4e46-a0cb-d92895c16f8a.jpg?1738355341",     
+          "normal" => "https://cards.scryfall.io/normal/front/a/4/a471b306-4941-4e46-a0cb-d92895c16f8a.jpg?1738355341",   
+          "png" => "https://cards.scryfall.io/png/front/a/4/a471b306-4941-4e46-a0cb-d92895c16f8a.png?1738355341",
+          "small" => "https://cards.scryfall.io/small/front/a/4/a471b306-4941-4e46-a0cb-d92895c16f8a.jpg?1738355341"      
+        },
+        legalities: %{
+          "alchemy" => "not_legal",
+          "brawl" => "not_legal",
+          "commander" => "legal",
+          "duel" => "legal",
+          "explorer" => "not_legal",
+          "future" => "not_legal",
+          "gladiator" => "not_legal",
+          "historic" => "not_legal",
+          "legacy" => "legal",
+          "modern" => "not_legal",
+          "oathbreaker" => "legal",
+          "oldschool" => "not_legal",
+          "pauper" => "not_legal",
+          "paupercommander" => "not_legal",
+          "penny" => "not_legal",
+          "pioneer" => "not_legal",
+          "predh" => "not_legal",
+          "premodern" => "not_legal",
+          "standard" => "not_legal",
+          "standardbrawl" => "not_legal",
+          "timeless" => "not_legal",
+          "vintage" => "legal"
+        }
+      },
+      errors: [set_code: {"can't be blank", [validation: :required]}],
+      data: #MtgDraftServer.Cards.Card<>,
+      valid?: false,
+      ...
+    >
+
+    (ecto 3.12.5) lib/ecto/repo/schema.ex:316: Ecto.Repo.Schema.insert!/4
+    (elixir 1.18.2) lib/enum.ex:987: Enum."-each/2-lists^foreach/1-0-"/2
+    priv/repo/seeds.exs:7: (file)
+    (elixir 1.18.2) lib/code.ex:1525: Code.require_file/2
+    (mix 1.18.2) lib/mix/tasks/run.ex:146: Mix.Tasks.Run.run/5
+    (mix 1.18.2) lib/mix/tasks/run.ex:85: Mix.Tasks.Run.run/1
+    (mix 1.18.2) lib/mix/task.ex:495: anonymous fn/3 in Mix.Task.run_task/5
+    (mix 1.18.2) lib/mix/task.ex:561: Mix.Task.run_alias/6
+    (mix 1.18.2) lib/mix/cli.ex:107: Mix.CLI.run_task/2
+    c:/Program Files/Elixir/bin/mix:2: (file)
+
+Take a look at my migrations and schema and make help me fix ecto.reset. The incoming data is in the format:
+
+{"object":"card","id":"036ef8c9-72ac-46ce-af07-83b79d736538","oracle_id":"000d5588-5a4c-434e-988d-396632ade42c","multiverse_ids":[83282],"mtgo_id":22609,"mtgo_foil_id":22610,"tcgplayer_id":12835,"cardmarket_id":12551,"name":"Storm Crow","lang":"en","released_at":"2005-07-29","uri":"https://api.scryfall.com/cards/036ef8c9-72ac-46ce-af07-83b79d736538","scryfall_uri":"https://scryfall.com/card/9ed/100/storm-crow?utm_source=api","layout":"normal","highres_image":true,"image_status":"highres_scan","image_uris":{"small":"https://cards.scryfall.io/small/front/0/3/036ef8c9-72ac-46ce-af07-83b79d736538.jpg?1562730661","normal":"https://cards.scryfall.io/normal/front/0/3/036ef8c9-72ac-46ce-af07-83b79d736538.jpg?1562730661","large":"https://cards.scryfall.io/large/front/0/3/036ef8c9-72ac-46ce-af07-83b79d736538.jpg?1562730661","png":"https://cards.scryfall.io/png/front/0/3/036ef8c9-72ac-46ce-af07-83b79d736538.png?1562730661","art_crop":"https://cards.scryfall.io/art_crop/front/0/3/036ef8c9-72ac-46ce-af07-83b79d736538.jpg?1562730661","border_crop":"https://cards.scryfall.io/border_crop/front/0/3/036ef8c9-72ac-46ce-af07-83b79d736538.jpg?1562730661"},"mana_cost":"{1}{U}","cmc":2.0,"type_line":"Creature — Bird","oracle_text":"Flying (This creature can't be blocked except by creatures with flying or reach.)","power":"1","toughness":"2","colors":["U"],"color_identity":["U"],"keywords":["Flying"],"legalities":{"standard":"not_legal","future":"not_legal","historic":"not_legal","timeless":"not_legal","gladiator":"not_legal","pioneer":"not_legal","explorer":"not_legal","modern":"legal","legacy":"legal","pauper":"legal","vintage":"legal","penny":"legal","commander":"legal","oathbreaker":"legal","standardbrawl":"not_legal","brawl":"not_legal","alchemy":"not_legal","paupercommander":"legal","duel":"legal","oldschool":"not_legal","premodern":"legal","predh":"legal"},"games":["paper","mtgo"],"reserved":false,"foil":false,"nonfoil":true,"finishes":["nonfoil"],"oversized":false,"promo":false,"reprint":true,"variation":false,"set_id":"e70c8572-4732-4e92-a140-b4e3c1c84c93","set":"9ed","set_name":"Ninth Edition","set_type":"core","set_uri":"https://api.scryfall.com/sets/e70c8572-4732-4e92-a140-b4e3c1c84c93","set_search_uri":"https://api.scryfall.com/cards/search?order=set&q=e%3A9ed&unique=prints","scryfall_set_uri":"https://scryfall.com/sets/9ed?utm_source=api","rulings_uri":"https://api.scryfall.com/cards/036ef8c9-72ac-46ce-af07-83b79d736538/rulings","prints_search_uri":"https://api.scryfall.com/cards/search?order=released&q=oracleid%3A000d5588-5a4c-434e-988d-396632ade42c&unique=prints","collector_number":"100","digital":false,"rarity":"common","flavor_text":"Storm crow descending, winter unending. Storm crow departing, summer is starting.","card_back_id":"0aeebaf5-8c7d-4636-9e82-8c27447861f7","artist":"John Matson","artist_ids":["a1685587-4b55-446b-b420-c37b202ed3f1"],"illustration_id":"d01aa92b-0582-4e1e-a7b0-737b2ad4e462","border_color":"white","frame":"2003","full_art":false,"textless":false,"booster":true,"story_spotlight":false,"edhrec_rank":17868,"penny_rank":13059,"prices":{"usd":"0.08","usd_foil":null,"usd_etched":null,"eur":"0.07","eur_foil":null,"tix":"0.04"},"related_uris":{"gatherer":"https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=83282&printed=false","tcgplayer_infinite_articles":"https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Darticle%26game%3Dmagic%26q%3DStorm%2BCrow","tcgplayer_infinite_decks":"https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Ddeck%26game%3Dmagic%26q%3DStorm%2BCrow","edhrec":"https://edhrec.com/route/?cc=Storm+Crow"},"purchase_uris":{"tcgplayer":"https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fproduct%2F12835%3Fpage%3D1","cardmarket":"https://www.cardmarket.com/en/Magic/Products/Singles/Ninth-Edition/Storm-Crow?referrer=scryfall&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall","cardhoarder":"https://www.cardhoarder.com/cards/22609?affiliate_id=scryfall&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"}},
+{"object":"card","id":"6010d06b-33b6-4631-9b3f-192d8c6b96e7","oracle_id":"000d8291-d6a8-436e-9e17-7531333686a8","multiverse_ids":[],"arena_id":91397,"name":"Snarlfang Vermin","lang":"en","released_at":"2024-03-05","uri":"https://api.scryfall.com/cards/6010d06b-33b6-4631-9b3f-192d8c6b96e7","scryfall_uri":"https://scryfall.com/card/ymkm/12/snarlfang-vermin?utm_source=api","layout":"normal","highres_image":true,"image_status":"highres_scan","image_uris":{"small":"https://cards.scryfall.io/small/front/6/0/6010d06b-33b6-4631-9b3f-192d8c6b96e7.jpg?1710340313","normal":"https://cards.scryfall.io/normal/front/6/0/6010d06b-33b6-4631-9b3f-192d8c6b96e7.jpg?1710340313","large":"https://cards.scryfall.io/large/front/6/0/6010d06b-33b6-4631-9b3f-192d8c6b96e7.jpg?1710340313","png":"https://cards.scryfall.io/png/front/6/0/6010d06b-33b6-4631-9b3f-192d8c6b96e7.png?1710340313","art_crop":"https://cards.scryfall.io/art_crop/front/6/0/6010d06b-33b6-4631-9b3f-192d8c6b96e7.jpg?1710340313","border_crop":"https://cards.scryfall.io/border_crop/front/6/0/6010d06b-33b6-4631-9b3f-192d8c6b96e7.jpg?1710340313"},"mana_cost":"{B}","cmc":1.0,"type_line":"Creature — Rat","oracle_text":"Whenever Snarlfang Vermin deals combat damage to a creature, if that creature is still on the battlefield, suspect that creature. It perpetually gains this ability.\nWhenever a suspected creature an opponent controls dies while Snarlfang Vermin is in your graveyard, that opponent loses 1 life.","power":"2","toughness":"1","colors":["B"],"color_identity":["B"],"keywords":[],"legalities":{"standard":"not_legal","future":"not_legal","historic":"legal","timeless":"legal","gladiator":"legal","pioneer":"not_legal","explorer":"not_legal","modern":"not_legal","legacy":"not_legal","pauper":"not_legal","vintage":"not_legal","penny":"not_legal","commander":"not_legal","oathbreaker":"not_legal","standardbrawl":"not_legal","brawl":"legal","alchemy":"legal","paupercommander":"not_legal","duel":"not_legal","oldschool":"not_legal","premodern":"not_legal","predh":"not_legal"},"games":["arena"],"reserved":false,"foil":false,"nonfoil":true,"finishes":["nonfoil"],"oversized":false,"promo":false,"reprint":false,"variation":false,"set_id":"3879667a-f0b8-4bc2-8662-7c861e22b4e9","set":"ymkm","set_name":"Alchemy: Murders at Karlov Manor ","set_type":"alchemy","set_uri":"https://api.scryfall.com/sets/3879667a-f0b8-4bc2-8662-7c861e22b4e9","set_search_uri":"https://api.scryfall.com/cards/search?order=set&q=e%3Aymkm&unique=prints","scryfall_set_uri":"https://scryfall.com/sets/ymkm?utm_source=api","rulings_uri":"https://api.scryfall.com/cards/6010d06b-33b6-4631-9b3f-192d8c6b96e7/rulings","prints_search_uri":"https://api.scryfall.com/cards/search?order=released&q=oracleid%3A000d8291-d6a8-436e-9e17-7531333686a8&unique=prints","collector_number":"12","digital":true,"rarity":"uncommon","card_back_id":"0aeebaf5-8c7d-4636-9e82-8c27447861f7","artist":"Ernanda Souza","artist_ids":["e87a8b19-f97f-4df0-9dda-1310ab0257bb"],"illustration_id":"a34dcd37-7f1d-41ef-85a0-dc537c360a4a","border_color":"black","frame":"2015","security_stamp":"arena","full_art":false,"textless":false,"booster":false,"story_spotlight":false,"promo_types":["alchemy"],"prices":{"usd":null,"usd_foil":null,"usd_etched":null,"eur":null,"eur_foil":null,"tix":null},"related_uris":{"tcgplayer_infinite_articles":"https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Darticle%26game%3Dmagic%26q%3DSnarlfang%2BVermin","tcgplayer_infinite_decks":"https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Ddeck%26game%3Dmagic%26q%3DSnarlfang%2BVermin","edhrec":"https://edhrec.com/route/?cc=Snarlfang+Vermin"}},
+{"object":"card","id":"b125d1e7-5d9b-4997-88b0-71bdfc19c6f2","oracle_id":"000e5d65-96c3-498b-bd01-72b1a1991850","multiverse_ids":[12380],"mtgo_id":12637,"mtgo_foil_id":12638,"tcgplayer_id":6412,"cardmarket_id":10604,"name":"Walking Sponge","lang":"en","released_at":"1999-02-15","uri":"https://api.scryfall.com/cards/b125d1e7-5d9b-4997-88b0-71bdfc19c6f2","scryfall_uri":"https://scryfall.com/card/ulg/47/walking-sponge?utm_source=api","layout":"normal","highres_image":true,"image_status":"highres_scan","image_uris":{"small":"https://cards.scryfall.io/small/front/b/1/b125d1e7-5d9b-4997-88b0-71bdfc19c6f2.jpg?1562863790","normal":"https://cards.scryfall.io/normal/front/b/1/b125d1e7-5d9b-4997-88b0-71bdfc19c6f2.jpg?1562863790","large":"https://cards.scryfall.io/large/front/b/1/b125d1e7-5d9b-4997-88b0-71bdfc19c6f2.jpg?1562863790","png":"https://cards.scryfall.io/png/front/b/1/b125d1e7-5d9b-4997-88b0-71bdfc19c6f2.png?1562863790","art_crop":"https://cards.scryfall.io/art_crop/front/b/1/b125d1e7-5d9b-4997-88b0-71bdfc19c6f2.jpg?1562863790","border_crop":"https://cards.scryfall.io/border_crop/front/b/1/b125d1e7-5d9b-4997-88b0-71bdfc19c6f2.jpg?1562863790"},"mana_cost":"{1}{U}","cmc":2.0,"type_line":"Creature — Sponge","oracle_text":"{T}: Target creature loses your choice of flying, first strike, or trample until end of turn.","power":"1","toughness":"1","colors":["U"],"color_identity":["U"],"keywords":[],"legalities":{"standard":"not_legal","future":"not_legal","historic":"not_legal","timeless":"not_legal","gladiator":"not_legal","pioneer":"not_legal","explorer":"not_legal","modern":"not_legal","legacy":"legal","pauper":"not_legal","vintage":"legal","penny":"legal","commander":"legal","oathbreaker":"legal","standardbrawl":"not_legal","brawl":"not_legal","alchemy":"not_legal","paupercommander":"not_legal","duel":"legal","oldschool":"not_legal","premodern":"legal","predh":"legal"},"games":["paper","mtgo"],"reserved":false,"foil":true,"nonfoil":true,"finishes":["nonfoil","foil"],"oversized":false,"promo":false,"reprint":false,"variation":false,"set_id":"78ced61b-4b8a-4b33-b6b2-f5bd66f1a75a","set":"ulg","set_name":"Urza's Legacy","set_type":"expansion","set_uri":"https://api.scryfall.com/sets/78ced61b-4b8a-4b33-b6b2-f5bd66f1a75a","set_search_uri":"https://api.scryfall.com/cards/search?order=set&q=e%3Aulg&unique=prints","scryfall_set_uri":"https://scryfall.com/sets/ulg?utm_source=api","rulings_uri":"https://api.scryfall.com/cards/b125d1e7-5d9b-4997-88b0-71bdfc19c6f2/rulings","prints_search_uri":"https://api.scryfall.com/cards/search?order=released&q=oracleid%3A000e5d65-96c3-498b-bd01-72b1a1991850&unique=prints","collector_number":"47","digital":false,"rarity":"uncommon","flavor_text":"Not only does it catch fish, it cleans them too.","card_back_id":"0aeebaf5-8c7d-4636-9e82-8c27447861f7","artist":"Ron Spencer","artist_ids":["dab52c11-0564-4207-a4a1-c1735c946a65"],"illustration_id":"32958190-1a5b-4e24-9e5d-aa7bf1869fcd","border_color":"black","frame":"1997","full_art":false,"textless":false,"booster":true,"story_spotlight":false,"edhrec_rank":23884,"prices":{"usd":"0.25","usd_foil":"4.90","usd_etched":null,"eur":"0.10","eur_foil":"1.75","tix":"0.09"},"related_uris":{"gatherer":"https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=12380&printed=false","tcgplayer_infinite_articles":"https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Darticle%26game%3Dmagic%26q%3DWalking%2BSponge","tcgplayer_infinite_decks":"https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Ddeck%26game%3Dmagic%26q%3DWalking%2BSponge","edhrec":"https://edhrec.com/route/?cc=Walking+Sponge"},"purchase_uris":{"tcgplayer":"https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fproduct%2F6412%3Fpage%3D1","cardmarket":"https://www.cardmarket.com/en/Magic/Products/Singles/Urzas-Legacy/Walking-Sponge?referrer=scryfall&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall","cardhoarder":"https://www.cardhoarder.com/cards/12637?affiliate_id=scryfall&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"}},
 
 === File: lib/mtg_draft_server/application.ex ===
 
@@ -45,11 +119,31 @@ end
 === File: lib/mtg_draft_server/cards/card.ex ===
 
 defmodule MtgDraftServer.Cards.Card do
+  @derive {Jason.Encoder, only: [
+    :id,
+    :oracle_id,
+    :name,
+    :mana_cost,
+    :cmc,
+    :type_line,
+    :oracle_text,
+    :power,
+    :toughness,
+    :colors,
+    :color_identity,
+    :set_code,
+    :rarity,
+    :foil,
+    :image_uris,
+    :legalities,
+    :inserted_at,
+    :updated_at
+  ]}
   use Ecto.Schema
   import Ecto.Changeset
 
-  # we use the Scryfall id as primary key
-  @primary_key {:id, :binary_id, autogenerate: false}
+  @primary_key {:id, :binary_id, autogenerate: true}  # Ensures id is binary_id
+  @foreign_key_type :binary_id  # Ensures foreign keys also use binary_id
   schema "cards" do
     field :oracle_id, Ecto.UUID
     field :name, :string
@@ -61,6 +155,9 @@ defmodule MtgDraftServer.Cards.Card do
     field :toughness, :string
     field :colors, {:array, :string}
     field :color_identity, {:array, :string}
+    field :set_code, :string
+    field :rarity, :string
+    field :foil, :boolean, default: false
     field :image_uris, :map
     field :legalities, :map
 
@@ -71,7 +168,7 @@ defmodule MtgDraftServer.Cards.Card do
   def changeset(card, attrs) do
     card
     |> cast(attrs, [
-      :id,
+      :id,  # Keep id here to allow it to be cast
       :oracle_id,
       :name,
       :mana_cost,
@@ -82,10 +179,13 @@ defmodule MtgDraftServer.Cards.Card do
       :toughness,
       :colors,
       :color_identity,
+      :set_code,
+      :rarity,
+      :foil,
       :image_uris,
       :legalities
     ])
-    |> validate_required([:id, :oracle_id, :name])
+    |> validate_required([:oracle_id, :name, :set_code, :rarity])
   end
 end
 
@@ -200,7 +300,7 @@ defmodule MtgDraftServer.Drafts do
 
   @doc """
   Creates a new draft.
-  
+
   Note that the draft itself is agnostic of a player.
   If a creator is provided in the attrs (using key `:creator`), a corresponding
   draft_player record is created.
@@ -230,7 +330,7 @@ defmodule MtgDraftServer.Drafts do
     if creator = attrs[:creator] do
       case get_active_draft_for_player(creator) do
         nil -> :ok
-        _   -> {:error, "Player already in an active draft"}
+        _ -> {:error, "Player already in an active draft"}
       end
     else
       :ok
@@ -244,8 +344,10 @@ defmodule MtgDraftServer.Drafts do
             {:ok, _pid} = MtgDraftServer.DraftSessionSupervisor.start_new_session(draft.id)
             # Have the creator join the draft session.
             if attrs[:creator] do
-              :ok = MtgDraftServer.DraftSession.join(draft.id, %{user_id: attrs[:creator], seat: 1})
+              :ok =
+                MtgDraftServer.DraftSession.join(draft.id, %{user_id: attrs[:creator], seat: 1})
             end
+
             draft
           else
             error -> Repo.rollback(error)
@@ -309,6 +411,7 @@ defmodule MtgDraftServer.Drafts do
 
     # Record telemetry for the pick action.
     end_time = System.monotonic_time()
+
     :telemetry.execute(
       [:mtg_draft_server, :drafts, :pick_card],
       %{duration: end_time - start_time},
@@ -391,7 +494,7 @@ defmodule MtgDraftServer.Drafts do
     |> Repo.insert()
   end
 
-  defp get_draft_player(draft_id, user_id) do
+  def get_draft_player(draft_id, user_id) do
     case Repo.one(
            from dp in DraftPlayer,
              where: dp.draft_id == ^draft_id and dp.user_id == ^user_id,
@@ -611,7 +714,8 @@ defmodule MtgDraftServer.FirebaseToken do
   def verify_firebase_token(nil), do: {:error, :no_token_provided}
 
   def verify_firebase_token(token) do
-    with {:ok, %{body: body}} <- Finch.build(:get, @firebase_jwks_url) |> Finch.request(MtgDraftServer.Finch),
+    with {:ok, %{body: body}} <-
+           Finch.build(:get, @firebase_jwks_url) |> Finch.request(MtgDraftServer.Finch),
          {:ok, certs} <- Jason.decode(body),
          {:ok, header} <- Joken.peek_header(token),
          %{"kid" => kid} = header,
@@ -648,6 +752,183 @@ defmodule MtgDraftServer.JWKSStrategy do
   end
 end
 
+=== File: lib/mtg_draft_server/pack_generator.ex ===
+
+defmodule MtgDraftServer.Drafts.PackGenerator do
+    @moduledoc """
+    Generates booster packs for a draft based on the modern draft booster distribution.
+  
+    A modern draft booster (ignoring the marketing token) contains 15 Magic cards:
+      - 1 Basic Land
+      - 10 Common Cards
+      - 3 Uncommon Cards
+      - 1 Rare or Mythic Rare Card
+  
+    Additionally, there is a chance for one of the common cards to be replaced by a premium foil card
+    (of any rarity). In that case the pack will have:
+      - 1 Basic Land
+      - 1 Foil Card
+      - 9 Common Cards
+      - 3 Uncommon Cards
+      - 1 Rare or Mythic Rare Card
+  
+    Accepted options (opts):
+      - :set_codes - a list of set codes (e.g. ["ulg", "m21"])
+      - :allowed_rarities - a list of rarities to include (default: ["basic", "common", "uncommon", "rare", "mythic"])
+      - :distribution - a map defining the default booster composition.
+        Defaults to `%{"basic" => 1, "common" => 10, "uncommon" => 3, "rare" => 1}`.
+  
+    Additionally, packs can be distributed among players. For example, if a draft has 8 players,
+    24 booster packs (8 × 3) will be generated and then grouped into three packs per player.
+    """
+  
+    alias MtgDraftServer.Repo
+    alias MtgDraftServer.Cards.Card
+    import Ecto.Query
+  
+    @default_distribution %{"basic" => 1, "common" => 10, "uncommon" => 3, "rare" => 1}
+    @foil_chance 0.25
+  
+    @doc """
+    Prepares the booster pack card pool based on the provided options.
+  
+    This function:
+      1. Parses the incoming options and fills in defaults.
+      2. Queries the database for cards matching the provided set codes and allowed rarities.
+      3. Groups the resulting cards by rarity.
+  
+    Returns a map with:
+      - :opts - the parsed options
+      - :rarity_groups - a map of rarity to a list of matching cards
+    """
+    def generate_booster_packs(opts \\ %{}) do
+      parsed_opts = parse_opts(opts)
+      cards = fetch_card_pool(parsed_opts)
+      rarity_groups = group_cards_by_rarity(cards)
+      %{opts: parsed_opts, rarity_groups: rarity_groups}
+    end
+  
+    @doc """
+    Generates a single booster pack using the given rarity groups and distribution.
+  
+    The process is as follows:
+      1. Pick the required number of basic lands, commons, and uncommons.
+      2. For the rare slot, combine the "rare" and "mythic" groups and pick one card.
+      3. With a chance of #{@foil_chance * 100}%, select a foil card from all foil-eligible cards,
+         remove one common card, and insert the foil.
+      4. Shuffle the pack before returning it.
+  
+    Returns a list of cards representing the booster pack.
+    """
+    def generate_single_pack(rarity_groups, distribution) do
+      basics    = Enum.take_random(Map.get(rarity_groups, "basic", []), distribution["basic"])
+      commons   = Enum.take_random(Map.get(rarity_groups, "common", []), distribution["common"])
+      uncommons = Enum.take_random(Map.get(rarity_groups, "uncommon", []), distribution["uncommon"])
+      rare_pool = (Map.get(rarity_groups, "rare", []) ++ Map.get(rarity_groups, "mythic", []))
+      rare      = Enum.take_random(rare_pool, distribution["rare"])
+  
+      initial_pack = basics ++ commons ++ uncommons ++ rare
+  
+      pack =
+        if :rand.uniform() <= @foil_chance do
+          case pick_foil_card(rarity_groups) do
+            nil ->
+              initial_pack
+  
+            foil_card ->
+              if length(commons) > 0 do
+                index = :rand.uniform(length(commons)) - 1
+                new_commons = List.delete_at(commons, index)
+                basics ++ new_commons ++ uncommons ++ rare ++ [foil_card]
+              else
+                initial_pack ++ [foil_card]
+              end
+          end
+        else
+          initial_pack
+        end
+  
+      Enum.shuffle(pack)
+    end
+  
+    @doc """
+    Generates the specified number of booster packs using the provided rarity groups and distribution.
+  
+    By default, generates 24 packs (suitable for 8 players receiving 3 packs each).
+    """
+    def generate_all_packs(rarity_groups, distribution, num_packs \\ 24) do
+      Enum.map(1..num_packs, fn _ -> generate_single_pack(rarity_groups, distribution) end)
+    end
+  
+    @doc """
+    Distributes booster packs to players.
+  
+    Given a list of players and a list of booster packs, groups the packs so that each player
+    receives three packs. It assumes that length(packs) == length(players) * 3.
+  
+    Returns a map where keys are player identifiers (or player structs) and values are lists of packs.
+    """
+    def distribute_packs(packs, players) do
+      packs_per_player = 3
+      packs_chunks = Enum.chunk_every(packs, packs_per_player)
+      Enum.zip(players, packs_chunks)
+      |> Enum.into(%{})
+    end
+  
+    @doc """
+    Generates and distributes booster packs to the given players.
+  
+    * opts – options for pack generation (see generate_booster_packs/1)
+    * players – a list of player identifiers (or player structs)
+  
+    Returns a map of player => list of booster packs.
+    """
+    def generate_and_distribute_booster_packs(opts \\ %{}, players) do
+      %{opts: parsed_opts, rarity_groups: rarity_groups} = generate_booster_packs(opts)
+      total_packs = length(players) * 3
+      packs = generate_all_packs(rarity_groups, parsed_opts.distribution, total_packs)
+      distribute_packs(packs, players)
+    end
+  
+    # --- Private Helpers ---
+  
+    defp parse_opts(opts) do
+      %{
+        set_codes: Map.get(opts, :set_codes, []),
+        allowed_rarities: Map.get(opts, :allowed_rarities, ["basic", "common", "uncommon", "rare", "mythic"]),
+        distribution: Map.get(opts, :distribution, @default_distribution)
+      }
+    end
+  
+    defp fetch_card_pool(%{set_codes: set_codes, allowed_rarities: allowed_rarities}) do
+      base_query =
+        from card in Card,
+          where: card.rarity in ^allowed_rarities
+  
+      query =
+        if set_codes == [] do
+          base_query
+        else
+          from card in base_query, where: card.set_code in ^set_codes
+        end
+  
+      Repo.all(query)
+    end
+  
+    defp group_cards_by_rarity(cards) do
+      Enum.group_by(cards, & &1.rarity)
+    end
+  
+    defp pick_foil_card(rarity_groups) do
+      all_cards = Enum.flat_map(rarity_groups, fn {_rarity, cards} -> cards end)
+      foil_pool = Enum.filter(all_cards, fn card -> card.foil end)
+      case foil_pool do
+        [] -> nil
+        _ -> Enum.random(foil_pool)
+      end
+    end
+  end
+  
 === File: lib/mtg_draft_server/repo.ex ===
 
 defmodule MtgDraftServer.Repo do
@@ -718,10 +999,9 @@ defmodule MtgDraftServerWeb.DraftController do
         |> json(%{"error" => "Authentication required"})
     end
   end
-  
+
   @doc """
   Start the draft by updating its status to "active".
-  POST /api/drafts/:id/start
   """
   def start(conn, %{"id" => draft_id}) do
     case conn.assigns[:current_user] do
@@ -740,7 +1020,6 @@ defmodule MtgDraftServerWeb.DraftController do
 
   @doc """
   Persist a card pick.
-  POST /api/drafts/:id/pick
   """
   def pick(conn, %{
         "id" => draft_id,
@@ -772,10 +1051,6 @@ defmodule MtgDraftServerWeb.DraftController do
 
   @doc """
   Reconnect a user to their active draft session.
-  POST /api/drafts/reconnect
-
-  If a draft session exists, the user rejoins it. If no session exists but the user
-  has an active draft, a new session is started and the user joins it.
   """
   def reconnect(conn, _params) do
     case conn.assigns[:current_user] do
@@ -791,12 +1066,10 @@ defmodule MtgDraftServerWeb.DraftController do
 
             case Registry.lookup(MtgDraftServer.DraftRegistry, draft_id) do
               [{_pid, _}] ->
-                # The draft session exists; join the session.
                 :ok = MtgDraftServer.DraftSession.join(draft_id, %{user_id: uid})
                 json(conn, %{message: "Rejoined draft", draft_id: draft_id})
 
               [] ->
-                # The draft session is not running; start it and then join.
                 {:ok, _pid} = MtgDraftServer.DraftSessionSupervisor.start_new_session(draft_id)
                 :ok = MtgDraftServer.DraftSession.join(draft_id, %{user_id: uid})
                 json(conn, %{message: "Draft session restarted and rejoined", draft_id: draft_id})
@@ -812,7 +1085,6 @@ defmodule MtgDraftServerWeb.DraftController do
 
   @doc """
   Get all picks for the current user in a given draft.
-  GET /api/drafts/:id/picks
   """
   def picked_cards(conn, %{"id" => draft_id}) do
     case conn.assigns[:current_user] do
@@ -828,6 +1100,34 @@ defmodule MtgDraftServerWeb.DraftController do
         |> put_status(:unauthorized)
         |> json(%{"error" => "Authentication required"})
     end
+  end
+
+  @doc """
+  Generate booster packs and distribute them among players.
+
+  Expects a JSON payload with keys:
+    - "players": a list of player identifiers
+    - "set_codes": a list of set codes (e.g. ["mh3", "stx", "war"])
+    - Optionally, "allowed_rarities" and "distribution" can be provided.
+  """
+  def generate_booster_packs(conn, params) do
+    players = Map.get(params, "players", [])
+
+    opts = %{
+      set_codes: Map.get(params, "set_codes", []),
+      allowed_rarities:
+        Map.get(params, "allowed_rarities", ["basic", "common", "uncommon", "rare", "mythic"]),
+      distribution:
+        Map.get(params, "distribution", %{
+          "basic" => 1,
+          "common" => 10,
+          "uncommon" => 3,
+          "rare" => 1
+        })
+    }
+
+    packs_distribution = Drafts.PackGenerator.generate_and_distribute_booster_packs(opts, players)
+    json(conn, packs_distribution)
   end
 
   # ===================
@@ -984,46 +1284,47 @@ end
 === File: lib/mtg_draft_server_web/plugs/auth_plug.ex ===
 
 defmodule MtgDraftServerWeb.AuthPlug do
-    import Plug.Conn
-    alias MtgDraftServer.FirebaseToken
-  
-    def init(default), do: default
-  
-    def call(conn, _opts) do
-      case get_req_header(conn, "authorization") do
-        ["Bearer " <> token] ->
-          verify_token(conn, token)
-  
-        _ ->
-          conn
-          |> send_resp(401, Jason.encode!(%{error: "Missing or invalid Authorization header"}))
-          |> halt()
-      end
-    end
-  
-    defp verify_token(conn, token) do
-      case FirebaseToken.verify_firebase_token(token) do
-        {:ok, claims} ->
-          IO.inspect(claims, label: "✅ Firebase Token Claims")
-          # Map "user_id" to "uid" so controllers can consistently use "uid"
-          claims = Map.put(claims, "uid", claims["user_id"])
-          assign(conn, :current_user, claims)
-  
-        {:error, reason} ->
-          IO.inspect(reason, label: "❌ Token Verification Failed")
-          conn
-          |> send_resp(401, Jason.encode!(%{error: "Invalid token"}))
-          |> halt()
-      end
+  import Plug.Conn
+  alias MtgDraftServer.FirebaseToken
+
+  def init(default), do: default
+
+  def call(conn, _opts) do
+    case get_req_header(conn, "authorization") do
+      ["Bearer " <> token] ->
+        verify_token(conn, token)
+
+      _ ->
+        conn
+        |> send_resp(401, Jason.encode!(%{error: "Missing or invalid Authorization header"}))
+        |> halt()
     end
   end
-  
+
+  defp verify_token(conn, token) do
+    case FirebaseToken.verify_firebase_token(token) do
+      {:ok, claims} ->
+        IO.inspect(claims, label: "✅ Firebase Token Claims")
+        # Map "user_id" to "uid" so controllers can consistently use "uid"
+        claims = Map.put(claims, "uid", claims["user_id"])
+        assign(conn, :current_user, claims)
+
+      {:error, reason} ->
+        IO.inspect(reason, label: "❌ Token Verification Failed")
+
+        conn
+        |> send_resp(401, Jason.encode!(%{error: "Invalid token"}))
+        |> halt()
+    end
+  end
+end
+
 === File: lib/mtg_draft_server_web/router.ex ===
 
 defmodule MtgDraftServerWeb.Router do
   use MtgDraftServerWeb, :router
 
-  alias MtgDraftServerWeb.AuthPlug  # Import the Auth Plug
+  alias MtgDraftServerWeb.AuthPlug
 
   pipeline :api do
     plug :accepts, ["json"]
@@ -1034,6 +1335,12 @@ defmodule MtgDraftServerWeb.Router do
     plug AuthPlug
   end
 
+  scope "/", MtgDraftServerWeb do
+    pipe_through :api
+
+    get "/", DefaultController, :index
+  end
+
   scope "/api", MtgDraftServerWeb do
     pipe_through :auth_api
 
@@ -1042,6 +1349,9 @@ defmodule MtgDraftServerWeb.Router do
     post "/drafts/:id/pick", DraftController, :pick
     get "/drafts/:id/picks", DraftController, :picked_cards
     post "/drafts/reconnect", DraftController, :reconnect
+
+    # New route for booster pack generation
+    post "/drafts/booster-packs", DraftController, :generate_booster_packs
   end
 end
 
@@ -1257,7 +1567,6 @@ defmodule MtgDraftServer.MixProject do
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.1.1"},
       {:bandit, "~> 1.5"},
-      {:guardian, "~> 2.3"},
       {:cachex, "~> 3.6"},
       {:cors_plug, "~> 3.0"},
       {:joken, "~> 2.5"},
@@ -1515,7 +1824,6 @@ defmodule MtgDraftServer.Repo.Migrations.CreateCards do
 
   def change do
     create table(:cards, primary_key: false) do
-      # Use the Scryfall card id (a UUID string) as the primary key.
       add :id, :uuid, primary_key: true
       add :oracle_id, :uuid, null: false
       add :name, :string, null: false
@@ -1527,7 +1835,12 @@ defmodule MtgDraftServer.Repo.Migrations.CreateCards do
       add :toughness, :string
       add :colors, {:array, :string}
       add :color_identity, {:array, :string}
-      # Store structured data such as image URIs and legalities as JSONB
+
+      # NEW FIELDS FOR BOOSTER GENERATION
+      add :set_code, null: false :string
+      add :rarity, :string
+      add :foil, :boolean, default: false
+
       add :image_uris, :map
       add :legalities, :map
 
@@ -1602,30 +1915,16 @@ end
 
 === File: priv/repo/seeds.exs ===
 
-# Script for populating the database. You can run it as:
-#
-#     mix run priv/repo/seeds.exs
-#
-# Inside the script, you can read and write to any of your
-# repositories directly:
-#
-#     MtgDraftServer.Repo.insert!(%MtgDraftServer.SomeSchema{})
-#
-# We recommend using the bang functions (`insert!`, `update!`
-# and so on) as they will fail if something goes wrong.
-# priv/repo/seeds.exs
 alias MtgDraftServer.Repo
 alias MtgDraftServer.Cards.Card
 
-# Adjust the path to your JSON file
 "priv/repo/data/oracle_cards.json"
 |> File.read!()
 |> Jason.decode!()
 |> Enum.each(fn card_attrs ->
-  # Note: the keys in the JSON are strings. Your changeset above expects those keys.
   %Card{}
   |> Card.changeset(card_attrs)
-  |> Repo.insert!()
+  |> Repo.insert!(on_conflict: :nothing)
 end)
 
 === File: priv/static/robots.txt ===

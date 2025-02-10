@@ -3,7 +3,6 @@ defmodule MtgDraftServer.Repo.Migrations.CreateCards do
 
   def change do
     create table(:cards, primary_key: false) do
-      # Use the Scryfall card id (a UUID string) as the primary key.
       add :id, :uuid, primary_key: true
       add :oracle_id, :uuid, null: false
       add :name, :string, null: false
@@ -15,7 +14,12 @@ defmodule MtgDraftServer.Repo.Migrations.CreateCards do
       add :toughness, :string
       add :colors, {:array, :string}
       add :color_identity, {:array, :string}
-      # Store structured data such as image URIs and legalities as JSONB
+
+      # NEW FIELDS FOR BOOSTER GENERATION
+      add :set_code, :string, null: false
+      add :rarity, :string
+      add :foil, :boolean, default: false
+
       add :image_uris, :map
       add :legalities, :map
 

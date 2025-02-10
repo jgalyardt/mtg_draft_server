@@ -24,10 +24,9 @@ defmodule MtgDraftServerWeb.DraftController do
         |> json(%{"error" => "Authentication required"})
     end
   end
-  
+
   @doc """
   Start the draft by updating its status to "active".
-  POST /api/drafts/:id/start
   """
   def start(conn, %{"id" => draft_id}) do
     case conn.assigns[:current_user] do
@@ -46,7 +45,6 @@ defmodule MtgDraftServerWeb.DraftController do
 
   @doc """
   Persist a card pick.
-  POST /api/drafts/:id/pick
   """
   def pick(conn, %{
         "id" => draft_id,
@@ -78,10 +76,6 @@ defmodule MtgDraftServerWeb.DraftController do
 
   @doc """
   Reconnect a user to their active draft session.
-  POST /api/drafts/reconnect
-
-  If a draft session exists, the user rejoins it. If no session exists but the user
-  has an active draft, a new session is started and the user joins it.
   """
   def reconnect(conn, _params) do
     case conn.assigns[:current_user] do
@@ -97,12 +91,10 @@ defmodule MtgDraftServerWeb.DraftController do
 
             case Registry.lookup(MtgDraftServer.DraftRegistry, draft_id) do
               [{_pid, _}] ->
-                # The draft session exists; join the session.
                 :ok = MtgDraftServer.DraftSession.join(draft_id, %{user_id: uid})
                 json(conn, %{message: "Rejoined draft", draft_id: draft_id})
 
               [] ->
-                # The draft session is not running; start it and then join.
                 {:ok, _pid} = MtgDraftServer.DraftSessionSupervisor.start_new_session(draft_id)
                 :ok = MtgDraftServer.DraftSession.join(draft_id, %{user_id: uid})
                 json(conn, %{message: "Draft session restarted and rejoined", draft_id: draft_id})
@@ -118,7 +110,6 @@ defmodule MtgDraftServerWeb.DraftController do
 
   @doc """
   Get all picks for the current user in a given draft.
-  GET /api/drafts/:id/picks
   """
   def picked_cards(conn, %{"id" => draft_id}) do
     case conn.assigns[:current_user] do
@@ -134,6 +125,34 @@ defmodule MtgDraftServerWeb.DraftController do
         |> put_status(:unauthorized)
         |> json(%{"error" => "Authentication required"})
     end
+  end
+
+  @doc """
+  Generate booster packs and distribute them among players.
+
+  Expects a JSON payload with keys:
+    - "players": a list of player identifiers
+    - "set_codes": a list of set codes (e.g. ["mh3", "stx", "war"])
+    - Optionally, "allowed_rarities" and "distribution" can be provided.
+  """
+  def generate_booster_packs(conn, params) do
+    players = Map.get(params, "players", [])
+
+    opts = %{
+      set_codes: Map.get(params, "set_codes", []),
+      allowed_rarities:
+        Map.get(params, "allowed_rarities", ["basic", "common", "uncommon", "rare", "mythic"]),
+      distribution:
+        Map.get(params, "distribution", %{
+          "basic" => 1,
+          "common" => 10,
+          "uncommon" => 3,
+          "rare" => 1
+        })
+    }
+
+    packs_distribution = Drafts.PackGenerator.generate_and_distribute_booster_packs(opts, players)
+    json(conn, packs_distribution)
   end
 
   # ===================
