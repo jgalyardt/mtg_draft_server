@@ -22,11 +22,14 @@ defmodule MtgDraftServerWeb.Router do
 
     post "/drafts", DraftController, :create
     post "/drafts/:id/start", DraftController, :start
+    post "/drafts/:id/start_with_boosters", DraftController, :start_draft_with_boosters
     post "/drafts/:id/pick", DraftController, :pick
     get "/drafts/:id/picks", DraftController, :picked_cards
     post "/drafts/reconnect", DraftController, :reconnect
     post "/drafts/booster_packs", DraftController, :generate_booster_packs
     post "/drafts/:id/add_ai", DraftController, :add_ai
+    get "/drafts/:id/state", DraftController, :state
+
 
     # NEW endpoints
     get "/drafts/pending", DraftController, :pending_drafts

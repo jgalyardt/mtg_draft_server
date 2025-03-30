@@ -2,6 +2,7 @@ defmodule MtgDraftServer.Drafts.DraftPlayer do
   use Ecto.Schema
   import Ecto.Changeset
 
+  @derive {Jason.Encoder, only: [:id, :user_id, :seat, :connected, :draft_id, :inserted_at, :updated_at]}
   schema "draft_players" do
     field :user_id, :string
     field :seat, :integer
