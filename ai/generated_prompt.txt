@@ -1,4 +1,5 @@
-Replace the sample data with data coming from the server endpoints. Here is my server code:
+The following is my bash script to generate a prompt, and below it is a sample output for my Elixir project.
+I want to improve my bash script and make sure any irrelevant files are ignored.
 
 === File: lib/mtg_draft_server/application.ex ===
 
@@ -1561,6 +1562,51 @@ defmodule MtgDraftServerWeb.DraftController do
   end
 
   @doc """
+  Get the current state of the draft, including if it's the user's turn and the current pack if applicable.
+  """
+  def state(conn, %{"id" => draft_id}) do
+    case conn.assigns[:current_user] do
+      %{"uid" => uid} ->
+        with {:ok, draft} <- Drafts.get_draft(draft_id),
+            {:ok, _authorized} <- authorize_draft_action(draft, uid) do
+          # Get draft session state
+          case Registry.lookup(MtgDraftServer.DraftRegistry, draft_id) do
+            [{pid, _}] ->
+              state = GenServer.call(pid, :get_state)
+              current_user_index = Enum.find_index(state.turn_order, fn id -> id == uid end)
+              is_your_turn = state.current_turn_index == current_user_index
+              
+              # Only include current pack if it's the user's turn
+              current_pack = 
+                if is_your_turn do
+                  get_current_pack_for_user(state, uid)
+                else
+                  []
+                end
+              
+              json(conn, %{
+                status: state.status,
+                pack_number: state.pack_number,
+                pick_number: state.pick_number,
+                is_your_turn: is_your_turn,
+                current_pack: current_pack
+              })
+              
+            [] ->
+              conn
+              |> put_status(:not_found)
+              |> json(%{error: "Draft session not found"})
+          end
+        end
+        
+      _ ->
+        conn
+        |> put_status(:unauthorized)
+        |> json(%{error: "Authentication required"})
+    end
+  end
+
+  @doc """
   Reconnects the user to their active draft and returns lobby state.
   """
   def reconnect(conn, _params) do
@@ -1614,6 +1660,18 @@ defmodule MtgDraftServerWeb.DraftController do
     case Drafts.get_draft_player(draft.id, user_id) do
       {:ok, _player} -> {:ok, true}
       _ -> {:error, "Unauthorized"}
+    end
+  end
+
+  defp get_current_pack_for_user(state, user_id) do
+    if state.booster_packs do
+      # Get the player's packs
+      player_packs = Map.get(state.booster_packs, user_id, [])
+      # Get the current pack based on pack_number (1-indexed, so subtract 1)
+      current_pack = Enum.at(player_packs, state.pack_number - 1, [])
+      current_pack
+    else
+      []
     end
   end
 end
@@ -1822,6 +1880,8 @@ defmodule MtgDraftServerWeb.Router do
     post "/drafts/reconnect", DraftController, :reconnect
     post "/drafts/booster_packs", DraftController, :generate_booster_packs
     post "/drafts/:id/add_ai", DraftController, :add_ai
+    get "/drafts/:id/state", DraftController, :state
+
 
     # NEW endpoints
     get "/drafts/pending", DraftController, :pending_drafts

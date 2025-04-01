@@ -1,1 +1,2 @@
-Replace the sample data with data coming from the server endpoints. Here is my server code:
+The following is my bash script to generate a prompt, and below it is a sample output for my Elixir project.
+I want to improve my bash script and make sure any irrelevant files are ignored.
