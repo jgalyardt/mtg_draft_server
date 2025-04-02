@@ -62,10 +62,12 @@ defmodule MtgDraftServer.Drafts do
           with {:ok, draft} <- do_create_draft(attrs),
                {:ok, _player} <- maybe_create_player(draft, attrs[:creator]) do
             {:ok, _pid} = MtgDraftServer.DraftSessionSupervisor.start_new_session(draft.id)
+
             if attrs[:creator] do
               :ok =
                 MtgDraftServer.DraftSession.join(draft.id, %{user_id: attrs[:creator], seat: 1})
             end
+
             draft
           else
             error -> Repo.rollback(error)
@@ -237,10 +239,13 @@ defmodule MtgDraftServer.Drafts do
   If the user is already in the draft, returns the existing record.
   """
   def join_draft(%Draft{} = draft, user_id) do
-    case Repo.one(from dp in DraftPlayer, 
-                  where: dp.draft_id == ^draft.id and dp.user_id == ^user_id) do
+    case Repo.one(
+           from dp in DraftPlayer,
+             where: dp.draft_id == ^draft.id and dp.user_id == ^user_id
+         ) do
       %DraftPlayer{} = existing_player ->
         {:ok, existing_player}
+
       nil ->
         player_count =
           Repo.one(from dp in DraftPlayer, where: dp.draft_id == ^draft.id, select: count(dp.id))
@@ -351,14 +356,18 @@ defmodule MtgDraftServer.Drafts do
 
   defp do_validate_card_availability(card_id, state) do
     current_user = Enum.at(state.turn_order, state.current_turn_index)
+
     cond do
       state.booster_packs ->
         current_pack = get_current_pack_for_player(state, current_user)
+
         if card_in_pack?(current_pack, card_id),
           do: :ok,
           else: {:error, "Card not available in current pack"}
+
       card_id in state.pack ->
         :ok
+
       true ->
         {:error, "Card not available in current pack"}
     end

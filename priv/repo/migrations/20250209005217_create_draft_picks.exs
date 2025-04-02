@@ -7,13 +7,11 @@ defmodule MtgDraftServer.Repo.Migrations.CreateDraftPicks do
       add :draft_player_id, references(:draft_players, on_delete: :delete_all), null: false
       add :card_id, references(:cards, type: :uuid, on_delete: :nothing), null: false
       add :expires_at, :utc_datetime, null: false
-      
+
       # 1, 2, or 3
       add :pack_number, :integer, null: false
       # Order of the pick within the pack
       add :pick_number, :integer, null: false
-
-
 
       timestamps()
     end

@@ -150,8 +150,10 @@ defmodule MtgDraftServer.DraftSession do
       if state.booster_packs do
         player_packs = Map.get(state.booster_packs, user_id, [])
         current_pack = Enum.at(player_packs, state.pack_number - 1, [])
+
         if current_pack != [] do
           random_card = Enum.random(current_pack)
+
           card_id =
             case random_card do
               %{id: id} -> id
@@ -159,6 +161,7 @@ defmodule MtgDraftServer.DraftSession do
               simple_id when is_binary(simple_id) -> simple_id
               _ -> nil
             end
+
           if card_id do
             IO.puts("AI #{user_id} auto-picks card #{card_id}.")
             GenServer.cast(self(), {:pick, user_id, card_id})
@@ -270,6 +273,7 @@ defmodule MtgDraftServer.DraftSession do
             | booster_packs: updated_booster_packs,
               current_turn_index: next_player_index
           }
+
           {:noreply, updated_state}
         end
       end
@@ -280,17 +284,20 @@ defmodule MtgDraftServer.DraftSession do
 
   defp pass_pack(booster_packs, _from_player, to_player, pack, pack_index) do
     to_player_packs = Map.get(booster_packs, to_player, [])
+
     updated_to_player_packs =
       if Enum.count(to_player_packs) > pack_index do
         List.replace_at(to_player_packs, pack_index, pack)
       else
         pad_list(to_player_packs, pack_index, []) ++ [pack]
       end
+
     Map.put(booster_packs, to_player, updated_to_player_packs)
   end
 
   defp pad_list(list, target_index, padding) do
     current_length = length(list)
+
     if current_length <= target_index do
       list ++ List.duplicate(padding, target_index - current_length)
     else
@@ -301,9 +308,11 @@ defmodule MtgDraftServer.DraftSession do
   defp next_player_index(state) do
     player_count = length(state.turn_order)
     current_index = state.current_turn_index
+
     case state.current_pack_direction do
       :left ->
         rem(current_index + 1, player_count)
+
       :right ->
         rem(player_count + current_index - 1, player_count)
     end
@@ -319,6 +328,7 @@ defmodule MtgDraftServer.DraftSession do
   defp maybe_schedule_ai(state) do
     next_player = Enum.at(state.turn_order, state.current_turn_index)
     next_player_info = Map.get(state.players, next_player, %{})
+
     if Map.get(next_player_info, "ai") || Map.get(next_player_info, :ai) do
       Process.send_after(self(), {:ai_pick, next_player}, 1_000)
     end
@@ -326,11 +336,13 @@ defmodule MtgDraftServer.DraftSession do
 
   defp complete_draft(state) do
     Drafts.complete_draft(state.draft_id)
+
     Phoenix.PubSub.broadcast(
       MtgDraftServer.PubSub,
       "draft:#{state.draft_id}",
       {:draft_complete, state.draft_id}
     )
+
     %{state | status: :complete}
   end
 end
