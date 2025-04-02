@@ -48,7 +48,6 @@ defmodule MtgDraftServer.Drafts do
   """
   @spec create_and_join_draft(map()) :: {:ok, Draft.t()} | {:error, any()}
   def create_and_join_draft(attrs \\ %{}) do
-    # If a creator is provided, ensure they are not already in an active draft.
     if creator = attrs[:creator] do
       case get_active_draft_for_player(creator) do
         nil -> :ok
@@ -62,14 +61,11 @@ defmodule MtgDraftServer.Drafts do
         Repo.transaction(fn ->
           with {:ok, draft} <- do_create_draft(attrs),
                {:ok, _player} <- maybe_create_player(draft, attrs[:creator]) do
-            # Start the draft session.
             {:ok, _pid} = MtgDraftServer.DraftSessionSupervisor.start_new_session(draft.id)
-            # Have the creator join the draft session.
             if attrs[:creator] do
               :ok =
                 MtgDraftServer.DraftSession.join(draft.id, %{user_id: attrs[:creator], seat: 1})
             end
-
             draft
           else
             error -> Repo.rollback(error)
@@ -118,7 +114,6 @@ defmodule MtgDraftServer.Drafts do
   Validates that the pick is legal and updates the draft state accordingly.
   """
   def pick_card(draft_id, user_id, card_id, extra_attrs \\ %{}) do
-    # Start a transaction to ensure all validations and updates are atomic
     Repo.transaction(fn ->
       with {:ok, draft} <- get_draft(draft_id),
            :ok <- validate_draft_status(draft),
@@ -133,7 +128,6 @@ defmodule MtgDraftServer.Drafts do
                extra_attrs["pack_number"],
                extra_attrs["pick_number"]
              ) do
-        # All validations passed, create the pick record
         now = DateTime.utc_now() |> DateTime.truncate(:second)
         expires_at = DateTime.add(now, @one_day_in_seconds, :second)
 
@@ -243,15 +237,11 @@ defmodule MtgDraftServer.Drafts do
   If the user is already in the draft, returns the existing record.
   """
   def join_draft(%Draft{} = draft, user_id) do
-    # First check if player is already in this draft
     case Repo.one(from dp in DraftPlayer, 
                   where: dp.draft_id == ^draft.id and dp.user_id == ^user_id) do
       %DraftPlayer{} = existing_player ->
-        # User is already in this draft, return success with existing player
         {:ok, existing_player}
-        
       nil ->
-        # User is not in this draft yet, check if draft is full
         player_count =
           Repo.one(from dp in DraftPlayer, where: dp.draft_id == ^draft.id, select: count(dp.id))
 
@@ -291,10 +281,8 @@ defmodule MtgDraftServer.Drafts do
     |> Repo.update()
   end
 
-  # If no creator is provided, simply succeed.
   defp maybe_create_player(_draft, nil), do: {:ok, nil}
 
-  # When a creator is provided, first check that the draft is not already full.
   defp maybe_create_player(draft, creator) do
     player_count =
       Repo.one(from dp in DraftPlayer, where: dp.draft_id == ^draft.id, select: count(dp.id))
@@ -310,79 +298,87 @@ defmodule MtgDraftServer.Drafts do
     end
   end
 
-  # Check if it's the player's turn to pick
-  defp validate_player_turn(draft_id, user_id) do
-    case Registry.lookup(MtgDraftServer.DraftRegistry, draft_id) do
-      [{pid, _}] ->
-        # Get current state from the draft session
-        state = GenServer.call(pid, :get_state)
-        current_user = Enum.at(state.turn_order, state.current_turn_index)
+  # ============================================================================
+  # Refactored Validation Functions
+  # ============================================================================
 
-        if current_user == user_id do
-          :ok
-        else
-          {:error, "Not your turn to pick"}
+  @doc """
+  Validates whether it is the given user's turn to pick.
+
+  Optionally, an existing state can be provided to avoid an extra GenServer call.
+  """
+  def validate_player_turn(draft_id, user_id, state \\ nil) do
+    state =
+      if state != nil do
+        state
+      else
+        case Registry.lookup(MtgDraftServer.DraftRegistry, draft_id) do
+          [{pid, _}] -> GenServer.call(pid, :get_state)
+          [] -> nil
         end
+      end
 
-      [] ->
-        {:error, "Draft session not found"}
+    if state == nil do
+      {:error, "Draft session not found"}
+    else
+      do_validate_player_turn(user_id, state)
     end
   end
 
-  # Check if the card is available in the current pack
-  defp validate_card_availability(draft_id, card_id) do
-    case Registry.lookup(MtgDraftServer.DraftRegistry, draft_id) do
-      [{pid, _}] ->
-        state = GenServer.call(pid, :get_state)
+  defp do_validate_player_turn(user_id, state) do
+    current_user = Enum.at(state.turn_order, state.current_turn_index)
+    if current_user == user_id, do: :ok, else: {:error, "Not your turn to pick"}
+  end
 
-        # Get current player
-        current_user = Enum.at(state.turn_order, state.current_turn_index)
-
-        # For integrated boosters, check the actual booster pack
-        if state.booster_packs do
-          # If using real booster packs
-          current_pack = get_current_pack_for_player(state, current_user)
-
-          if card_in_pack?(current_pack, card_id) do
-            :ok
-          else
-            {:error, "Card not available in current pack"}
-          end
-        else
-          # Fallback for simulation packs
-          if card_id in state.pack do
-            :ok
-          else
-            {:error, "Card not available in current pack"}
-          end
+  @doc false
+  def validate_card_availability(draft_id, card_id, state \\ nil) do
+    state =
+      if state != nil do
+        state
+      else
+        case Registry.lookup(MtgDraftServer.DraftRegistry, draft_id) do
+          [{pid, _}] -> GenServer.call(pid, :get_state)
+          [] -> nil
         end
+      end
 
-      [] ->
-        {:error, "Draft session not found"}
+    if state == nil do
+      {:error, "Draft session not found"}
+    else
+      do_validate_card_availability(card_id, state)
+    end
+  end
+
+  defp do_validate_card_availability(card_id, state) do
+    current_user = Enum.at(state.turn_order, state.current_turn_index)
+    cond do
+      state.booster_packs ->
+        current_pack = get_current_pack_for_player(state, current_user)
+        if card_in_pack?(current_pack, card_id),
+          do: :ok,
+          else: {:error, "Card not available in current pack"}
+      card_id in state.pack ->
+        :ok
+      true ->
+        {:error, "Card not available in current pack"}
     end
   end
 
   defp get_current_pack_for_player(state, user_id) do
-    # For a real draft with booster packs, this would be more complex
-    # and would need to account for pack passing
     player_packs = Map.get(state.booster_packs, user_id, [])
     Enum.at(player_packs, state.pack_number - 1, [])
   end
 
-  # Helper to check if a card is in a pack
   defp card_in_pack?(pack, card_id) do
     Enum.any?(pack, fn card ->
-      # Handle both map-like structures (with string/atom keys) and Card structs
       cond do
         is_map(card) && Map.has_key?(card, :id) -> card.id == card_id
         is_map(card) && Map.has_key?(card, "id") -> card["id"] == card_id
-        # For simple simulation packs with just IDs
         true -> card == card_id
       end
     end)
   end
 
-  # Check for duplicate picks from the same player
   defp validate_no_duplicate_pick(draft_player_id, pack_number, pick_number) do
     existing_pick =
       Repo.one(

@@ -3,12 +3,13 @@ defmodule MtgDraftServer.Drafts.DraftPick do
   import Ecto.Changeset
 
   schema "draft_picks" do
-    field :card_id, :binary_id
     field :pack_number, :integer
     field :pick_number, :integer
     field :expires_at, :utc_datetime
+
     belongs_to :draft, MtgDraftServer.Drafts.Draft, type: :binary_id
     belongs_to :draft_player, MtgDraftServer.Drafts.DraftPlayer
+    belongs_to :card, MtgDraftServer.Cards.Card, type: :binary_id
 
     timestamps()
   end
