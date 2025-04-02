@@ -6,7 +6,7 @@ defmodule MtgDraftServer.DraftSessionTest do
     # Generate a draft_id and insert a corresponding draft record.
     draft_id = Ecto.UUID.generate()
 
-    {:ok, draft} =
+    {:ok, _draft} =
       %MtgDraftServer.Drafts.Draft{id: draft_id, status: "active"}
       |> MtgDraftServer.Drafts.Draft.changeset(%{status: "active"})
       |> MtgDraftServer.Repo.insert()

@@ -23,6 +23,9 @@ config :mtg_draft_server, MtgDraftServerWeb.Endpoint,
 # In test we don't send emails
 config :mtg_draft_server, MtgDraftServer.Mailer, adapter: Swoosh.Adapters.Test
 
+# Disable authentication for tests
+config :mtg_draft_server, skip_auth: true
+
 # Disable swoosh api client as it is only required for production adapters
 config :swoosh, :api_client, false
 

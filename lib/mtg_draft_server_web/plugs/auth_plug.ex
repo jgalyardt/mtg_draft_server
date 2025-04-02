@@ -5,16 +5,21 @@ defmodule MtgDraftServerWeb.AuthPlug do
   def init(default), do: default
 
   def call(conn, _opts) do
-    case get_req_header(conn, "authorization") do
-      ["Bearer " <> token] ->
-        verify_token(conn, token)
-
-      _ ->
-        conn
-        |> send_resp(401, Jason.encode!(%{error: "Missing or invalid Authorization header"}))
-        |> halt()
+    if Application.get_env(:mtg_draft_server, :skip_auth, false) do
+      # In test (or any env where :skip_auth is true), bypass real auth
+      assign(conn, :current_user, %{"uid" => "test_user"})
+    else
+      case get_req_header(conn, "authorization") do
+        ["Bearer " <> token] ->
+          verify_token(conn, token)
+        _ ->
+          conn
+          |> send_resp(401, Jason.encode!(%{error: "Missing or invalid Authorization header"}))
+          |> halt()
+      end
     end
   end
+  
 
   defp verify_token(conn, token) do
     case FirebaseToken.verify_firebase_token(token) do
