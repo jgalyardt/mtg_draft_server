@@ -3,6 +3,10 @@ defmodule MtgDraftServer.DraftSessionTest do
   alias MtgDraftServer.DraftSession
 
   setup do
+    # Checkout the connection and set shared mode
+    :ok = Ecto.Adapters.SQL.Sandbox.checkout(MtgDraftServer.Repo)
+    Ecto.Adapters.SQL.Sandbox.mode(MtgDraftServer.Repo, {:shared, self()})
+
     # Generate a draft_id and insert a corresponding draft record.
     draft_id = Ecto.UUID.generate()
 
@@ -66,7 +70,6 @@ defmodule MtgDraftServer.DraftSessionTest do
     [pack] = Map.get(booster, "player1", [[]])
     # After picking "card1", only one card ("card2") should remain.
     assert length(pack) == 1
-
     assert Enum.any?(pack, fn card ->
              is_map(card) and (card["id"] == "card2" or Map.get(card, :id) == "card2")
            end)

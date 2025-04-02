@@ -4,7 +4,9 @@ defmodule MtgDraftServer.DraftsTest do
   alias MtgDraftServer.Drafts.Draft
 
   setup do
+    # Checkout the connection and set shared mode.
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(MtgDraftServer.Repo)
+    Ecto.Adapters.SQL.Sandbox.mode(MtgDraftServer.Repo, {:shared, self()})
     :ok
   end
 
