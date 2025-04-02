@@ -70,6 +70,7 @@ defmodule MtgDraftServer.DraftSessionTest do
     [pack] = Map.get(booster, "player1", [[]])
     # After picking "card1", only one card ("card2") should remain.
     assert length(pack) == 1
+
     assert Enum.any?(pack, fn card ->
              is_map(card) and (card["id"] == "card2" or Map.get(card, :id) == "card2")
            end)

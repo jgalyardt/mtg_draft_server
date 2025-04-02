@@ -1,91 +1,303 @@
 I need you help adjusting my Elixir server that manages Magic the Gathering Drafts.
-I've built some tests, and now Im getting the following output from mix test:
+I've built some tests, but I want to improve the coverage.
+I've included my test files, followed by my project files.
 
-$ mix test
-Running ExUnit with seed: 52470, max_cases: 32
-
-.......    warning: MtgDraftServerWeb.Router.Helpers.api_draft_path/2 is undefined (module MtgDraftServerWeb.Router.Helpers is not available or is yet to be defined)
-    │
- 14 │     conn = post(conn, Routes.api_draft_path(conn, :create), %{})
-    │                              ~
-    │
-    └─ test/mtg_draft_server_web/controllers/controllers/draft_controller_test.exs:14:30: MtgDraftServerWeb.DraftControllerTest."test POST /api/drafts creates a new draft"/1
-
-    warning: MtgDraftServerWeb.Router.Helpers.api_draft_path/3 is undefined (module MtgDraftServerWeb.Router.Helpers is not available or is yet to be defined)
-    │
- 22 │     conn = post(conn, Routes.api_draft_path(conn, :join, draft.id))
-    │                              ~
-    │
-    └─ test/mtg_draft_server_web/controllers/controllers/draft_controller_test.exs:22:30: MtgDraftServerWeb.DraftControllerTest."test POST /api/drafts/:id/join allows a user to join a draft"/1    
-
-.20:24:04.371 [error] GenServer {MtgDraftServer.DraftRegistry, "80e1c826-3a1e-4218-953c-e230dc408c24"} terminating
-** (DBConnection.OwnershipError) cannot find ownership process for #PID<0.417.0>.
-
-When using ownership, you must manage connections in one
-of the four ways:
-
-* By explicitly checking out a connection
-* By explicitly allowing a spawned process
-* By running the pool in shared mode
-* By using :caller option with allowed process
-
-The first two options require every new process to explicitly
-check a connection out or be allowed by calling checkout or
-allow respectively.
-
-The third option requires a {:shared, pid} mode to be set.
-If using shared mode in tests, make sure your tests are not
-async.
-
-The fourth option requires [caller: pid] to be used when
-checking out a connection from the pool. The caller process
-should already be allowed on a connection.
-
-If you are reading this error, it means you have not done one
-of the steps above or that the owner process has crashed.
-
-    (db_connection 2.7.0) lib/db_connection.ex:1088: DBConnection.transaction/3
-    (mtg_draft_server 0.1.0) lib/mtg_draft_server/draft_session.ex:193: MtgDraftServer.DraftSession.handle_real_booster_pick/3
-    (mtg_draft_server 0.1.0) lib/mtg_draft_server/draft_session.ex:139: MtgDraftServer.DraftSession.handle_cast/2
-    (stdlib 6.2) gen_server.erl:2371: :gen_server.try_handle_cast/3
-    (stdlib 6.2) gen_server.erl:2433: :gen_server.handle_msg/6
-    (stdlib 6.2) proc_lib.erl:329: :proc_lib.init_p_do_apply/3
-Last message: {:"$gen_cast", {:pick, "player1", "card1"}}
+### [[ TEST FILES CONTEXT ]] ###
 
 
-  1) test picking a card updates the session state (MtgDraftServer.DraftSessionTest)
-     test/mtg_draft_server/cards/draft_session_test.exs:20
-     Assertion with == failed
-     code:  assert length(pack) == 1
-     left:  0
-     right: 1
-     stacktrace:
-       test/mtg_draft_server/cards/draft_session_test.exs:53: (test)
+### FILE: test/mtg_draft_server/cards/card_test.exs ###
 
-.....
+defmodule MtgDraftServer.Cards.CardTest do
+  use ExUnit.Case, async: true
+  alias MtgDraftServer.Cards.Card
 
-  2) test POST /api/drafts creates a new draft (MtgDraftServerWeb.DraftControllerTest)
-     test/mtg_draft_server_web/controllers/controllers/draft_controller_test.exs:13
-     ** (UndefinedFunctionError) function MtgDraftServerWeb.Router.Helpers.api_draft_path/2 is undefined (module MtgDraftServerWeb.Router.Helpers is not available)
-     code: conn = post(conn, Routes.api_draft_path(conn, :create), %{})
-     stacktrace:
-       MtgDraftServerWeb.Router.Helpers.api_draft_path(%Plug.Conn{adapter: {Plug.Adapters.Test.Conn, :...}, assigns: %{current_user: %{"uid" => "user_123"}}, body_params: %Plug.Conn.Unfetched{aspect: :body_params}, cookies: %Plug.Conn.Unfetched{aspect: :cookies}, halted: false, host: "www.example.com", method: "GET", owner: #PID<0.435.0>, params: %Plug.Conn.Unfetched{aspect: :params}, path_info: [], path_params: %{}, port: 80, private: %{plug_skip_csrf_protection: true, phoenix_recycled: true}, query_params: %Plug.Conn.Unfetched{aspect: :query_params}, query_string: "", remote_ip: {127, 0, 0, 1}, req_cookies: %Plug.Conn.Unfetched{aspect: :cookies}, req_headers: [], request_path: "/", resp_body: nil, resp_cookies: %{}, resp_headers: [{"cache-control", "max-age=0, private, must-revalidate"}], scheme: :http, script_name: [], secret_key_base: nil, state: :unset, status: nil}, :create)
-       test/mtg_draft_server_web/controllers/controllers/draft_controller_test.exs:14: (test)     
+  @valid_attrs %{
+    oracle_id: "00037840-6089-42ec-8c5c-281f9f474504",
+    name: "Nissa, Worldsoul Speaker",
+    mana_cost: "{3}{G}",
+    cmc: 4.0,
+    type_line: "Legendary Creature — Elf Druid",
+    oracle_text: "Landfall — Whenever a land you control enters, you get {E}{E}.",
+    power: "3",
+    toughness: "3",
+    colors: ["G"],
+    color_identity: ["G"],
+    set_code: "drc",
+    rarity: "rare",
+    foil: false,
+    image_uris: %{
+      "small" =>
+        "https://cards.scryfall.io/small/front/a/4/a471b306-4941-4e46-a0cb-d92895c16f8a.jpg?1738355341"
+    },
+    legalities: %{"legacy" => "legal"}
+  }
+
+  test "changeset with valid attributes" do
+    changeset = Card.changeset(%Card{}, @valid_attrs)
+    assert changeset.valid?
+  end
+
+  test "changeset without required fields" do
+    changeset = Card.changeset(%Card{}, %{})
+    refute changeset.valid?
+
+    errors = errors_on(changeset)
+    assert errors.oracle_id == ["can't be blank"]
+    assert errors.name == ["can't be blank"]
+    assert errors.set_code == ["can't be blank"]
+    assert errors.rarity == ["can't be blank"]
+  end
+
+  defp errors_on(changeset) do
+    Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+      Enum.reduce(opts, msg, fn {key, value}, acc ->
+        String.replace(acc, "%{#{key}}", to_string(value))
+      end)
+    end)
+  end
+end
 
 
+### FILE: test/mtg_draft_server/cards/draft_session_test.exs ###
 
-  3) test POST /api/drafts/:id/join allows a user to join a draft (MtgDraftServerWeb.DraftControllerTest)
-     test/mtg_draft_server_web/controllers/controllers/draft_controller_test.exs:20
-     ** (UndefinedFunctionError) function MtgDraftServerWeb.Router.Helpers.api_draft_path/3 is undefined (module MtgDraftServerWeb.Router.Helpers is not available)
-     code: conn = post(conn, Routes.api_draft_path(conn, :join, draft.id))
-     stacktrace:
-       MtgDraftServerWeb.Router.Helpers.api_draft_path(%Plug.Conn{adapter: {Plug.Adapters.Test.Conn, :...}, assigns: %{current_user: %{"uid" => "user_123"}}, body_params: %Plug.Conn.Unfetched{aspect: :body_params}, cookies: %Plug.Conn.Unfetched{aspect: :cookies}, halted: false, host: "www.example.com", method: "GET", owner: #PID<0.439.0>, params: %Plug.Conn.Unfetched{aspect: :params}, path_info: [], path_params: %{}, port: 80, private: %{plug_skip_csrf_protection: true, phoenix_recycled: true}, query_params: %Plug.Conn.Unfetched{aspect: :query_params}, query_string: "", remote_ip: {127, 0, 0, 1}, req_cookies: %Plug.Conn.Unfetched{aspect: :cookies}, req_headers: [], request_path: "/", resp_body: nil, resp_cookies: %{}, resp_headers: [{"cache-control", "max-age=0, private, must-revalidate"}], scheme: :http, script_name: [], secret_key_base: nil, state: :unset, status: nil}, :join, "a83149a3-5311-49ae-8440-203d29a894dd")
-       test/mtg_draft_server_web/controllers/controllers/draft_controller_test.exs:22: (test)     
+defmodule MtgDraftServer.DraftSessionTest do
+  use ExUnit.Case, async: false
+  alias MtgDraftServer.DraftSession
+
+  setup do
+    # Checkout the connection and set shared mode
+    :ok = Ecto.Adapters.SQL.Sandbox.checkout(MtgDraftServer.Repo)
+    Ecto.Adapters.SQL.Sandbox.mode(MtgDraftServer.Repo, {:shared, self()})
+
+    # Generate a draft_id and insert a corresponding draft record.
+    draft_id = Ecto.UUID.generate()
+
+    {:ok, _draft} =
+      %MtgDraftServer.Drafts.Draft{id: draft_id, status: "active"}
+      |> MtgDraftServer.Drafts.Draft.changeset(%{status: "active"})
+      |> MtgDraftServer.Repo.insert()
+
+    # Insert a draft player record for "player1".
+    {:ok, _player} =
+      MtgDraftServer.Drafts.DraftPlayer.create_draft_player(%{
+        draft_id: draft_id,
+        user_id: "player1",
+        seat: 1
+      })
+
+    {:ok, pid} = start_supervised({DraftSession, draft_id})
+    # Allow the GenServer process to use the DB connection.
+    Ecto.Adapters.SQL.Sandbox.allow(MtgDraftServer.Repo, self(), pid)
+    %{draft_id: draft_id, pid: pid}
+  end
+
+  test "join adds a player and updates turn order", %{draft_id: draft_id} do
+    :ok = DraftSession.join(draft_id, %{"user_id" => "player1"})
+    state = DraftSession.get_state(draft_id)
+    assert state.turn_order == ["player1"]
+    assert Map.has_key?(state.players, "player1")
+  end
+
+  test "picking a card updates the session state", %{draft_id: draft_id, pid: pid} do
+    # Build an initial state with a booster pack for testing.
+    initial_state = %{
+      draft_id: draft_id,
+      players: %{"player1" => %{"user_id" => "player1"}},
+      turn_order: ["player1"],
+      current_turn_index: 0,
+      pack: [],
+      pack_number: 1,
+      pick_number: 1,
+      status: :active,
+      booster_packs: %{
+        "player1" => [
+          [
+            %{"id" => "card1"},
+            %{"id" => "card2"}
+          ]
+        ]
+      },
+      draft_started: true,
+      current_pack_direction: :left
+    }
+
+    # Replace the GenServer state.
+    :sys.replace_state(pid, fn _ -> initial_state end)
+
+    DraftSession.pick(draft_id, "player1", "card1")
+    # Allow some time for asynchronous processing.
+    Process.sleep(100)
+    state = DraftSession.get_state(draft_id)
+    booster = state.booster_packs || %{}
+    [pack] = Map.get(booster, "player1", [[]])
+    # After picking "card1", only one card ("card2") should remain.
+    assert length(pack) == 1
+    assert Enum.any?(pack, fn card ->
+             is_map(card) and (card["id"] == "card2" or Map.get(card, :id) == "card2")
+           end)
+  end
+end
 
 
-Finished in 0.4 seconds (0.2s async, 0.1s sync)
-16 tests, 3 failures
+### FILE: test/mtg_draft_server/cards/drafts_test.exs ###
+
+defmodule MtgDraftServer.DraftsTest do
+  use ExUnit.Case, async: false
+  alias MtgDraftServer.Drafts
+  alias MtgDraftServer.Drafts.Draft
+
+  setup do
+    # Checkout the connection and set shared mode.
+    :ok = Ecto.Adapters.SQL.Sandbox.checkout(MtgDraftServer.Repo)
+    Ecto.Adapters.SQL.Sandbox.mode(MtgDraftServer.Repo, {:shared, self()})
+    :ok
+  end
+
+  @draft_attrs %{status: "pending"}
+  @creator "test_user_1"
+
+  test "create_draft/1 creates a draft" do
+    assert {:ok, %Draft{} = draft} = Drafts.create_draft(@draft_attrs)
+    assert draft.status == "pending"
+  end
+
+  test "create_and_join_draft/1 creates a draft and joins the creator" do
+    assert {:ok, %Draft{} = draft} =
+             Drafts.create_and_join_draft(%{status: "pending", creator: @creator})
+
+    {:ok, draft_player} = Drafts.get_draft_player(draft.id, @creator)
+    assert draft_player.user_id == @creator
+  end
+
+  test "get_active_draft_for_player/1 returns active draft player" do
+    {:ok, _draft} = Drafts.create_and_join_draft(%{status: "pending", creator: @creator})
+    draft_player = Drafts.get_active_draft_for_player(@creator)
+    assert draft_player != nil
+    assert draft_player.user_id == @creator
+  end
+
+  test "join_draft/2 adds a new player if draft is not full" do
+    {:ok, draft} = Drafts.create_draft(%{status: "pending"})
+    {:ok, player} = Drafts.join_draft(draft, "test_user_2")
+    assert player.user_id == "test_user_2"
+  end
+
+  test "list_pending_drafts/0 returns drafts with fewer than 8 players" do
+    {:ok, draft} = Drafts.create_draft(%{status: "pending"})
+    pending = Drafts.list_pending_drafts()
+    assert Enum.any?(pending, fn d -> d.id == draft.id and d.player_count == 0 end)
+  end
+end
 
 
-My project files are as follows:
+### FILE: test/mtg_draft_server/cards/pack_generator_test.exs ###
+
+defmodule MtgDraftServer.Drafts.PackGeneratorTest do
+  use ExUnit.Case, async: true
+  alias MtgDraftServer.Drafts.PackGenerator
+  alias MtgDraftServer.Cards.Card
+
+  @dummy_cards [
+    %Card{id: "basic1", rarity: "basic", foil: false},
+    %Card{id: "common1", rarity: "common", foil: false},
+    %Card{id: "common2", rarity: "common", foil: false},
+    %Card{id: "uncommon1", rarity: "uncommon", foil: false},
+    %Card{id: "rare1", rarity: "rare", foil: false},
+    %Card{id: "mythic1", rarity: "mythic", foil: false},
+    %Card{id: "foil1", rarity: "common", foil: true}
+  ]
+
+  test "generate_single_pack returns a shuffled pack with correct composition" do
+    rarity_groups = %{
+      "basic" => Enum.filter(@dummy_cards, &(&1.rarity == "basic")),
+      "common" => Enum.filter(@dummy_cards, &(&1.rarity == "common")),
+      "uncommon" => Enum.filter(@dummy_cards, &(&1.rarity == "uncommon")),
+      "rare" => Enum.filter(@dummy_cards, &(&1.rarity == "rare")),
+      "mythic" => Enum.filter(@dummy_cards, &(&1.rarity == "mythic"))
+    }
+
+    distribution = %{"basic" => 1, "common" => 1, "uncommon" => 1, "rare" => 1}
+
+    pack = PackGenerator.generate_single_pack(rarity_groups, distribution)
+    # The pack should contain 4 cards or 5 if a foil was inserted.
+    assert length(pack) in [4, 5]
+  end
+
+  test "distribute_packs returns correct distribution among players" do
+    packs = Enum.map(1..6, fn i -> ["card_#{i}"] end)
+    players = ["player1", "player2"]
+    distribution = PackGenerator.distribute_packs(packs, players)
+    assert Map.has_key?(distribution, "player1")
+    assert Map.has_key?(distribution, "player2")
+    assert length(distribution["player1"]) == 3
+    assert length(distribution["player2"]) == 3
+  end
+end
+
+
+### FILE: test/mtg_draft_server_web/controllers/controllers/draft_controller_test.exs ###
+
+defmodule MtgDraftServerWeb.DraftControllerTest do
+  use MtgDraftServerWeb.ConnCase
+  alias MtgDraftServer.Drafts
+  alias MtgDraftServerWeb.Router.Helpers, as: Routes
+
+  @valid_user %{"uid" => "user_123"}
+
+  setup %{conn: conn} do
+    conn = assign(conn, :current_user, @valid_user)
+    {:ok, conn: conn}
+  end
+
+  test "POST /api/drafts creates a new draft", %{conn: conn} do
+    conn = post(conn, Routes.api_draft_path(conn, :create), %{})
+    response = json_response(conn, 201)
+    assert Map.has_key?(response, "draft_id")
+    assert response["status"] in ["pending", "active"]
+  end
+
+  test "POST /api/drafts/:id/join allows a user to join a draft", %{conn: conn} do
+    {:ok, draft} = Drafts.create_draft(%{status: "pending"})
+    conn = post(conn, Routes.api_draft_path(conn, :join, draft.id))
+    json = json_response(conn, 200)
+    assert json["draft_id"] == draft.id
+    assert json["message"] == "Joined draft"
+  end
+end
+
+
+### FILE: test/mtg_draft_server_web/controllers/error_json_test.exs ###
+
+defmodule MtgDraftServerWeb.ErrorJSONTest do
+  use MtgDraftServerWeb.ConnCase, async: true
+
+  test "renders 404" do
+    assert MtgDraftServerWeb.ErrorJSON.render("404.json", %{}) == %{
+             errors: %{detail: "Not Found"}
+           }
+  end
+
+  test "renders 500" do
+    assert MtgDraftServerWeb.ErrorJSON.render("500.json", %{}) ==
+             %{errors: %{detail: "Internal Server Error"}}
+  end
+end
+
+
+### FILE: test/mtg_draft_server_web/controllers/firebase_token_test.exs ###
+
+defmodule MtgDraftServer.FirebaseTokenTest do
+  use ExUnit.Case, async: true
+  alias MtgDraftServer.FirebaseToken
+
+  test "verify_firebase_token/1 returns error when token is nil" do
+    assert {:error, :no_token_provided} = FirebaseToken.verify_firebase_token(nil)
+  end
+end
+
+
+### FILE: test/test_helper.exs ###
+
+ExUnit.start()
+Ecto.Adapters.SQL.Sandbox.mode(MtgDraftServer.Repo, :manual)
 

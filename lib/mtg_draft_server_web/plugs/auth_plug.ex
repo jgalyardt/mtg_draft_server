@@ -12,6 +12,7 @@ defmodule MtgDraftServerWeb.AuthPlug do
       case get_req_header(conn, "authorization") do
         ["Bearer " <> token] ->
           verify_token(conn, token)
+
         _ ->
           conn
           |> send_resp(401, Jason.encode!(%{error: "Missing or invalid Authorization header"}))
@@ -19,7 +20,6 @@ defmodule MtgDraftServerWeb.AuthPlug do
       end
     end
   end
-  
 
   defp verify_token(conn, token) do
     case FirebaseToken.verify_firebase_token(token) do

@@ -211,74 +211,73 @@ defmodule MtgDraftServer.DraftSession do
         List.replace_at(current_player_packs, current_pack_index, updated_pack)
 
       updated_booster_packs = Map.put(state.booster_packs, user_id, updated_player_packs)
-
       next_player_index = next_player_index(state)
       next_player = Enum.at(state.turn_order, next_player_index)
 
-      if updated_pack != [] do
-        updated_booster_packs =
-          pass_pack(
-            updated_booster_packs,
-            user_id,
-            next_player,
-            updated_pack,
-            current_pack_index
-          )
-
-        updated_state = %{
-          state
-          | booster_packs: updated_booster_packs,
-            current_turn_index: next_player_index,
-            pick_number: state.pick_number + 1
-        }
-
-        Phoenix.PubSub.broadcast(
-          MtgDraftServer.PubSub,
-          "draft:#{state.draft_id}",
-          {:pack_updated, next_player, state.pack_number, state.pick_number + 1}
-        )
-
-        maybe_schedule_ai(updated_state)
-        {:noreply, updated_state}
-      else
-        if current_pack_empty?(updated_booster_packs) do
-          if state.pack_number < 3 do
-            new_pack_number = state.pack_number + 1
-            new_direction = if new_pack_number == 2, do: :right, else: :left
-
-            updated_state = %{
-              state
-              | booster_packs: updated_booster_packs,
-                pack_number: new_pack_number,
-                pick_number: 1,
-                current_turn_index: 0,
-                current_pack_direction: new_direction
-            }
-
-            Phoenix.PubSub.broadcast(
-              MtgDraftServer.PubSub,
-              "draft:#{state.draft_id}",
-              {:new_pack, new_pack_number}
+      cond do
+        updated_pack != [] ->
+          updated_booster_packs =
+            pass_pack(
+              updated_booster_packs,
+              user_id,
+              next_player,
+              updated_pack,
+              current_pack_index
             )
 
-            maybe_schedule_ai(updated_state)
-            {:noreply, updated_state}
-          else
-            completed_state = complete_draft(state)
-            {:stop, :normal, completed_state}
-          end
-        else
+          updated_state = %{
+            state
+            | booster_packs: updated_booster_packs,
+              current_turn_index: next_player_index,
+              pick_number: state.pick_number + 1
+          }
+
+          Phoenix.PubSub.broadcast(
+            MtgDraftServer.PubSub,
+            "draft:#{state.draft_id}",
+            {:pack_updated, next_player, state.pack_number, state.pick_number + 1}
+          )
+
+          maybe_schedule_ai(updated_state)
+          updated_state
+
+        current_pack_empty?(updated_booster_packs) and state.pack_number < 3 ->
+          new_pack_number = state.pack_number + 1
+          new_direction = if new_pack_number == 2, do: :right, else: :left
+
+          updated_state = %{
+            state
+            | booster_packs: updated_booster_packs,
+              pack_number: new_pack_number,
+              pick_number: 1,
+              current_turn_index: 0,
+              current_pack_direction: new_direction
+          }
+
+          Phoenix.PubSub.broadcast(
+            MtgDraftServer.PubSub,
+            "draft:#{state.draft_id}",
+            {:new_pack, new_pack_number}
+          )
+
+          maybe_schedule_ai(updated_state)
+          updated_state
+
+        current_pack_empty?(updated_booster_packs) and state.pack_number >= 3 ->
+          # Final pack is empty; complete the draft.
+          complete_draft(state)
+
+        true ->
           updated_state = %{
             state
             | booster_packs: updated_booster_packs,
               current_turn_index: next_player_index
           }
 
-          {:noreply, updated_state}
-        end
+          updated_state
       end
     else
-      {:noreply, state}
+      state
     end
   end
 
