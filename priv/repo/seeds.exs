@@ -4,12 +4,11 @@ alias MtgDraftServer.Cards.CardMetadata
 
 # Define a function to process card faces as an anonymous function
 process_card_faces = fn card_attrs ->
-  if Map.has_key?(card_attrs, "card_faces") and is_list(card_attrs["card_faces"]) and 
-     length(card_attrs["card_faces"]) > 0 do
-    
+  if Map.has_key?(card_attrs, "card_faces") and is_list(card_attrs["card_faces"]) and
+       length(card_attrs["card_faces"]) > 0 do
     # Get the first face for default values
     first_face = List.first(card_attrs["card_faces"])
-    
+
     # Merge properties from the first face if they're missing in the main card
     card_attrs
     |> Map.put_new("mana_cost", first_face["mana_cost"])
@@ -40,7 +39,7 @@ end
   card_attrs = process_card_faces.(card_attrs)
 
   # Insert the card
-  {:ok, card} = 
+  {:ok, card} =
     %Card{}
     |> Card.changeset(card_attrs)
     |> Repo.insert(on_conflict: :nothing)

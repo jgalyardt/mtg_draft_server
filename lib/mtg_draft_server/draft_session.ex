@@ -102,12 +102,12 @@ defmodule MtgDraftServer.DraftSession do
       # Get the draft to check if it has specific set configurations
       {:ok, draft} = Drafts.get_draft(state.draft_id)
       player_count = length(state.turn_order)
-      
+
       booster_packs =
         if draft.pack_sets && length(draft.pack_sets) > 0 do
           # Use specific set configuration
           MtgDraftServer.Drafts.PackGenerator.generate_multi_set_packs(
-            player_count, 
+            player_count,
             draft.pack_sets
           )
         else

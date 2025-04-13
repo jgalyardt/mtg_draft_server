@@ -36,10 +36,17 @@ defmodule MtgDraftServer.Drafts.PackGenerator do
 
   # Add default layouts for drafting
   @default_draft_layouts [
-    "normal", "split", "flip", "transform", "modal_dfc", 
-    "adventure", "leveler", "saga", "class"
+    "normal",
+    "split",
+    "flip",
+    "transform",
+    "modal_dfc",
+    "adventure",
+    "leveler",
+    "saga",
+    "class"
   ]
-  
+
   @doc """
   Parses options and provides default values for missing options.
 
@@ -52,7 +59,8 @@ defmodule MtgDraftServer.Drafts.PackGenerator do
   def parse_opts(opts) do
     %{
       set_codes: Map.get(opts, :set_codes, []),
-      allowed_rarities: Map.get(opts, :allowed_rarities, ["basic", "common", "uncommon", "rare", "mythic"]),
+      allowed_rarities:
+        Map.get(opts, :allowed_rarities, ["basic", "common", "uncommon", "rare", "mythic"]),
       allowed_layouts: Map.get(opts, :allowed_layouts, @default_draft_layouts),
       distribution: Map.get(opts, :distribution, @default_distribution)
     }
@@ -66,13 +74,17 @@ defmodule MtgDraftServer.Drafts.PackGenerator do
 
   Returns a list of Card structs.
   """
-  def fetch_card_pool(%{set_codes: set_codes, allowed_rarities: allowed_rarities, allowed_layouts: allowed_layouts}) do
+  def fetch_card_pool(%{
+        set_codes: set_codes,
+        allowed_rarities: allowed_rarities,
+        allowed_layouts: allowed_layouts
+      }) do
     base_query =
       from card in Card,
         where: card.rarity in ^allowed_rarities
 
     # Join with a subquery that fetches layout information
-    layout_query = 
+    layout_query =
       from card in base_query,
         inner_join: metadata in "card_metadata",
         on: card.id == metadata.card_id,
@@ -149,7 +161,7 @@ defmodule MtgDraftServer.Drafts.PackGenerator do
     1. Parses the provided options
     2. Fetches cards from the database
     3. Groups the cards by rarity
-  
+
   Returns a map with:
     - :opts - parsed options
     - :rarity_groups - a map grouping cards by rarity
@@ -158,7 +170,7 @@ defmodule MtgDraftServer.Drafts.PackGenerator do
     parsed_opts = parse_opts(opts)
     cards = fetch_card_pool(parsed_opts)
     rarity_groups = group_cards_by_rarity(cards)
-    
+
     %{opts: parsed_opts, rarity_groups: rarity_groups}
   end
 
@@ -168,7 +180,7 @@ defmodule MtgDraftServer.Drafts.PackGenerator do
   This function:
     1. Generates packs for each set in the pack_sets list
     2. Groups and distributes the packs among players
-  
+
   Parameters:
     - player_count - the number of players in the draft
     - pack_sets - a list of set codes, one for each round of the draft
@@ -178,38 +190,38 @@ defmodule MtgDraftServer.Drafts.PackGenerator do
   """
   def generate_multi_set_packs(player_count, pack_sets) do
     packs_per_player = length(pack_sets)
-    
+
     # Ensure the number of packs is a multiple of player_count
     if rem(packs_per_player, player_count) != 0 do
       raise ArgumentError, "Number of packs per player must be a multiple of player_count"
     end
 
     # Generate packs for each set configuration
-    all_packs = 
+    all_packs =
       Enum.flat_map(pack_sets, fn set_code ->
         # Generate player_count packs from this set
         generate_packs_for_set(player_count, set_code)
       end)
-    
+
     # Group packs by set in order
     grouped_packs = Enum.chunk_every(all_packs, player_count)
-    
+
     # Distribute to players
     player_ids = Enum.map(1..player_count, &Integer.to_string/1)
-    
+
     # Structure: %{"player_id" => [[pack1_cards], [pack2_cards], [pack3_cards]]}
     Enum.reduce(player_ids, %{}, fn player_id, acc ->
-      player_packs = 
+      player_packs =
         grouped_packs
-        |> Enum.map(fn set_packs -> 
+        |> Enum.map(fn set_packs ->
           # Take one pack from each set for this player
           Enum.at(set_packs, String.to_integer(player_id) - 1)
         end)
-      
+
       Map.put(acc, player_id, player_packs)
     end)
   end
-  
+
   @doc """
   Distributes booster packs to players.
 
@@ -245,9 +257,9 @@ defmodule MtgDraftServer.Drafts.PackGenerator do
   # --- Private Helpers ---
 
   defp generate_packs_for_set(count, set_code) do
-    %{opts: parsed_opts, rarity_groups: rarity_groups} = 
+    %{opts: parsed_opts, rarity_groups: rarity_groups} =
       generate_booster_packs(%{set_codes: [set_code]})
-    
+
     generate_all_packs(rarity_groups, parsed_opts.distribution, count)
   end
 

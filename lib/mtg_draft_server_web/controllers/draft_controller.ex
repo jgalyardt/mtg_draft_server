@@ -12,14 +12,33 @@ defmodule MtgDraftServerWeb.DraftController do
   def create(conn, %{"pack_sets" => pack_sets} = _params) do
     case conn.assigns[:current_user] do
       %{"uid" => uid} ->
-        with {:ok, draft} <- Drafts.create_and_join_draft(%{
-               creator: uid,
-               pack_sets: pack_sets
-             }) do
+        with {:ok, draft} <-
+               Drafts.create_and_join_draft(%{
+                 creator: uid,
+                 pack_sets: pack_sets
+               }) do
           conn
           |> put_status(:created)
           |> put_resp_header("location", "/api/drafts/#{draft.id}")
           |> json(%{draft_id: draft.id, status: draft.status, pack_sets: pack_sets})
+        end
+
+      _ ->
+        conn
+        |> put_status(:unauthorized)
+        |> json(%{"error" => "Authentication required"})
+    end
+  end
+
+  # Handles request without pack_sets parameter (default)
+  def create(conn, _params) do
+    case conn.assigns[:current_user] do
+      %{"uid" => uid} ->
+        with {:ok, draft} <- Drafts.create_and_join_draft(%{creator: uid}) do
+          conn
+          |> put_status(:created)
+          |> put_resp_header("location", "/api/drafts/#{draft.id}")
+          |> json(%{draft_id: draft.id, status: draft.status})
         end
 
       _ ->

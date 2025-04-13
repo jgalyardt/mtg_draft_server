@@ -9,7 +9,7 @@ defmodule MtgDraftServer.Repo.Migrations.AddCardMetadata do
       add :is_token, :boolean, default: false
       add :is_digital, :boolean, default: false
       add :is_promo, :boolean, default: false
-      
+
       timestamps()
     end
 
