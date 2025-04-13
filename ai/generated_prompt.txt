@@ -1,307 +1,137 @@
-I need you help adjusting my Elixir server that manages Magic the Gathering Drafts.
-I've built some tests, but I want to improve the coverage.
-I've included my test files, followed by my project files.
+I am building an elixir phoenix server to host Magic the Gathering drafts.
 
-### [[ TEST FILES CONTEXT ]] ###
+I am trying to fix a bug with my cards import via seeds.exs.
+It appears that Split Cards are loading incorrectly, for example:
 
+    [
+      <<202, 242, 131, 119, ...>>,
+      <<0, 90, 136, ...>>,
+      "Tatsunari, Toad Rider // Tatsunari, Toad Rider",
+      nil,
+      0.0,
+      ...
+    ],
+    [
+      <<168, 103, ...>>,
+      <<1, ...>>,
+      "Exterminator Magmarch // Exterminator Magmarch",
+      ...
+    ],
 
-### FILE: test/mtg_draft_server/cards/card_test.exs ###
+These come into the front end as:
 
-defmodule MtgDraftServer.Cards.CardTest do
-  use ExUnit.Case, async: true
-  alias MtgDraftServer.Cards.Card
-
-  @valid_attrs %{
-    oracle_id: "00037840-6089-42ec-8c5c-281f9f474504",
-    name: "Nissa, Worldsoul Speaker",
-    mana_cost: "{3}{G}",
-    cmc: 4.0,
-    type_line: "Legendary Creature — Elf Druid",
-    oracle_text: "Landfall — Whenever a land you control enters, you get {E}{E}.",
-    power: "3",
-    toughness: "3",
-    colors: ["G"],
-    color_identity: ["G"],
-    set_code: "drc",
-    rarity: "rare",
-    foil: false,
-    image_uris: %{
-      "small" =>
-        "https://cards.scryfall.io/small/front/a/4/a471b306-4941-4e46-a0cb-d92895c16f8a.jpg?1738355341"
-    },
-    legalities: %{"legacy" => "legal"}
-  }
-
-  test "changeset with valid attributes" do
-    changeset = Card.changeset(%Card{}, @valid_attrs)
-    assert changeset.valid?
-  end
-
-  test "changeset without required fields" do
-    changeset = Card.changeset(%Card{}, %{})
-    refute changeset.valid?
-
-    errors = errors_on(changeset)
-    assert errors.oracle_id == ["can't be blank"]
-    assert errors.name == ["can't be blank"]
-    assert errors.set_code == ["can't be blank"]
-    assert errors.rarity == ["can't be blank"]
-  end
-
-  defp errors_on(changeset) do
-    Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-      Enum.reduce(opts, msg, fn {key, value}, acc ->
-        String.replace(acc, "%{#{key}}", to_string(value))
-      end)
-    end)
-  end
-end
-
-
-### FILE: test/mtg_draft_server/cards/draft_session_test.exs ###
-
-defmodule MtgDraftServer.DraftSessionTest do
-  use ExUnit.Case, async: false
-  alias MtgDraftServer.DraftSession
-
-  setup do
-    # Checkout the connection and set shared mode
-    :ok = Ecto.Adapters.SQL.Sandbox.checkout(MtgDraftServer.Repo)
-    Ecto.Adapters.SQL.Sandbox.mode(MtgDraftServer.Repo, {:shared, self()})
-
-    # Generate a draft_id and insert a corresponding draft record.
-    draft_id = Ecto.UUID.generate()
-
-    {:ok, _draft} =
-      %MtgDraftServer.Drafts.Draft{id: draft_id, status: "active"}
-      |> MtgDraftServer.Drafts.Draft.changeset(%{status: "active"})
-      |> MtgDraftServer.Repo.insert()
-
-    # Insert a draft player record for "player1".
-    {:ok, _player} =
-      MtgDraftServer.Drafts.DraftPlayer.create_draft_player(%{
-        draft_id: draft_id,
-        user_id: "player1",
-        seat: 1
-      })
-
-    {:ok, pid} = start_supervised({DraftSession, draft_id})
-    # Allow the GenServer process to use the DB connection.
-    Ecto.Adapters.SQL.Sandbox.allow(MtgDraftServer.Repo, self(), pid)
-    %{draft_id: draft_id, pid: pid}
-  end
-
-  test "join adds a player and updates turn order", %{draft_id: draft_id} do
-    :ok = DraftSession.join(draft_id, %{"user_id" => "player1"})
-    state = DraftSession.get_state(draft_id)
-    assert state.turn_order == ["player1"]
-    assert Map.has_key?(state.players, "player1")
-  end
-
-  test "picking a card updates the session state", %{draft_id: draft_id, pid: pid} do
-    # Build an initial state with a booster pack for testing.
-    initial_state = %{
-      draft_id: draft_id,
-      players: %{"player1" => %{"user_id" => "player1"}},
-      turn_order: ["player1"],
-      current_turn_index: 0,
-      pack: [],
-      pack_number: 1,
-      pick_number: 1,
-      status: :active,
-      booster_packs: %{
-        "player1" => [
-          [
-            %{"id" => "card1"},
-            %{"id" => "card2"}
-          ]
-        ]
-      },
-      draft_started: true,
-      current_pack_direction: :left
-    }
-
-    # Replace the GenServer state.
-    :sys.replace_state(pid, fn _ -> initial_state end)
-
-    DraftSession.pick(draft_id, "player1", "card1")
-    # Allow some time for asynchronous processing.
-    Process.sleep(100)
-    state = DraftSession.get_state(draft_id)
-    booster = state.booster_packs || %{}
-    [pack] = Map.get(booster, "player1", [[]])
-    # After picking "card1", only one card ("card2") should remain.
-    assert length(pack) == 1
-    assert Enum.any?(pack, fn card ->
-             is_map(card) and (card["id"] == "card2" or Map.get(card, :id) == "card2")
-           end)
-  end
-end
+{
+            "id": "84a051e5-df37-4020-971c-1dd1bb40d023",
+            "oracle_id": "403850c4-8f7f-47ec-8725-03ceee725f90",
+            "name": "Neera, Wild Mage // Neera, Wild Mage",
+            "mana_cost": null,
+            "cmc": 0.0,
+            "type_line": "Card // Card",
+            "oracle_text": null,
+            "power": null,
+            "toughness": null,
+            "colors": null,
+            "color_identity": [],
+            "set_code": "aclb",
+            "rarity": "common",
+            "foil": true,
+            "image_uris": null,
+            "legalities": {
+                "alchemy": "not_legal",
+                "brawl": "not_legal",
+                "commander": "not_legal",
+                "duel": "not_legal",
+                "explorer": "not_legal",
+                "future": "not_legal",
+                "gladiator": "not_legal",
+                "historic": "not_legal",
+                "legacy": "not_legal",
+                "modern": "not_legal",
+                "oathbreaker": "not_legal",
+                "oldschool": "not_legal",
+                "pauper": "not_legal",
+                "paupercommander": "not_legal",
+                "penny": "not_legal",
+                "pioneer": "not_legal",
+                "predh": "not_legal",
+                "premodern": "not_legal",
+                "standard": "not_legal",
+                "standardbrawl": "not_legal",
+                "timeless": "not_legal",
+                "vintage": "not_legal"
+            },
+            "inserted_at": "2025-04-01T23:34:51",
+            "updated_at": "2025-04-01T23:34:51"
+        },
 
 
-### FILE: test/mtg_draft_server/cards/drafts_test.exs ###
+This card for example is loaded from oracle_cards.json as:
 
-defmodule MtgDraftServer.DraftsTest do
-  use ExUnit.Case, async: false
-  alias MtgDraftServer.Drafts
-  alias MtgDraftServer.Drafts.Draft
+{"object":"card","id":"84a051e5-df37-4020-971c-1dd1bb40d023","oracle_id":"403850c4-8f7f-47ec-8725-03ceee725f90","multiverse_ids":[],"name":"Neera, Wild Mage // Neera, Wild Mage","lang":"en","released_at":"2022-06-10","uri":"https://api.scryfall.com/cards/84a051e5-df37-4020-971c-1dd1bb40d023","scryfall_uri":"https://scryfall.com/card/aclb/74/neera-wild-mage-neera-wild-mage?utm_source=api","layout":"art_series","highres_image":true,"image_status":"highres_scan","cmc":0.0,"type_line":"Card // Card","color_identity":[],"keywords":[],"card_faces":[{"object":"card_face","name":"Neera, Wild Mage","mana_cost":"","type_line":"Card","oracle_text":"","colors":[],"artist":"Pedro Potier","artist_id":"7c79286c-7096-42b8-97e5-bbaa35ae241d","illustration_id":"98da4f1b-1b51-494c-9743-5e78b0802747","image_uris":{"small":"https://cards.scryfall.io/small/front/8/4/84a051e5-df37-4020-971c-1dd1bb40d023.jpg?1679945549","normal":"https://cards.scryfall.io/normal/front/8/4/84a051e5-df37-4020-971c-1dd1bb40d023.jpg?1679945549","large":"https://cards.scryfall.io/large/front/8/4/84a051e5-df37-4020-971c-1dd1bb40d023.jpg?1679945549","png":"https://cards.scryfall.io/png/front/8/4/84a051e5-df37-4020-971c-1dd1bb40d023.png?1679945549","art_crop":"https://cards.scryfall.io/art_crop/front/8/4/84a051e5-df37-4020-971c-1dd1bb40d023.jpg?1679945549","border_crop":"https://cards.scryfall.io/border_crop/front/8/4/84a051e5-df37-4020-971c-1dd1bb40d023.jpg?1679945549"}},{"object":"card_face","name":"Neera, Wild Mage","mana_cost":"","type_line":"Card","oracle_text":"","colors":[],"artist":"Pedro Potier","artist_id":"7c79286c-7096-42b8-97e5-bbaa35ae241d","illustration_id":"108a7d10-cf74-4cf1-a87e-cf9b0022ca92","image_uris":{"small":"https://cards.scryfall.io/small/back/8/4/84a051e5-df37-4020-971c-1dd1bb40d023.jpg?1679945549","normal":"https://cards.scryfall.io/normal/back/8/4/84a051e5-df37-4020-971c-1dd1bb40d023.jpg?1679945549","large":"https://cards.scryfall.io/large/back/8/4/84a051e5-df37-4020-971c-1dd1bb40d023.jpg?1679945549","png":"https://cards.scryfall.io/png/back/8/4/84a051e5-df37-4020-971c-1dd1bb40d023.png?1679945549","art_crop":"https://cards.scryfall.io/art_crop/back/8/4/84a051e5-df37-4020-971c-1dd1bb40d023.jpg?1679945549","border_crop":"https://cards.scryfall.io/border_crop/back/8/4/84a051e5-df37-4020-971c-1dd1bb40d023.jpg?1679945549"}}],"legalities":{"standard":"not_legal","future":"not_legal","historic":"not_legal","timeless":"not_legal","gladiator":"not_legal","pioneer":"not_legal","explorer":"not_legal","modern":"not_legal","legacy":"not_legal","pauper":"not_legal","vintage":"not_legal","penny":"not_legal","commander":"not_legal","oathbreaker":"not_legal","standardbrawl":"not_legal","brawl":"not_legal","alchemy":"not_legal","paupercommander":"not_legal","duel":"not_legal","oldschool":"not_legal","premodern":"not_legal","predh":"not_legal"},"games":["paper"],"reserved":false,"foil":true,"nonfoil":true,"finishes":["nonfoil","foil"],"oversized":false,"promo":false,"reprint":false,"variation":false,"set_id":"5a1e41c1-05f4-4c73-9bc4-a2d7889ac3bb","set":"aclb","set_name":"Battle for Baldur's Gate Art Series","set_type":"memorabilia","set_uri":"https://api.scryfall.com/sets/5a1e41c1-05f4-4c73-9bc4-a2d7889ac3bb","set_search_uri":"https://api.scryfall.com/cards/search?order=set&q=e%3Aaclb&unique=prints","scryfall_set_uri":"https://scryfall.com/sets/aclb?utm_source=api","rulings_uri":"https://api.scryfall.com/cards/84a051e5-df37-4020-971c-1dd1bb40d023/rulings","prints_search_uri":"https://api.scryfall.com/cards/search?order=released&q=oracleid%3A403850c4-8f7f-47ec-8725-03ceee725f90&unique=prints","collector_number":"74","digital":false,"rarity":"common","artist":"Pedro Potier","artist_ids":["7c79286c-7096-42b8-97e5-bbaa35ae241d"],"border_color":"borderless","frame":"2015","full_art":false,"textless":false,"booster":false,"story_spotlight":false,"prices":{"usd":null,"usd_foil":null,"usd_etched":null,"eur":null,"eur_foil":null,"tix":null},"related_uris":{"tcgplayer_infinite_articles":"https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Darticle%26game%3Dmagic%26q%3DNeera%252C%2BWild%2BMage%2B%252F%252F%2BNeera%252C%2BWild%2BMage","tcgplayer_infinite_decks":"https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Ddeck%26game%3Dmagic%26q%3DNeera%252C%2BWild%2BMage%2B%252F%252F%2BNeera%252C%2BWild%2BMage","edhrec":"https://edhrec.com/route/?cc=Neera%2C+Wild+Mage"},"purchase_uris":{"tcgplayer":"https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Fmagic%2Fproduct%3FproductLineName%3Dmagic%26q%3DNeera%252C%2BWild%2BMage%26view%3Dgrid","cardmarket":"https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Neera%2C+Wild+Mage&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall","cardhoarder":"https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Neera%2C+Wild+Mage&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"}},
 
-  setup do
-    # Checkout the connection and set shared mode.
-    :ok = Ecto.Adapters.SQL.Sandbox.checkout(MtgDraftServer.Repo)
-    Ecto.Adapters.SQL.Sandbox.mode(MtgDraftServer.Repo, {:shared, self()})
-    :ok
-  end
+Other cards work however, such as:
 
-  @draft_attrs %{status: "pending"}
-  @creator "test_user_1"
+    {
+            "id": "22a6d05e-e566-4a85-bcf8-9d0fbea3dd14",
+            "oracle_id": "c1ed20c0-f75d-4aca-8874-6955bd9fb21b",
+            "name": "Kindled Heroism",
+            "mana_cost": "{R}",
+            "cmc": 1.0,
+            "type_line": "Instant",
+            "oracle_text": "Target creature gets +1/+0 and gains first strike until end of turn. Scry 1.",
+            "power": null,
+            "toughness": null,
+            "colors": [
+                "R"
+            ],
+            "color_identity": [
+                "R"
+            ],
+            "set_code": "woe",
+            "rarity": "common",
+            "foil": true,
+            "image_uris": {
+                "art_crop": "https://cards.scryfall.io/art_crop/front/2/2/22a6d05e-e566-4a85-bcf8-9d0fbea3dd14.jpg?1692938335",
+                "border_crop": "https://cards.scryfall.io/border_crop/front/2/2/22a6d05e-e566-4a85-bcf8-9d0fbea3dd14.jpg?1692938335",
+                "large": "https://cards.scryfall.io/large/front/2/2/22a6d05e-e566-4a85-bcf8-9d0fbea3dd14.jpg?1692938335",
+                "normal": "https://cards.scryfall.io/normal/front/2/2/22a6d05e-e566-4a85-bcf8-9d0fbea3dd14.jpg?1692938335",
+                "png": "https://cards.scryfall.io/png/front/2/2/22a6d05e-e566-4a85-bcf8-9d0fbea3dd14.png?1692938335",
+                "small": "https://cards.scryfall.io/small/front/2/2/22a6d05e-e566-4a85-bcf8-9d0fbea3dd14.jpg?1692938335"
+            },
+            "legalities": {
+                "alchemy": "legal",
+                "brawl": "legal",
+                "commander": "legal",
+                "duel": "legal",
+                "explorer": "legal",
+                "future": "legal",
+                "gladiator": "legal",
+                "historic": "legal",
+                "legacy": "legal",
+                "modern": "legal",
+                "oathbreaker": "legal",
+                "oldschool": "not_legal",
+                "pauper": "legal",
+                "paupercommander": "legal",
+                "penny": "not_legal",
+                "pioneer": "legal",
+                "predh": "not_legal",
+                "premodern": "not_legal",
+                "standard": "legal",
+                "standardbrawl": "legal",
+                "timeless": "legal",
+                "vintage": "legal"
+            },
+            "inserted_at": "2025-04-01T23:35:04",
+            "updated_at": "2025-04-01T23:35:04"
+        },
 
-  test "create_draft/1 creates a draft" do
-    assert {:ok, %Draft{} = draft} = Drafts.create_draft(@draft_attrs)
-    assert draft.status == "pending"
-  end
+Which loads from:
 
-  test "create_and_join_draft/1 creates a draft and joins the creator" do
-    assert {:ok, %Draft{} = draft} =
-             Drafts.create_and_join_draft(%{status: "pending", creator: @creator})
-
-    {:ok, draft_player} = Drafts.get_draft_player(draft.id, @creator)
-    assert draft_player.user_id == @creator
-  end
-
-  test "get_active_draft_for_player/1 returns active draft player" do
-    {:ok, _draft} = Drafts.create_and_join_draft(%{status: "pending", creator: @creator})
-    draft_player = Drafts.get_active_draft_for_player(@creator)
-    assert draft_player != nil
-    assert draft_player.user_id == @creator
-  end
-
-  test "join_draft/2 adds a new player if draft is not full" do
-    {:ok, draft} = Drafts.create_draft(%{status: "pending"})
-    {:ok, player} = Drafts.join_draft(draft, "test_user_2")
-    assert player.user_id == "test_user_2"
-  end
-
-  test "list_pending_drafts/0 returns drafts with fewer than 8 players" do
-    {:ok, draft} = Drafts.create_draft(%{status: "pending"})
-    pending = Drafts.list_pending_drafts()
-    assert Enum.any?(pending, fn d -> d.id == draft.id and d.player_count == 0 end)
-  end
-end
-
-
-### FILE: test/mtg_draft_server/cards/pack_generator_test.exs ###
-
-defmodule MtgDraftServer.Drafts.PackGeneratorTest do
-  use ExUnit.Case, async: true
-  alias MtgDraftServer.Drafts.PackGenerator
-  alias MtgDraftServer.Cards.Card
-
-  @dummy_cards [
-    %Card{id: "basic1", rarity: "basic", foil: false},
-    %Card{id: "common1", rarity: "common", foil: false},
-    %Card{id: "common2", rarity: "common", foil: false},
-    %Card{id: "uncommon1", rarity: "uncommon", foil: false},
-    %Card{id: "rare1", rarity: "rare", foil: false},
-    %Card{id: "mythic1", rarity: "mythic", foil: false},
-    %Card{id: "foil1", rarity: "common", foil: true}
-  ]
-
-  test "generate_single_pack returns a shuffled pack with correct composition" do
-    rarity_groups = %{
-      "basic" => Enum.filter(@dummy_cards, &(&1.rarity == "basic")),
-      "common" => Enum.filter(@dummy_cards, &(&1.rarity == "common")),
-      "uncommon" => Enum.filter(@dummy_cards, &(&1.rarity == "uncommon")),
-      "rare" => Enum.filter(@dummy_cards, &(&1.rarity == "rare")),
-      "mythic" => Enum.filter(@dummy_cards, &(&1.rarity == "mythic"))
-    }
-
-    distribution = %{"basic" => 1, "common" => 1, "uncommon" => 1, "rare" => 1}
-
-    pack = PackGenerator.generate_single_pack(rarity_groups, distribution)
-    # The pack should contain 4 cards or 5 if a foil was inserted.
-    assert length(pack) in [4, 5]
-  end
-
-  test "distribute_packs returns correct distribution among players" do
-    packs = Enum.map(1..6, fn i -> ["card_#{i}"] end)
-    players = ["player1", "player2"]
-    distribution = PackGenerator.distribute_packs(packs, players)
-    assert Map.has_key?(distribution, "player1")
-    assert Map.has_key?(distribution, "player2")
-    assert length(distribution["player1"]) == 3
-    assert length(distribution["player2"]) == 3
-  end
-end
+{"object":"card","id":"22a6d05e-e566-4a85-bcf8-9d0fbea3dd14","oracle_id":"c1ed20c0-f75d-4aca-8874-6955bd9fb21b","multiverse_ids":[629639],"mtgo_id":116600,"arena_id":86838,"tcgplayer_id":513936,"cardmarket_id":729891,"name":"Kindled Heroism","lang":"en","released_at":"2023-09-08","uri":"https://api.scryfall.com/cards/22a6d05e-e566-4a85-bcf8-9d0fbea3dd14","scryfall_uri":"https://scryfall.com/card/woe/138/kindled-heroism?utm_source=api","layout":"normal","highres_image":true,"image_status":"highres_scan","image_uris":{"small":"https://cards.scryfall.io/small/front/2/2/22a6d05e-e566-4a85-bcf8-9d0fbea3dd14.jpg?1692938335","normal":"https://cards.scryfall.io/normal/front/2/2/22a6d05e-e566-4a85-bcf8-9d0fbea3dd14.jpg?1692938335","large":"https://cards.scryfall.io/large/front/2/2/22a6d05e-e566-4a85-bcf8-9d0fbea3dd14.jpg?1692938335","png":"https://cards.scryfall.io/png/front/2/2/22a6d05e-e566-4a85-bcf8-9d0fbea3dd14.png?1692938335","art_crop":"https://cards.scryfall.io/art_crop/front/2/2/22a6d05e-e566-4a85-bcf8-9d0fbea3dd14.jpg?1692938335","border_crop":"https://cards.scryfall.io/border_crop/front/2/2/22a6d05e-e566-4a85-bcf8-9d0fbea3dd14.jpg?1692938335"},"mana_cost":"{R}","cmc":1.0,"type_line":"Instant","oracle_text":"Target creature gets +1/+0 and gains first strike until end of turn. Scry 1.","colors":["R"],"color_identity":["R"],"keywords":["Scry"],"legalities":{"standard":"legal","future":"legal","historic":"legal","timeless":"legal","gladiator":"legal","pioneer":"legal","explorer":"legal","modern":"legal","legacy":"legal","pauper":"legal","vintage":"legal","penny":"not_legal","commander":"legal","oathbreaker":"legal","standardbrawl":"legal","brawl":"legal","alchemy":"legal","paupercommander":"legal","duel":"legal","oldschool":"not_legal","premodern":"not_legal","predh":"not_legal"},"games":["paper","arena","mtgo"],"reserved":false,"foil":true,"nonfoil":true,"finishes":["nonfoil","foil"],"oversized":false,"promo":false,"reprint":false,"variation":false,"set_id":"79139661-13ee-43c4-8bad-a8c069f1a1df","set":"woe","set_name":"Wilds of Eldraine","set_type":"expansion","set_uri":"https://api.scryfall.com/sets/79139661-13ee-43c4-8bad-a8c069f1a1df","set_search_uri":"https://api.scryfall.com/cards/search?order=set&q=e%3Awoe&unique=prints","scryfall_set_uri":"https://scryfall.com/sets/woe?utm_source=api","rulings_uri":"https://api.scryfall.com/cards/22a6d05e-e566-4a85-bcf8-9d0fbea3dd14/rulings","prints_search_uri":"https://api.scryfall.com/cards/search?order=released&q=oracleid%3Ac1ed20c0-f75d-4aca-8874-6955bd9fb21b&unique=prints","collector_number":"138","digital":false,"rarity":"common","flavor_text":"Even in the grip of Hylda's unnatural cold, something in Kellan felt bright as spring, something that poured into the empty hilts he'd been given by Talion and formed thorn-sharp blades of light.","card_back_id":"0aeebaf5-8c7d-4636-9e82-8c27447861f7","artist":"Leanna Crossan","artist_ids":["976cfe82-042e-4c2a-b762-2bc3e86cb6d0"],"illustration_id":"54e323d3-d12a-4bb5-b1d2-128477340243","border_color":"black","frame":"2015","full_art":false,"textless":false,"booster":true,"story_spotlight":true,"edhrec_rank":16799,"prices":{"usd":"0.06","usd_foil":"0.07","usd_etched":null,"eur":"0.06","eur_foil":"0.09","tix":"0.03"},"related_uris":{"gatherer":"https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=629639&printed=false","tcgplayer_infinite_articles":"https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Darticle%26game%3Dmagic%26q%3DKindled%2BHeroism","tcgplayer_infinite_decks":"https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Ddeck%26game%3Dmagic%26q%3DKindled%2BHeroism","edhrec":"https://edhrec.com/route/?cc=Kindled+Heroism"},"purchase_uris":{"tcgplayer":"https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fproduct%2F513936%3Fpage%3D1","cardmarket":"https://www.cardmarket.com/en/Magic/Products/Singles/Wilds-of-Eldraine/Kindled-Heroism?referrer=scryfall&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall","cardhoarder":"https://www.cardhoarder.com/cards/116600?affiliate_id=scryfall&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"}},
 
 
-### FILE: test/mtg_draft_server_web/controllers/controllers/draft_controller_test.exs ###
-
-defmodule MtgDraftServerWeb.DraftControllerTest do
-  use MtgDraftServerWeb.ConnCase
-  alias MtgDraftServer.Drafts
-  alias MtgDraftServerWeb.Router.Helpers, as: Routes
-
-  @valid_user %{"uid" => "user_123"}
-
-  setup %{conn: conn} do
-    conn = assign(conn, :current_user, @valid_user)
-    {:ok, conn: conn}
-  end
-
-  test "POST /api/drafts creates a new draft", %{conn: conn} do
-    conn = post(conn, Routes.api_draft_path(conn, :create), %{})
-    response = json_response(conn, 201)
-    assert Map.has_key?(response, "draft_id")
-    assert response["status"] in ["pending", "active"]
-  end
-
-  test "POST /api/drafts/:id/join allows a user to join a draft", %{conn: conn} do
-    {:ok, draft} = Drafts.create_draft(%{status: "pending"})
-    conn = post(conn, Routes.api_draft_path(conn, :join, draft.id))
-    json = json_response(conn, 200)
-    assert json["draft_id"] == draft.id
-    assert json["message"] == "Joined draft"
-  end
-end
-
-
-### FILE: test/mtg_draft_server_web/controllers/error_json_test.exs ###
-
-defmodule MtgDraftServerWeb.ErrorJSONTest do
-  use MtgDraftServerWeb.ConnCase, async: true
-
-  test "renders 404" do
-    assert MtgDraftServerWeb.ErrorJSON.render("404.json", %{}) == %{
-             errors: %{detail: "Not Found"}
-           }
-  end
-
-  test "renders 500" do
-    assert MtgDraftServerWeb.ErrorJSON.render("500.json", %{}) ==
-             %{errors: %{detail: "Internal Server Error"}}
-  end
-end
-
-
-### FILE: test/mtg_draft_server_web/controllers/firebase_token_test.exs ###
-
-defmodule MtgDraftServer.FirebaseTokenTest do
-  use ExUnit.Case, async: true
-  alias MtgDraftServer.FirebaseToken
-
-  test "verify_firebase_token/1 returns error when token is nil" do
-    assert {:error, :no_token_provided} = FirebaseToken.verify_firebase_token(nil)
-  end
-end
-
-
-### FILE: test/test_helper.exs ###
-
-ExUnit.start()
-Ecto.Adapters.SQL.Sandbox.mode(MtgDraftServer.Repo, :manual)
-
-
+Analyze my code and determine why the former is loading as //, even when it's not necessarily a split card, and what I can do to fix the issue.
 === File: lib/mtg_draft_server/application.ex ===
 
 defmodule MtgDraftServer.Application do
@@ -1107,7 +937,7 @@ defmodule MtgDraftServer.DraftSession do
         {:noreply, state}
     end
   end
-  
+
   @impl true
   def handle_info({:ai_pick, user_id}, state) do
     if Enum.at(state.turn_order, state.current_turn_index) == user_id do
@@ -1145,7 +975,7 @@ defmodule MtgDraftServer.DraftSession do
     current_player_packs = Map.get(state.booster_packs, user_id, [])
     current_pack_index = state.pack_number - 1
     current_pack = Enum.at(current_player_packs, current_pack_index, [])
-  
+
     picked_card =
       Enum.find(current_pack, fn card ->
         case card do
@@ -1154,14 +984,14 @@ defmodule MtgDraftServer.DraftSession do
           _ -> false
         end
       end)
-  
+
     if picked_card do
       _ =
         Drafts.pick_card(state.draft_id, user_id, card_id, %{
           "pack_number" => state.pack_number,
           "pick_number" => state.pick_number
         })
-  
+
       updated_pack =
         Enum.reject(current_pack, fn card ->
           case card do
@@ -1170,37 +1000,45 @@ defmodule MtgDraftServer.DraftSession do
             _ -> false
           end
         end)
-  
-      updated_player_packs = List.replace_at(current_player_packs, current_pack_index, updated_pack)
+
+      updated_player_packs =
+        List.replace_at(current_player_packs, current_pack_index, updated_pack)
+
       updated_booster_packs = Map.put(state.booster_packs, user_id, updated_player_packs)
       next_player_index = next_player_index(state)
       next_player = Enum.at(state.turn_order, next_player_index)
-  
+
       cond do
         updated_pack != [] ->
           updated_booster_packs =
-            pass_pack(updated_booster_packs, user_id, next_player, updated_pack, current_pack_index)
-  
+            pass_pack(
+              updated_booster_packs,
+              user_id,
+              next_player,
+              updated_pack,
+              current_pack_index
+            )
+
           updated_state = %{
             state
             | booster_packs: updated_booster_packs,
               current_turn_index: next_player_index,
               pick_number: state.pick_number + 1
           }
-  
+
           Phoenix.PubSub.broadcast(
             MtgDraftServer.PubSub,
             "draft:#{state.draft_id}",
             {:pack_updated, next_player, state.pack_number, state.pick_number + 1}
           )
-  
+
           maybe_schedule_ai(updated_state)
           updated_state
-  
+
         current_pack_empty?(updated_booster_packs) and state.pack_number < 3 ->
           new_pack_number = state.pack_number + 1
           new_direction = if new_pack_number == 2, do: :right, else: :left
-  
+
           updated_state = %{
             state
             | booster_packs: updated_booster_packs,
@@ -1209,34 +1047,33 @@ defmodule MtgDraftServer.DraftSession do
               current_turn_index: 0,
               current_pack_direction: new_direction
           }
-  
+
           Phoenix.PubSub.broadcast(
             MtgDraftServer.PubSub,
             "draft:#{state.draft_id}",
             {:new_pack, new_pack_number}
           )
-  
+
           maybe_schedule_ai(updated_state)
           updated_state
-  
+
         current_pack_empty?(updated_booster_packs) and state.pack_number >= 3 ->
           # Final pack is empty; complete the draft.
           complete_draft(state)
-  
+
         true ->
           updated_state = %{
             state
             | booster_packs: updated_booster_packs,
               current_turn_index: next_player_index
           }
-  
+
           updated_state
       end
     else
       state
     end
   end
-  
 
   defp pass_pack(booster_packs, _from_player, to_player, pack, pack_index) do
     to_player_packs = Map.get(booster_packs, to_player, [])
@@ -2060,6 +1897,7 @@ defmodule MtgDraftServerWeb.AuthPlug do
       case get_req_header(conn, "authorization") do
         ["Bearer " <> token] ->
           verify_token(conn, token)
+
         _ ->
           conn
           |> send_resp(401, Jason.encode!(%{error: "Missing or invalid Authorization header"}))
@@ -2067,7 +1905,6 @@ defmodule MtgDraftServerWeb.AuthPlug do
       end
     end
   end
-  
 
   defp verify_token(conn, token) do
     case FirebaseToken.verify_firebase_token(token) do

@@ -7,16 +7,19 @@ defmodule MtgDraftServerWeb.DraftController do
   action_fallback MtgDraftServerWeb.FallbackController
 
   @doc """
-  Create a new draft using the Firebase authenticated user.
+  Create a new draft with specific set configuration.
   """
-  def create(conn, _params) do
+  def create(conn, %{"pack_sets" => pack_sets} = _params) do
     case conn.assigns[:current_user] do
       %{"uid" => uid} ->
-        with {:ok, draft} <- Drafts.create_and_join_draft(%{creator: uid}) do
+        with {:ok, draft} <- Drafts.create_and_join_draft(%{
+               creator: uid,
+               pack_sets: pack_sets
+             }) do
           conn
           |> put_status(:created)
           |> put_resp_header("location", "/api/drafts/#{draft.id}")
-          |> json(%{draft_id: draft.id, status: draft.status})
+          |> json(%{draft_id: draft.id, status: draft.status, pack_sets: pack_sets})
         end
 
       _ ->

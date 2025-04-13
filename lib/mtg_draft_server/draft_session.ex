@@ -99,11 +99,24 @@ defmodule MtgDraftServer.DraftSession do
   @impl true
   def handle_call(:start_draft_with_boosters, _from, state) do
     if not state.draft_started and length(state.turn_order) >= 2 do
+      # Get the draft to check if it has specific set configurations
+      {:ok, draft} = Drafts.get_draft(state.draft_id)
+      player_count = length(state.turn_order)
+      
       booster_packs =
-        MtgDraftServer.Drafts.PackGenerator.generate_and_distribute_booster_packs(
-          %{},
-          state.turn_order
-        )
+        if draft.pack_sets && length(draft.pack_sets) > 0 do
+          # Use specific set configuration
+          MtgDraftServer.Drafts.PackGenerator.generate_multi_set_packs(
+            player_count, 
+            draft.pack_sets
+          )
+        else
+          # Use default method (all sets)
+          MtgDraftServer.Drafts.PackGenerator.generate_and_distribute_booster_packs(
+            %{},
+            state.turn_order
+          )
+        end
 
       updated_state =
         state
@@ -112,13 +125,14 @@ defmodule MtgDraftServer.DraftSession do
         |> Map.put(:status, :active)
         |> Map.put(:current_pack_direction, :left)
         |> Map.put(:pack, [])
+        |> Map.put(:pack_sets, draft.pack_sets)
 
       Drafts.start_draft(state.draft_id)
 
       Phoenix.PubSub.broadcast(
         MtgDraftServer.PubSub,
         "draft:#{state.draft_id}",
-        {:draft_started, updated_state.draft_id}
+        {:draft_started, updated_state.draft_id, updated_state.pack_sets}
       )
 
       {:reply, {:ok, updated_state}, updated_state}

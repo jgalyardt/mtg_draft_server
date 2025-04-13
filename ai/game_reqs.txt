@@ -1,4 +1,3 @@
 I am building an elixir phoenix server to host Magic the Gathering drafts.
 Players can join, and once the draft hits 8 players, it will start.
-Review my project and create the logic to generate 8x3 packs of cards, with 15 cards in each.
 Make your best judgement on architectual questions, resolve any errors, and give me the full code output of any affected files.

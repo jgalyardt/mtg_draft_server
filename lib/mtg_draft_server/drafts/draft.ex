@@ -5,12 +5,13 @@ defmodule MtgDraftServer.Drafts.Draft do
   @primary_key {:id, :binary_id, autogenerate: true}
   schema "drafts" do
     field :status, :string, default: "pending"
+    field :pack_sets, {:array, :string}, default: []
     timestamps()
   end
 
   def changeset(draft, attrs) do
     draft
-    |> cast(attrs, [:status])
+    |> cast(attrs, [:status, :pack_sets])
     |> validate_required([:status])
   end
 end
