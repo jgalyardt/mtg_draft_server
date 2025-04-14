@@ -9,7 +9,7 @@ defmodule MtgDraftServer.DraftSession do
     - the pack number (1, 2, or 3) and pick number within the pack
 
   **New behavior:** When a player joins the session and the total number of players reaches 8, the draft
-  automatically “starts” by generating 8×3 booster packs (24 packs total, each containing 15 cards)
+  automatically "starts" by generating 8×3 booster packs (24 packs total, each containing 15 cards)
   via the `MtgDraftServer.Drafts.PackGenerator`. The resulting booster pack distribution (a map of
   player ID to a list of 3 packs) is stored in the session state (in the `booster_packs` field) and a
   broadcast is issued to notify connected clients that the draft has started.
@@ -17,6 +17,7 @@ defmodule MtgDraftServer.DraftSession do
 
   use GenServer
   alias MtgDraftServer.Drafts
+  import Ecto.Query
 
   ## Client API
 
@@ -89,6 +90,9 @@ defmodule MtgDraftServer.DraftSession do
       )
 
       Drafts.start_draft(state.draft_id)
+      
+      # Trigger AI pick if first player is AI
+      maybe_schedule_ai(updated_state)
 
       {:reply, :ok, updated_state}
     else
@@ -134,6 +138,9 @@ defmodule MtgDraftServer.DraftSession do
         "draft:#{state.draft_id}",
         {:draft_started, updated_state.draft_id, updated_state.pack_sets}
       )
+      
+      # Trigger AI pick if first player is AI
+      maybe_schedule_ai(updated_state)
 
       {:reply, {:ok, updated_state}, updated_state}
     else
@@ -148,13 +155,61 @@ defmodule MtgDraftServer.DraftSession do
 
   @impl true
   def handle_cast({:pick, user_id, card_id}, state) do
-    with :ok <- Drafts.validate_player_turn(state.draft_id, user_id, state),
-         :ok <- Drafts.validate_card_availability(state.draft_id, card_id, state) do
-      new_state = handle_real_booster_pick(state, user_id, card_id)
-      {:noreply, new_state}
-    else
-      _error ->
+    # Do validation directly with the state we already have
+    current_user = Enum.at(state.turn_order, state.current_turn_index)
+    
+    if current_user == user_id do
+      # Check if card is available in current pack
+      current_pack = get_current_pack_for_player(state, user_id)
+      
+      if card_in_pack?(current_pack, card_id) do
+        # Create a separate process to handle database operations
+        # This prevents deadlocks by avoiding circular dependencies
+        spawn(fn ->
+          # First get the player id directly without using the GenServer
+          case MtgDraftServer.Repo.one(
+            from dp in MtgDraftServer.Drafts.DraftPlayer,
+            where: dp.draft_id == ^state.draft_id and dp.user_id == ^user_id,
+            select: dp.id
+          ) do
+            nil -> 
+              IO.puts("Player #{user_id} not found in draft #{state.draft_id}")
+              
+            player_id ->
+              # Create the pick directly in the database
+              now = DateTime.utc_now() |> DateTime.truncate(:second)
+              expires_at = DateTime.add(now, 86400, :second)
+              
+              attrs = %{
+                draft_id: state.draft_id,
+                draft_player_id: player_id,
+                card_id: card_id,
+                pack_number: state.pack_number,
+                pick_number: state.pick_number,
+                expires_at: expires_at
+              }
+              
+              case %MtgDraftServer.Drafts.DraftPick{}
+                |> MtgDraftServer.Drafts.DraftPick.changeset(attrs)
+                |> MtgDraftServer.Repo.insert() do
+                {:ok, pick} -> 
+                  IO.puts("Pick #{pick.id} recorded for player #{user_id}")
+                {:error, changeset} -> 
+                  IO.puts("Error recording pick: #{inspect(changeset.errors)}")
+              end
+          end
+        end)
+        
+        # Update game state
+        new_state = handle_pack_updates(state, user_id, card_id)
+        {:noreply, new_state}
+      else
+        IO.puts("Card #{card_id} not available in current pack")
         {:noreply, state}
+      end
+    else
+      IO.puts("Not player #{user_id}'s turn. Current turn: #{current_user}")
+      {:noreply, state}
     end
   end
 
@@ -166,10 +221,29 @@ defmodule MtgDraftServer.DraftSession do
         current_pack = Enum.at(player_packs, state.pack_number - 1, [])
 
         if current_pack != [] do
-          random_card = Enum.random(current_pack)
+          # Sort cards by a simple heuristic (rarity for now)
+          # This makes AI picks slightly more realistic
+          sorted_cards = Enum.sort_by(current_pack, fn card ->
+            priority = case card do
+              %{rarity: "mythic"} -> 1
+              %{rarity: "rare"} -> 2
+              %{rarity: "uncommon"} -> 3
+              %{rarity: "common"} -> 4
+              %{"rarity" => "mythic"} -> 1
+              %{"rarity" => "rare"} -> 2
+              %{"rarity" => "uncommon"} -> 3
+              %{"rarity" => "common"} -> 4
+              _ -> 5
+            end
+            # Add some randomness so it's not always picking the best card
+            priority + :rand.uniform()
+          end)
+          
+          # Pick the first card after sorting
+          best_card = List.first(sorted_cards)
 
           card_id =
-            case random_card do
+            case best_card do
               %{id: id} -> id
               %{"id" => id} -> id
               simple_id when is_binary(simple_id) -> simple_id
@@ -177,7 +251,7 @@ defmodule MtgDraftServer.DraftSession do
             end
 
           if card_id do
-            IO.puts("AI #{user_id} auto-picks card #{card_id}.")
+            IO.puts("AI #{user_id} picks card #{card_id}.")
             GenServer.cast(self(), {:pick, user_id, card_id})
           end
         end
@@ -191,13 +265,15 @@ defmodule MtgDraftServer.DraftSession do
   # Private functions
   # ============================================================================
 
-  defp handle_real_booster_pick(state, user_id, card_id) do
+  # Renamed from handle_real_booster_pick to better reflect its purpose
+  defp handle_pack_updates(state, user_id, card_id) do
     current_player_packs = Map.get(state.booster_packs, user_id, [])
     current_pack_index = state.pack_number - 1
     current_pack = Enum.at(current_player_packs, current_pack_index, [])
 
-    picked_card =
-      Enum.find(current_pack, fn card ->
+    # Remove picked card from pack
+    updated_pack =
+      Enum.reject(current_pack, fn card ->
         case card do
           %{id: id} -> id == card_id
           %{"id" => id} -> id == card_id
@@ -205,94 +281,94 @@ defmodule MtgDraftServer.DraftSession do
         end
       end)
 
-    if picked_card do
-      _ =
-        Drafts.pick_card(state.draft_id, user_id, card_id, %{
-          "pack_number" => state.pack_number,
-          "pick_number" => state.pick_number
-        })
+    updated_player_packs =
+      List.replace_at(current_player_packs, current_pack_index, updated_pack)
 
-      updated_pack =
-        Enum.reject(current_pack, fn card ->
-          case card do
-            %{id: id} -> id == card_id
-            %{"id" => id} -> id == card_id
-            _ -> false
-          end
-        end)
+    updated_booster_packs = Map.put(state.booster_packs, user_id, updated_player_packs)
+    next_player_index = next_player_index(state)
+    next_player = Enum.at(state.turn_order, next_player_index)
 
-      updated_player_packs =
-        List.replace_at(current_player_packs, current_pack_index, updated_pack)
-
-      updated_booster_packs = Map.put(state.booster_packs, user_id, updated_player_packs)
-      next_player_index = next_player_index(state)
-      next_player = Enum.at(state.turn_order, next_player_index)
-
-      cond do
-        updated_pack != [] ->
-          updated_booster_packs =
-            pass_pack(
-              updated_booster_packs,
-              user_id,
-              next_player,
-              updated_pack,
-              current_pack_index
-            )
-
-          updated_state = %{
-            state
-            | booster_packs: updated_booster_packs,
-              current_turn_index: next_player_index,
-              pick_number: state.pick_number + 1
-          }
-
-          Phoenix.PubSub.broadcast(
-            MtgDraftServer.PubSub,
-            "draft:#{state.draft_id}",
-            {:pack_updated, next_player, state.pack_number, state.pick_number + 1}
+    cond do
+      updated_pack != [] ->
+        updated_booster_packs =
+          pass_pack(
+            updated_booster_packs,
+            user_id,
+            next_player,
+            updated_pack,
+            current_pack_index
           )
 
-          maybe_schedule_ai(updated_state)
-          updated_state
+        updated_state = %{
+          state
+          | booster_packs: updated_booster_packs,
+            current_turn_index: next_player_index,
+            pick_number: state.pick_number + 1
+        }
 
-        current_pack_empty?(updated_booster_packs) and state.pack_number < 3 ->
-          new_pack_number = state.pack_number + 1
-          new_direction = if new_pack_number == 2, do: :right, else: :left
+        Phoenix.PubSub.broadcast(
+          MtgDraftServer.PubSub,
+          "draft:#{state.draft_id}",
+          {:pack_updated, next_player, state.pack_number, state.pick_number + 1}
+        )
 
-          updated_state = %{
-            state
-            | booster_packs: updated_booster_packs,
-              pack_number: new_pack_number,
-              pick_number: 1,
-              current_turn_index: 0,
-              current_pack_direction: new_direction
-          }
+        maybe_schedule_ai(updated_state)
+        updated_state
 
-          Phoenix.PubSub.broadcast(
-            MtgDraftServer.PubSub,
-            "draft:#{state.draft_id}",
-            {:new_pack, new_pack_number}
-          )
+      current_pack_empty?(updated_booster_packs) and state.pack_number < 3 ->
+        new_pack_number = state.pack_number + 1
+        new_direction = if new_pack_number == 2, do: :right, else: :left
 
-          maybe_schedule_ai(updated_state)
-          updated_state
+        updated_state = %{
+          state
+          | booster_packs: updated_booster_packs,
+            pack_number: new_pack_number,
+            pick_number: 1,
+            current_turn_index: 0,
+            current_pack_direction: new_direction
+        }
 
-        current_pack_empty?(updated_booster_packs) and state.pack_number >= 3 ->
-          # Final pack is empty; complete the draft.
-          complete_draft(state)
+        Phoenix.PubSub.broadcast(
+          MtgDraftServer.PubSub,
+          "draft:#{state.draft_id}",
+          {:new_pack, new_pack_number}
+        )
 
-        true ->
-          updated_state = %{
-            state
-            | booster_packs: updated_booster_packs,
-              current_turn_index: next_player_index
-          }
+        maybe_schedule_ai(updated_state)
+        updated_state
 
-          updated_state
-      end
-    else
-      state
+      current_pack_empty?(updated_booster_packs) and state.pack_number >= 3 ->
+        # Final pack is empty; complete the draft.
+        complete_draft(state)
+
+      true ->
+        updated_state = %{
+          state
+          | booster_packs: updated_booster_packs,
+            current_turn_index: next_player_index
+        }
+
+        updated_state
     end
+  end
+
+  defp get_current_pack_for_player(state, user_id) do
+    if state.booster_packs do
+      player_packs = Map.get(state.booster_packs, user_id, [])
+      Enum.at(player_packs, state.pack_number - 1, [])
+    else
+      []
+    end
+  end
+
+  defp card_in_pack?(pack, card_id) do
+    Enum.any?(pack, fn card ->
+      cond do
+        is_map(card) && Map.has_key?(card, :id) -> card.id == card_id
+        is_map(card) && Map.has_key?(card, "id") -> card["id"] == card_id
+        true -> card == card_id
+      end
+    end)
   end
 
   defp pass_pack(booster_packs, _from_player, to_player, pack, pack_index) do

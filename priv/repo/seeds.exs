@@ -39,19 +39,30 @@ end
   card_attrs = process_card_faces.(card_attrs)
 
   # Insert the card
-  {:ok, card} =
-    %Card{}
-    |> Card.changeset(card_attrs)
-    |> Repo.insert(on_conflict: :nothing)
-
-  # Now insert the metadata
-  %CardMetadata{}
-  |> CardMetadata.changeset(%{
-    card_id: card.id,
-    layout: Map.get(card_attrs, "layout", "normal"),
-    is_token: Map.get(card_attrs, "is_token", false),
-    is_digital: Map.get(card_attrs, "digital", false),
-    is_promo: Map.get(card_attrs, "promo", false)
-  })
-  |> Repo.insert(on_conflict: :nothing)
+  case %Card{}
+       |> Card.changeset(card_attrs)
+       |> Repo.insert(on_conflict: :nothing) do
+    {:ok, card} ->
+      # Check if the card actually exists in the database
+      case Repo.get(Card, card.id) do
+        nil -> 
+          # Card doesn't exist, skip metadata
+          :ok
+        _ ->
+          # Card exists, add metadata
+          %CardMetadata{}
+          |> CardMetadata.changeset(%{
+            card_id: card.id,
+            layout: Map.get(card_attrs, "layout", "normal"),
+            is_token: Map.get(card_attrs, "is_token", false),
+            is_digital: Map.get(card_attrs, "digital", false),
+            is_promo: Map.get(card_attrs, "promo", false)
+          })
+          |> Repo.insert(on_conflict: :nothing)
+      end
+    
+    _ ->
+      # Card was not inserted, skip
+      :ok
+  end
 end)

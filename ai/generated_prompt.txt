@@ -1,137 +1,218 @@
 I am building an elixir phoenix server to host Magic the Gathering drafts.
+Players can join, and once the draft hits 8 players, it will start.
 
-I am trying to fix a bug with my cards import via seeds.exs.
-It appears that Split Cards are loading incorrectly, for example:
+When I pick a card, I am told that it was picked, and this is what I see on the front end:
 
-    [
-      <<202, 242, 131, 119, ...>>,
-      <<0, 90, 136, ...>>,
-      "Tatsunari, Toad Rider // Tatsunari, Toad Rider",
-      nil,
-      0.0,
-      ...
-    ],
-    [
-      <<168, 103, ...>>,
-      <<1, ...>>,
-      "Exterminator Magmarch // Exterminator Magmarch",
-      ...
-    ],
+<div data-v-3c270dc2="" class="draft-board"><!-- Upper Section: Live Draft Board --><div data-v-3c270dc2="" class="upper-section"><h1 data-v-3c270dc2="">Draft Board</h1><div data-v-3c270dc2="" class="draft-info"><p data-v-3c270dc2="">Draft ID: 57f135fb-52a3-4e43-85bf-822b93579c98</p><p data-v-3c270dc2="">Pack: 1 / Pick: 1</p></div><!-- Current Pack for Picking --><div data-v-3c270dc2="" class="waiting-message"><h2 data-v-3c270dc2="">Waiting for your next pack...</h2><p data-v-3c270dc2="">You'll get a new pack to pick from when it's your turn.</p></div><div data-v-004fe049="" data-v-3c270dc2="" class="error-message"><div data-v-004fe049="" class="error-content">Card selected! <!--v-if--></div></div></div><!-- Lower Section: Deck Builder --><div data-v-3c270dc2="" class="lower-section"><h2 data-v-3c270dc2="">Your Deck (0)</h2><div data-v-3c270dc2="" class="deck-columns"><!-- Loop over each mana column --></div></div></div>
 
-These come into the front end as:
+
+The state coming from the server:
 
 {
-            "id": "84a051e5-df37-4020-971c-1dd1bb40d023",
-            "oracle_id": "403850c4-8f7f-47ec-8725-03ceee725f90",
-            "name": "Neera, Wild Mage // Neera, Wild Mage",
-            "mana_cost": null,
-            "cmc": 0.0,
-            "type_line": "Card // Card",
-            "oracle_text": null,
-            "power": null,
-            "toughness": null,
-            "colors": null,
-            "color_identity": [],
-            "set_code": "aclb",
-            "rarity": "common",
-            "foil": true,
-            "image_uris": null,
-            "legalities": {
-                "alchemy": "not_legal",
-                "brawl": "not_legal",
-                "commander": "not_legal",
-                "duel": "not_legal",
-                "explorer": "not_legal",
-                "future": "not_legal",
-                "gladiator": "not_legal",
-                "historic": "not_legal",
-                "legacy": "not_legal",
-                "modern": "not_legal",
-                "oathbreaker": "not_legal",
-                "oldschool": "not_legal",
-                "pauper": "not_legal",
-                "paupercommander": "not_legal",
-                "penny": "not_legal",
-                "pioneer": "not_legal",
-                "predh": "not_legal",
-                "premodern": "not_legal",
-                "standard": "not_legal",
-                "standardbrawl": "not_legal",
-                "timeless": "not_legal",
-                "vintage": "not_legal"
-            },
-            "inserted_at": "2025-04-01T23:34:51",
-            "updated_at": "2025-04-01T23:34:51"
-        },
+    "status": "pending",
+    "pack_number": 1,
+    "pick_number": 1,
+    "current_pack": [],
+    "is_your_turn": false
+}
 
 
-This card for example is loaded from oracle_cards.json as:
+Can you help figure out what's happening? Here is the draft board view on the client:
 
-{"object":"card","id":"84a051e5-df37-4020-971c-1dd1bb40d023","oracle_id":"403850c4-8f7f-47ec-8725-03ceee725f90","multiverse_ids":[],"name":"Neera, Wild Mage // Neera, Wild Mage","lang":"en","released_at":"2022-06-10","uri":"https://api.scryfall.com/cards/84a051e5-df37-4020-971c-1dd1bb40d023","scryfall_uri":"https://scryfall.com/card/aclb/74/neera-wild-mage-neera-wild-mage?utm_source=api","layout":"art_series","highres_image":true,"image_status":"highres_scan","cmc":0.0,"type_line":"Card // Card","color_identity":[],"keywords":[],"card_faces":[{"object":"card_face","name":"Neera, Wild Mage","mana_cost":"","type_line":"Card","oracle_text":"","colors":[],"artist":"Pedro Potier","artist_id":"7c79286c-7096-42b8-97e5-bbaa35ae241d","illustration_id":"98da4f1b-1b51-494c-9743-5e78b0802747","image_uris":{"small":"https://cards.scryfall.io/small/front/8/4/84a051e5-df37-4020-971c-1dd1bb40d023.jpg?1679945549","normal":"https://cards.scryfall.io/normal/front/8/4/84a051e5-df37-4020-971c-1dd1bb40d023.jpg?1679945549","large":"https://cards.scryfall.io/large/front/8/4/84a051e5-df37-4020-971c-1dd1bb40d023.jpg?1679945549","png":"https://cards.scryfall.io/png/front/8/4/84a051e5-df37-4020-971c-1dd1bb40d023.png?1679945549","art_crop":"https://cards.scryfall.io/art_crop/front/8/4/84a051e5-df37-4020-971c-1dd1bb40d023.jpg?1679945549","border_crop":"https://cards.scryfall.io/border_crop/front/8/4/84a051e5-df37-4020-971c-1dd1bb40d023.jpg?1679945549"}},{"object":"card_face","name":"Neera, Wild Mage","mana_cost":"","type_line":"Card","oracle_text":"","colors":[],"artist":"Pedro Potier","artist_id":"7c79286c-7096-42b8-97e5-bbaa35ae241d","illustration_id":"108a7d10-cf74-4cf1-a87e-cf9b0022ca92","image_uris":{"small":"https://cards.scryfall.io/small/back/8/4/84a051e5-df37-4020-971c-1dd1bb40d023.jpg?1679945549","normal":"https://cards.scryfall.io/normal/back/8/4/84a051e5-df37-4020-971c-1dd1bb40d023.jpg?1679945549","large":"https://cards.scryfall.io/large/back/8/4/84a051e5-df37-4020-971c-1dd1bb40d023.jpg?1679945549","png":"https://cards.scryfall.io/png/back/8/4/84a051e5-df37-4020-971c-1dd1bb40d023.png?1679945549","art_crop":"https://cards.scryfall.io/art_crop/back/8/4/84a051e5-df37-4020-971c-1dd1bb40d023.jpg?1679945549","border_crop":"https://cards.scryfall.io/border_crop/back/8/4/84a051e5-df37-4020-971c-1dd1bb40d023.jpg?1679945549"}}],"legalities":{"standard":"not_legal","future":"not_legal","historic":"not_legal","timeless":"not_legal","gladiator":"not_legal","pioneer":"not_legal","explorer":"not_legal","modern":"not_legal","legacy":"not_legal","pauper":"not_legal","vintage":"not_legal","penny":"not_legal","commander":"not_legal","oathbreaker":"not_legal","standardbrawl":"not_legal","brawl":"not_legal","alchemy":"not_legal","paupercommander":"not_legal","duel":"not_legal","oldschool":"not_legal","premodern":"not_legal","predh":"not_legal"},"games":["paper"],"reserved":false,"foil":true,"nonfoil":true,"finishes":["nonfoil","foil"],"oversized":false,"promo":false,"reprint":false,"variation":false,"set_id":"5a1e41c1-05f4-4c73-9bc4-a2d7889ac3bb","set":"aclb","set_name":"Battle for Baldur's Gate Art Series","set_type":"memorabilia","set_uri":"https://api.scryfall.com/sets/5a1e41c1-05f4-4c73-9bc4-a2d7889ac3bb","set_search_uri":"https://api.scryfall.com/cards/search?order=set&q=e%3Aaclb&unique=prints","scryfall_set_uri":"https://scryfall.com/sets/aclb?utm_source=api","rulings_uri":"https://api.scryfall.com/cards/84a051e5-df37-4020-971c-1dd1bb40d023/rulings","prints_search_uri":"https://api.scryfall.com/cards/search?order=released&q=oracleid%3A403850c4-8f7f-47ec-8725-03ceee725f90&unique=prints","collector_number":"74","digital":false,"rarity":"common","artist":"Pedro Potier","artist_ids":["7c79286c-7096-42b8-97e5-bbaa35ae241d"],"border_color":"borderless","frame":"2015","full_art":false,"textless":false,"booster":false,"story_spotlight":false,"prices":{"usd":null,"usd_foil":null,"usd_etched":null,"eur":null,"eur_foil":null,"tix":null},"related_uris":{"tcgplayer_infinite_articles":"https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Darticle%26game%3Dmagic%26q%3DNeera%252C%2BWild%2BMage%2B%252F%252F%2BNeera%252C%2BWild%2BMage","tcgplayer_infinite_decks":"https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Ddeck%26game%3Dmagic%26q%3DNeera%252C%2BWild%2BMage%2B%252F%252F%2BNeera%252C%2BWild%2BMage","edhrec":"https://edhrec.com/route/?cc=Neera%2C+Wild+Mage"},"purchase_uris":{"tcgplayer":"https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Fmagic%2Fproduct%3FproductLineName%3Dmagic%26q%3DNeera%252C%2BWild%2BMage%26view%3Dgrid","cardmarket":"https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Neera%2C+Wild+Mage&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall","cardhoarder":"https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Neera%2C+Wild+Mage&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"}},
+<template>
+  <div class="draft-board">
+    <!-- Upper Section: Live Draft Board -->
+    <div class="upper-section">
+      <h1>Draft Board</h1>
+      <div class="draft-info">
+        <p>Draft ID: {{ draftId }}</p>
+        <p>Pack: {{ packNumber }} / Pick: {{ pickNumber }}</p>
+      </div>
 
-Other cards work however, such as:
+      <!-- Current Pack for Picking -->
+      <div v-if="currentPack && currentPack.length > 0" class="current-pack">
+        <h2>Pick a Card</h2>
+        <div class="cards-container">
+          <div 
+            v-for="card in currentPack" 
+            :key="card.id" 
+            class="card-slot"
+            @click="selectCard(card.id)"
+          >
+            <img 
+              :src="card.image_uris?.normal || card.image_uris?.small || '/placeholder-card.jpg'" 
+              :alt="card.name" 
+              class="card-image"
+            />
+          </div>
+        </div>
+      </div>
+      <div v-else class="waiting-message">
+        <h2>Waiting for your next pack...</h2>
+        <p>You'll get a new pack to pick from when it's your turn.</p>
+      </div>
 
-    {
-            "id": "22a6d05e-e566-4a85-bcf8-9d0fbea3dd14",
-            "oracle_id": "c1ed20c0-f75d-4aca-8874-6955bd9fb21b",
-            "name": "Kindled Heroism",
-            "mana_cost": "{R}",
-            "cmc": 1.0,
-            "type_line": "Instant",
-            "oracle_text": "Target creature gets +1/+0 and gains first strike until end of turn. Scry 1.",
-            "power": null,
-            "toughness": null,
-            "colors": [
-                "R"
-            ],
-            "color_identity": [
-                "R"
-            ],
-            "set_code": "woe",
-            "rarity": "common",
-            "foil": true,
-            "image_uris": {
-                "art_crop": "https://cards.scryfall.io/art_crop/front/2/2/22a6d05e-e566-4a85-bcf8-9d0fbea3dd14.jpg?1692938335",
-                "border_crop": "https://cards.scryfall.io/border_crop/front/2/2/22a6d05e-e566-4a85-bcf8-9d0fbea3dd14.jpg?1692938335",
-                "large": "https://cards.scryfall.io/large/front/2/2/22a6d05e-e566-4a85-bcf8-9d0fbea3dd14.jpg?1692938335",
-                "normal": "https://cards.scryfall.io/normal/front/2/2/22a6d05e-e566-4a85-bcf8-9d0fbea3dd14.jpg?1692938335",
-                "png": "https://cards.scryfall.io/png/front/2/2/22a6d05e-e566-4a85-bcf8-9d0fbea3dd14.png?1692938335",
-                "small": "https://cards.scryfall.io/small/front/2/2/22a6d05e-e566-4a85-bcf8-9d0fbea3dd14.jpg?1692938335"
-            },
-            "legalities": {
-                "alchemy": "legal",
-                "brawl": "legal",
-                "commander": "legal",
-                "duel": "legal",
-                "explorer": "legal",
-                "future": "legal",
-                "gladiator": "legal",
-                "historic": "legal",
-                "legacy": "legal",
-                "modern": "legal",
-                "oathbreaker": "legal",
-                "oldschool": "not_legal",
-                "pauper": "legal",
-                "paupercommander": "legal",
-                "penny": "not_legal",
-                "pioneer": "legal",
-                "predh": "not_legal",
-                "premodern": "not_legal",
-                "standard": "legal",
-                "standardbrawl": "legal",
-                "timeless": "legal",
-                "vintage": "legal"
-            },
-            "inserted_at": "2025-04-01T23:35:04",
-            "updated_at": "2025-04-01T23:35:04"
-        },
+      <ErrorDisplay :message="message" v-if="message" />
+    </div>
 
-Which loads from:
+    <!-- Lower Section: Deck Builder -->
+    <div class="lower-section">
+      <h2>Your Deck ({{ totalCards }})</h2>
+      <div class="deck-columns">
+        <!-- Loop over each mana column -->
+        <div 
+          v-for="(column, colIndex) in deckColumns" 
+          :key="column.mana" 
+          class="deck-column"
+        >
+          <div class="mana-header">Mana: {{ column.mana }}</div>
+          <!-- Use draggable for card ordering -->
+          <draggable 
+            v-model="column.cards" 
+            :group="{ name: 'cards', pull: true, put: true }" 
+            item-key="id" 
+            animation="200" 
+            class="card-stack"
+          >
+            <template #item="{ element }">
+              <div class="deck-card">
+                <img 
+                  :src="element.image_uris?.normal || element.image_uris?.small || '/placeholder-card.jpg'" 
+                  :alt="element.name" 
+                  class="card-image"
+                />
+              </div>
+            </template>
+          </draggable>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
 
-{"object":"card","id":"22a6d05e-e566-4a85-bcf8-9d0fbea3dd14","oracle_id":"c1ed20c0-f75d-4aca-8874-6955bd9fb21b","multiverse_ids":[629639],"mtgo_id":116600,"arena_id":86838,"tcgplayer_id":513936,"cardmarket_id":729891,"name":"Kindled Heroism","lang":"en","released_at":"2023-09-08","uri":"https://api.scryfall.com/cards/22a6d05e-e566-4a85-bcf8-9d0fbea3dd14","scryfall_uri":"https://scryfall.com/card/woe/138/kindled-heroism?utm_source=api","layout":"normal","highres_image":true,"image_status":"highres_scan","image_uris":{"small":"https://cards.scryfall.io/small/front/2/2/22a6d05e-e566-4a85-bcf8-9d0fbea3dd14.jpg?1692938335","normal":"https://cards.scryfall.io/normal/front/2/2/22a6d05e-e566-4a85-bcf8-9d0fbea3dd14.jpg?1692938335","large":"https://cards.scryfall.io/large/front/2/2/22a6d05e-e566-4a85-bcf8-9d0fbea3dd14.jpg?1692938335","png":"https://cards.scryfall.io/png/front/2/2/22a6d05e-e566-4a85-bcf8-9d0fbea3dd14.png?1692938335","art_crop":"https://cards.scryfall.io/art_crop/front/2/2/22a6d05e-e566-4a85-bcf8-9d0fbea3dd14.jpg?1692938335","border_crop":"https://cards.scryfall.io/border_crop/front/2/2/22a6d05e-e566-4a85-bcf8-9d0fbea3dd14.jpg?1692938335"},"mana_cost":"{R}","cmc":1.0,"type_line":"Instant","oracle_text":"Target creature gets +1/+0 and gains first strike until end of turn. Scry 1.","colors":["R"],"color_identity":["R"],"keywords":["Scry"],"legalities":{"standard":"legal","future":"legal","historic":"legal","timeless":"legal","gladiator":"legal","pioneer":"legal","explorer":"legal","modern":"legal","legacy":"legal","pauper":"legal","vintage":"legal","penny":"not_legal","commander":"legal","oathbreaker":"legal","standardbrawl":"legal","brawl":"legal","alchemy":"legal","paupercommander":"legal","duel":"legal","oldschool":"not_legal","premodern":"not_legal","predh":"not_legal"},"games":["paper","arena","mtgo"],"reserved":false,"foil":true,"nonfoil":true,"finishes":["nonfoil","foil"],"oversized":false,"promo":false,"reprint":false,"variation":false,"set_id":"79139661-13ee-43c4-8bad-a8c069f1a1df","set":"woe","set_name":"Wilds of Eldraine","set_type":"expansion","set_uri":"https://api.scryfall.com/sets/79139661-13ee-43c4-8bad-a8c069f1a1df","set_search_uri":"https://api.scryfall.com/cards/search?order=set&q=e%3Awoe&unique=prints","scryfall_set_uri":"https://scryfall.com/sets/woe?utm_source=api","rulings_uri":"https://api.scryfall.com/cards/22a6d05e-e566-4a85-bcf8-9d0fbea3dd14/rulings","prints_search_uri":"https://api.scryfall.com/cards/search?order=released&q=oracleid%3Ac1ed20c0-f75d-4aca-8874-6955bd9fb21b&unique=prints","collector_number":"138","digital":false,"rarity":"common","flavor_text":"Even in the grip of Hylda's unnatural cold, something in Kellan felt bright as spring, something that poured into the empty hilts he'd been given by Talion and formed thorn-sharp blades of light.","card_back_id":"0aeebaf5-8c7d-4636-9e82-8c27447861f7","artist":"Leanna Crossan","artist_ids":["976cfe82-042e-4c2a-b762-2bc3e86cb6d0"],"illustration_id":"54e323d3-d12a-4bb5-b1d2-128477340243","border_color":"black","frame":"2015","full_art":false,"textless":false,"booster":true,"story_spotlight":true,"edhrec_rank":16799,"prices":{"usd":"0.06","usd_foil":"0.07","usd_etched":null,"eur":"0.06","eur_foil":"0.09","tix":"0.03"},"related_uris":{"gatherer":"https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=629639&printed=false","tcgplayer_infinite_articles":"https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Darticle%26game%3Dmagic%26q%3DKindled%2BHeroism","tcgplayer_infinite_decks":"https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Ddeck%26game%3Dmagic%26q%3DKindled%2BHeroism","edhrec":"https://edhrec.com/route/?cc=Kindled+Heroism"},"purchase_uris":{"tcgplayer":"https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fproduct%2F513936%3Fpage%3D1","cardmarket":"https://www.cardmarket.com/en/Magic/Products/Singles/Wilds-of-Eldraine/Kindled-Heroism?referrer=scryfall&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall","cardhoarder":"https://www.cardhoarder.com/cards/116600?affiliate_id=scryfall&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"}},
+<script setup>
+import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { useRoute } from 'vue-router'
+import { getPickedCards, pickCard, getDraftState } from '@/api/draft'
+import ErrorDisplay from '@/components/ErrorDisplay.vue'
+import draggable from 'vuedraggable'
 
+const route = useRoute()
+const draftId = ref(route.params.id || localStorage.getItem('draftId'))
+const currentPack = ref([])
+const pickedCards = ref([])
+const message = ref('')
+const isError = ref(false)
+const packNumber = ref(1)
+const pickNumber = ref(1)
+const pollInterval = ref(null)
 
-Analyze my code and determine why the former is loading as //, even when it's not necessarily a split card, and what I can do to fix the issue.
+// Reactive deck builder state – an array of column objects (each with a mana value and an array of cards)
+const deckColumns = ref([])
+
+// Compute total number of cards for display
+const totalCards = computed(() => {
+  return deckColumns.value.reduce((sum, col) => sum + col.cards.length, 0)
+})
+
+// Group picked cards by their mana cost (cmc) and update the deckColumns state
+const initializeDeckColumns = () => {
+  const groups = {}
+  pickedCards.value.forEach(pick => {
+    // Default to 0 if "cmc" is not defined.
+    const mana = pick.card.cmc !== undefined ? pick.card.cmc : 0
+    if (!groups[mana]) groups[mana] = []
+    groups[mana].push(pick.card)
+  })
+  // Create columns sorted by mana cost
+  const sortedKeys = Object.keys(groups).map(Number).sort((a, b) => a - b)
+  deckColumns.value = sortedKeys.map(mana => ({
+    mana,
+    cards: groups[mana]
+  }))
+}
+
+// Fetch the draft state (including the current pack)
+const fetchDraftState = async () => {
+  try {
+    const data = await getDraftState(draftId.value)
+    currentPack.value = data.is_your_turn ? (data.current_pack || []) : []
+    packNumber.value = data.pack_number || 1
+    pickNumber.value = data.pick_number || 1
+    if (data.status === 'complete') {
+      message.value = 'Draft complete! Check your picks.'
+      stopPolling()
+    }
+  } catch (error) {
+    console.error('Error fetching draft state:', error)
+    if (!isError.value) {
+      message.value = error.message
+    }
+  }
+}
+
+// Called when the user picks a card
+const selectCard = async (cardId) => {
+  try {
+    isError.value = false
+    message.value = 'Submitting your pick...'
+    await pickCard(draftId.value, cardId, packNumber.value, pickNumber.value)
+    message.value = 'Card selected!'
+    currentPack.value = []  // Clear pack for immediate feedback
+
+    // Fetch updated picks and update deckColumns
+    await fetchPickedCards()
+    initializeDeckColumns()
+  } catch (error) {
+    message.value = error.message
+  }
+}
+
+// Fetch the player's picked cards
+const fetchPickedCards = async () => {
+  try {
+    const data = await getPickedCards(draftId.value)
+    pickedCards.value = data.picks || []
+  } catch (error) {
+    console.error('Error fetching picked cards:', error)
+  }
+}
+
+// Polling for draft state updates every 2 seconds
+const startPolling = () => {
+  pollInterval.value = setInterval(async () => {
+    await fetchDraftState()
+  }, 2000)
+}
+const stopPolling = () => {
+  if (pollInterval.value) {
+    clearInterval(pollInterval.value)
+    pollInterval.value = null
+  }
+}
+
+// On component mount, fetch the initial state and start polling
+onMounted(async () => {
+  if (!draftId.value) {
+    message.value = error.message
+    return
+  }
+  localStorage.setItem('draftId', draftId.value)
+  try {
+    await fetchPickedCards()
+    initializeDeckColumns()
+    await fetchDraftState()
+    startPolling()
+  } catch (error) {
+    message.value = error.message
+  }
+})
+
+// Clean up when unmounted
+onUnmounted(() => {
+  stopPolling()
+})
+</script>
 === File: lib/mtg_draft_server/application.ex ===
 
 defmodule MtgDraftServer.Application do
@@ -252,6 +333,28 @@ defmodule MtgDraftServer.Cards.Card do
   end
 end
 
+=== File: lib/mtg_draft_server/cards/card_metadata.ex ===
+
+defmodule MtgDraftServer.Cards.CardMetadata do
+    use Ecto.Schema
+    import Ecto.Changeset
+  
+    schema "card_metadata" do
+      belongs_to :card, MtgDraftServer.Cards.Card, type: :binary_id
+      field :layout, :string
+      field :is_token, :boolean, default: false
+      field :is_digital, :boolean, default: false
+      field :is_promo, :boolean, default: false
+  
+      timestamps()
+    end
+  
+    def changeset(metadata, attrs) do
+      metadata
+      |> cast(attrs, [:card_id, :layout, :is_token, :is_digital, :is_promo])
+      |> validate_required([:card_id])
+    end
+  end
 === File: lib/mtg_draft_server/drafts/draft.ex ===
 
 defmodule MtgDraftServer.Drafts.Draft do
@@ -261,12 +364,13 @@ defmodule MtgDraftServer.Drafts.Draft do
   @primary_key {:id, :binary_id, autogenerate: true}
   schema "drafts" do
     field :status, :string, default: "pending"
+    field :pack_sets, {:array, :string}, default: []
     timestamps()
   end
 
   def changeset(draft, attrs) do
     draft
-    |> cast(attrs, [:status])
+    |> cast(attrs, [:status, :pack_sets])
     |> validate_required([:status])
   end
 end
@@ -893,11 +997,24 @@ defmodule MtgDraftServer.DraftSession do
   @impl true
   def handle_call(:start_draft_with_boosters, _from, state) do
     if not state.draft_started and length(state.turn_order) >= 2 do
+      # Get the draft to check if it has specific set configurations
+      {:ok, draft} = Drafts.get_draft(state.draft_id)
+      player_count = length(state.turn_order)
+
       booster_packs =
-        MtgDraftServer.Drafts.PackGenerator.generate_and_distribute_booster_packs(
-          %{},
-          state.turn_order
-        )
+        if draft.pack_sets && length(draft.pack_sets) > 0 do
+          # Use specific set configuration
+          MtgDraftServer.Drafts.PackGenerator.generate_multi_set_packs(
+            player_count,
+            draft.pack_sets
+          )
+        else
+          # Use default method (all sets)
+          MtgDraftServer.Drafts.PackGenerator.generate_and_distribute_booster_packs(
+            %{},
+            state.turn_order
+          )
+        end
 
       updated_state =
         state
@@ -906,13 +1023,14 @@ defmodule MtgDraftServer.DraftSession do
         |> Map.put(:status, :active)
         |> Map.put(:current_pack_direction, :left)
         |> Map.put(:pack, [])
+        |> Map.put(:pack_sets, draft.pack_sets)
 
       Drafts.start_draft(state.draft_id)
 
       Phoenix.PubSub.broadcast(
         MtgDraftServer.PubSub,
         "draft:#{state.draft_id}",
-        {:draft_started, updated_state.draft_id}
+        {:draft_started, updated_state.draft_id, updated_state.pack_sets}
       )
 
       {:reply, {:ok, updated_state}, updated_state}
@@ -1234,6 +1352,7 @@ defmodule MtgDraftServer.Drafts.PackGenerator do
   Accepted options (opts):
     - :set_codes - a list of set codes (e.g. ["ulg", "m21"])
     - :allowed_rarities - a list of rarities to include (default: ["basic", "common", "uncommon", "rare", "mythic"])
+    - :allowed_layouts - a list of card layouts to include (default: normal, split, flip, etc.)
     - :distribution - a map defining the default booster composition.
       Defaults to `%{"basic" => 1, "common" => 10, "uncommon" => 3, "rare" => 1}`.
 
@@ -1248,23 +1367,70 @@ defmodule MtgDraftServer.Drafts.PackGenerator do
   @default_distribution %{"basic" => 1, "common" => 10, "uncommon" => 3, "rare" => 1}
   @foil_chance 0.25
 
+  # Add default layouts for drafting
+  @default_draft_layouts [
+    "normal",
+    "split",
+    "flip",
+    "transform",
+    "modal_dfc",
+    "adventure",
+    "leveler",
+    "saga",
+    "class"
+  ]
+
   @doc """
-  Prepares the booster pack card pool based on the provided options.
+  Parses options and provides default values for missing options.
 
-  This function:
-    1. Parses the incoming options and fills in defaults.
-    2. Queries the database for cards matching the provided set codes and allowed rarities.
-    3. Groups the resulting cards by rarity.
-
-  Returns a map with:
-    - :opts - the parsed options
-    - :rarity_groups - a map of rarity to a list of matching cards
+  Returns a map with parsed options including:
+    - :set_codes - list of set codes to filter cards
+    - :allowed_rarities - list of allowed card rarities
+    - :allowed_layouts - list of allowed card layouts
+    - :distribution - map defining the booster pack composition
   """
-  def generate_booster_packs(opts \\ %{}) do
-    parsed_opts = parse_opts(opts)
-    cards = fetch_card_pool(parsed_opts)
-    rarity_groups = group_cards_by_rarity(cards)
-    %{opts: parsed_opts, rarity_groups: rarity_groups}
+  def parse_opts(opts) do
+    %{
+      set_codes: Map.get(opts, :set_codes, []),
+      allowed_rarities:
+        Map.get(opts, :allowed_rarities, ["basic", "common", "uncommon", "rare", "mythic"]),
+      allowed_layouts: Map.get(opts, :allowed_layouts, @default_draft_layouts),
+      distribution: Map.get(opts, :distribution, @default_distribution)
+    }
+  end
+
+  @doc """
+  Fetches cards from the database based on the provided options.
+
+  This function queries cards matching the provided set codes, allowed rarities,
+  and allowed layouts.
+
+  Returns a list of Card structs.
+  """
+  def fetch_card_pool(%{
+        set_codes: set_codes,
+        allowed_rarities: allowed_rarities,
+        allowed_layouts: allowed_layouts
+      }) do
+    base_query =
+      from card in Card,
+        where: card.rarity in ^allowed_rarities
+
+    # Join with a subquery that fetches layout information
+    layout_query =
+      from card in base_query,
+        inner_join: metadata in "card_metadata",
+        on: card.id == metadata.card_id,
+        where: metadata.layout in ^allowed_layouts
+
+    query =
+      if set_codes == [] do
+        layout_query
+      else
+        from card in layout_query, where: card.set_code in ^set_codes
+      end
+
+    Repo.all(query)
   end
 
   @doc """
@@ -1314,9 +1480,79 @@ defmodule MtgDraftServer.Drafts.PackGenerator do
   Generates the specified number of booster packs using the provided rarity groups and distribution.
 
   By default, generates 24 packs (suitable for 8 players receiving 3 packs each).
+
+  Returns a list of lists, where each inner list represents a booster pack of cards.
   """
   def generate_all_packs(rarity_groups, distribution, num_packs \\ 24) do
     Enum.map(1..num_packs, fn _ -> generate_single_pack(rarity_groups, distribution) end)
+  end
+
+  @doc """
+  Generates booster packs based on the provided options.
+
+  This function:
+    1. Parses the provided options
+    2. Fetches cards from the database
+    3. Groups the cards by rarity
+
+  Returns a map with:
+    - :opts - parsed options
+    - :rarity_groups - a map grouping cards by rarity
+  """
+  def generate_booster_packs(opts \\ %{}) do
+    parsed_opts = parse_opts(opts)
+    cards = fetch_card_pool(parsed_opts)
+    rarity_groups = group_cards_by_rarity(cards)
+
+    %{opts: parsed_opts, rarity_groups: rarity_groups}
+  end
+
+  @doc """
+  Generates packs from multiple different sets for a draft.
+
+  This function:
+    1. Generates packs for each set in the pack_sets list
+    2. Groups and distributes the packs among players
+
+  Parameters:
+    - player_count - the number of players in the draft
+    - pack_sets - a list of set codes, one for each round of the draft
+
+  Returns a map where keys are player IDs and values are lists of packs, with one pack
+  from each set for each player.
+  """
+  def generate_multi_set_packs(player_count, pack_sets) do
+    packs_per_player = length(pack_sets)
+
+    # Ensure the number of packs is a multiple of player_count
+    if rem(packs_per_player, player_count) != 0 do
+      raise ArgumentError, "Number of packs per player must be a multiple of player_count"
+    end
+
+    # Generate packs for each set configuration
+    all_packs =
+      Enum.flat_map(pack_sets, fn set_code ->
+        # Generate player_count packs from this set
+        generate_packs_for_set(player_count, set_code)
+      end)
+
+    # Group packs by set in order
+    grouped_packs = Enum.chunk_every(all_packs, player_count)
+
+    # Distribute to players
+    player_ids = Enum.map(1..player_count, &Integer.to_string/1)
+
+    # Structure: %{"player_id" => [[pack1_cards], [pack2_cards], [pack3_cards]]}
+    Enum.reduce(player_ids, %{}, fn player_id, acc ->
+      player_packs =
+        grouped_packs
+        |> Enum.map(fn set_packs ->
+          # Take one pack from each set for this player
+          Enum.at(set_packs, String.to_integer(player_id) - 1)
+        end)
+
+      Map.put(acc, player_id, player_packs)
+    end)
   end
 
   @doc """
@@ -1338,10 +1574,11 @@ defmodule MtgDraftServer.Drafts.PackGenerator do
   @doc """
   Generates and distributes booster packs to the given players.
 
-  * opts – options for pack generation (see generate_booster_packs/1)
-  * players – a list of player identifiers (or player structs)
+  Parameters:
+    - opts – options for pack generation (see generate_booster_packs/1)
+    - players – a list of player identifiers (or player structs)
 
-  Returns a map of player => list of booster packs.
+  Returns a map of player => list of booster packs, where each player gets three packs.
   """
   def generate_and_distribute_booster_packs(opts \\ %{}, players) do
     %{opts: parsed_opts, rarity_groups: rarity_groups} = generate_booster_packs(opts)
@@ -1352,28 +1589,11 @@ defmodule MtgDraftServer.Drafts.PackGenerator do
 
   # --- Private Helpers ---
 
-  defp parse_opts(opts) do
-    %{
-      set_codes: Map.get(opts, :set_codes, []),
-      allowed_rarities:
-        Map.get(opts, :allowed_rarities, ["basic", "common", "uncommon", "rare", "mythic"]),
-      distribution: Map.get(opts, :distribution, @default_distribution)
-    }
-  end
+  defp generate_packs_for_set(count, set_code) do
+    %{opts: parsed_opts, rarity_groups: rarity_groups} =
+      generate_booster_packs(%{set_codes: [set_code]})
 
-  defp fetch_card_pool(%{set_codes: set_codes, allowed_rarities: allowed_rarities}) do
-    base_query =
-      from card in Card,
-        where: card.rarity in ^allowed_rarities
-
-    query =
-      if set_codes == [] do
-        base_query
-      else
-        from card in base_query, where: card.set_code in ^set_codes
-      end
-
-    Repo.all(query)
+    generate_all_packs(rarity_groups, parsed_opts.distribution, count)
   end
 
   defp group_cards_by_rarity(cards) do
@@ -1444,8 +1664,30 @@ defmodule MtgDraftServerWeb.DraftController do
   action_fallback MtgDraftServerWeb.FallbackController
 
   @doc """
-  Create a new draft using the Firebase authenticated user.
+  Create a new draft with specific set configuration.
   """
+  def create(conn, %{"pack_sets" => pack_sets} = _params) do
+    case conn.assigns[:current_user] do
+      %{"uid" => uid} ->
+        with {:ok, draft} <-
+               Drafts.create_and_join_draft(%{
+                 creator: uid,
+                 pack_sets: pack_sets
+               }) do
+          conn
+          |> put_status(:created)
+          |> put_resp_header("location", "/api/drafts/#{draft.id}")
+          |> json(%{draft_id: draft.id, status: draft.status, pack_sets: pack_sets})
+        end
+
+      _ ->
+        conn
+        |> put_status(:unauthorized)
+        |> json(%{"error" => "Authentication required"})
+    end
+  end
+
+  # Handles request without pack_sets parameter (default)
   def create(conn, _params) do
     case conn.assigns[:current_user] do
       %{"uid" => uid} ->
@@ -2528,10 +2770,66 @@ defmodule MtgDraftServer.Repo.Migrations.CreateDraftPicks do
   end
 end
 
+=== File: priv/repo/migrations/20250413232549_add_card_metadata.exs ===
+
+# Create a new migration: mix ecto.gen.migration add_card_metadata
+defmodule MtgDraftServer.Repo.Migrations.AddCardMetadata do
+  use Ecto.Migration
+
+  def change do
+    create table(:card_metadata) do
+      add :card_id, references(:cards, type: :uuid, on_delete: :delete_all), null: false
+      add :layout, :string
+      add :is_token, :boolean, default: false
+      add :is_digital, :boolean, default: false
+      add :is_promo, :boolean, default: false
+
+      timestamps()
+    end
+
+    create index(:card_metadata, [:card_id])
+    create index(:card_metadata, [:layout])
+  end
+end
+
+=== File: priv/repo/migrations/20250413234823_add_pack_sets_to_drafts.exs ===
+
+defmodule MtgDraftServer.Repo.Migrations.AddPackSetsToDrafts do
+  use Ecto.Migration
+
+  def change do
+    alter table(:drafts) do
+      add :pack_sets, {:array, :string}, default: []
+    end
+  end
+end
+
 === File: priv/repo/seeds.exs ===
 
 alias MtgDraftServer.Repo
 alias MtgDraftServer.Cards.Card
+alias MtgDraftServer.Cards.CardMetadata
+
+# Define a function to process card faces as an anonymous function
+process_card_faces = fn card_attrs ->
+  if Map.has_key?(card_attrs, "card_faces") and is_list(card_attrs["card_faces"]) and
+       length(card_attrs["card_faces"]) > 0 do
+    # Get the first face for default values
+    first_face = List.first(card_attrs["card_faces"])
+
+    # Merge properties from the first face if they're missing in the main card
+    card_attrs
+    |> Map.put_new("mana_cost", first_face["mana_cost"])
+    |> Map.put_new("type_line", first_face["type_line"])
+    |> Map.put_new("oracle_text", first_face["oracle_text"])
+    |> Map.put_new("colors", first_face["colors"])
+    |> Map.put_new("power", first_face["power"])
+    |> Map.put_new("toughness", first_face["toughness"])
+    |> Map.put_new("image_uris", first_face["image_uris"])
+  else
+    card_attrs
+  end
+end
 
 "priv/repo/data/oracle_cards.json"
 |> File.read!()
@@ -2545,11 +2843,37 @@ alias MtgDraftServer.Cards.Card
       card_attrs
     end
 
-  %Card{}
-  |> Card.changeset(card_attrs)
-  |> Repo.insert!(on_conflict: :nothing)
-end)
+  # Process card faces before inserting
+  card_attrs = process_card_faces.(card_attrs)
 
+  # Insert the card
+  case %Card{}
+       |> Card.changeset(card_attrs)
+       |> Repo.insert(on_conflict: :nothing) do
+    {:ok, card} ->
+      # Check if the card actually exists in the database
+      case Repo.get(Card, card.id) do
+        nil -> 
+          # Card doesn't exist, skip metadata
+          :ok
+        _ ->
+          # Card exists, add metadata
+          %CardMetadata{}
+          |> CardMetadata.changeset(%{
+            card_id: card.id,
+            layout: Map.get(card_attrs, "layout", "normal"),
+            is_token: Map.get(card_attrs, "is_token", false),
+            is_digital: Map.get(card_attrs, "digital", false),
+            is_promo: Map.get(card_attrs, "promo", false)
+          })
+          |> Repo.insert(on_conflict: :nothing)
+      end
+    
+    _ ->
+      # Card was not inserted, skip
+      :ok
+  end
+end)
 === File: priv/static/robots.txt ===
 
 # See https://www.robotstxt.org/robotstxt.html for documentation on how to use the robots.txt file

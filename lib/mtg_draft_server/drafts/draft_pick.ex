@@ -1,4 +1,15 @@
 defmodule MtgDraftServer.Drafts.DraftPick do
+  @derive {Jason.Encoder, only: [
+    :id, 
+    :pack_number, 
+    :pick_number, 
+    :draft_id, 
+    :draft_player_id, 
+    :card_id, 
+    :card, 
+    :inserted_at, 
+    :updated_at
+  ]}
   use Ecto.Schema
   import Ecto.Changeset
 
