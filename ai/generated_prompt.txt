@@ -1,218 +1,201 @@
 I am building an elixir phoenix server to host Magic the Gathering drafts.
 Players can join, and once the draft hits 8 players, it will start.
 
-When I pick a card, I am told that it was picked, and this is what I see on the front end:
+I have the following error:
 
-<div data-v-3c270dc2="" class="draft-board"><!-- Upper Section: Live Draft Board --><div data-v-3c270dc2="" class="upper-section"><h1 data-v-3c270dc2="">Draft Board</h1><div data-v-3c270dc2="" class="draft-info"><p data-v-3c270dc2="">Draft ID: 57f135fb-52a3-4e43-85bf-822b93579c98</p><p data-v-3c270dc2="">Pack: 1 / Pick: 1</p></div><!-- Current Pack for Picking --><div data-v-3c270dc2="" class="waiting-message"><h2 data-v-3c270dc2="">Waiting for your next pack...</h2><p data-v-3c270dc2="">You'll get a new pack to pick from when it's your turn.</p></div><div data-v-004fe049="" data-v-3c270dc2="" class="error-message"><div data-v-004fe049="" class="error-content">Card selected! <!--v-if--></div></div></div><!-- Lower Section: Deck Builder --><div data-v-3c270dc2="" class="lower-section"><h2 data-v-3c270dc2="">Your Deck (0)</h2><div data-v-3c270dc2="" class="deck-columns"><!-- Loop over each mana column --></div></div></div>
-
-
-The state coming from the server:
-
-{
-    "status": "pending",
-    "pack_number": 1,
-    "pick_number": 1,
-    "current_pack": [],
-    "is_your_turn": false
+[info] Sent 200 in 9ms
+[info] POST /api/drafts/5fae7f95-6efd-40b5-a308-81ed476513f4/start
+[debug] Processing with MtgDraftServerWeb.DraftController.start/2
+  Parameters: %{"id" => "5fae7f95-6efd-40b5-a308-81ed476513f4"}
+  Pipelines: [:auth_api]
+✅ Firebase Token Claims: %{
+  "aud" => "draft-client",
+  "auth_time" => 1738809178,
+  "email" => "jgalyardt@gmail.com",
+  "email_verified" => true,
+  "exp" => 1745184953,
+  "firebase" => %{
+    "identities" => %{
+      "email" => ["jgalyardt@gmail.com"],
+      "google.com" => ["107056192664110810176"]
+    },
+    "sign_in_provider" => "google.com"
+  },
+  "iat" => 1745181353,
+  "iss" => "https://securetoken.google.com/draft-client",
+  "name" => "Jackson Galyardt",
+  "picture" => "https://lh3.googleusercontent.com/a/ACg8ocJ51M6mLGN8ChVUbfcDe1L9ryfqPxhe47EjOSeeahi9YBLtZ6Q=s96-c",
+  "sub" => "wFjsAquDLpP2sSP7kw3uRYOhVlv1",
+  "user_id" => "wFjsAquDLpP2sSP7kw3uRYOhVlv1"
 }
+[debug] QUERY OK source="drafts" db=0.5ms idle=233.1ms
+SELECT d0."id", d0."status", d0."pack_sets", d0."inserted_at", d0."updated_at" FROM "drafts" AS d0 WHERE (d0."id" = $1) ["5fae7f95-6efd-40b5-a308-81ed476513f4"]
+↳ MtgDraftServer.Drafts.get_draft/1, at: lib/mtg_draft_server/drafts.ex:166
+[debug] QUERY OK source="draft_players" db=0.2ms idle=233.7ms
+SELECT d0."id", d0."user_id", d0."seat", d0."connected", d0."draft_id", d0."inserted_at", d0."updated_at" FROM "draft_players" AS d0 WHERE ((d0."draft_id" = $1) AND (d0."user_id" = $2)) ["5fae7f95-6efd-40b5-a308-81ed476513f4", "wFjsAquDLpP2sSP7kw3uRYOhVlv1"]
+↳ MtgDraftServer.Drafts.get_draft_player/2, at: lib/mtg_draft_server/drafts.ex:182       
+[debug] QUERY OK source="drafts" db=0.4ms idle=233.9ms
+SELECT d0."id", d0."status", d0."pack_sets", d0."inserted_at", d0."updated_at", d0."id" FROM "drafts" AS d0 WHERE (d0."id" = $1) ["5fae7f95-6efd-40b5-a308-81ed476513f4"]
+↳ MtgDraftServer.Drafts.get_draft_player/2, at: lib/mtg_draft_server/drafts.ex:182       
+[debug] QUERY OK source="draft_players" db=0.4ms queue=0.1ms idle=234.2ms
+SELECT d0."user_id" FROM "draft_players" AS d0 WHERE (d0."draft_id" = $1) ["5fae7f95-6efd-40b5-a308-81ed476513f4"]
+↳ MtgDraftServerWeb.DraftController.start/2, at: lib/mtg_draft_server_web/controllers/draft_controller.ex:72
+[debug] QUERY OK source="draft_players" db=0.4ms idle=234.8ms
+SELECT d0."user_id" FROM "draft_players" AS d0 WHERE (d0."draft_id" = $1) ["5fae7f95-6efd-40b5-a308-81ed476513f4"]
+↳ MtgDraftServer.DraftSession.handle_call/3, at: lib/mtg_draft_server/draft_session.ex:87
+[debug] QUERY OK source="cards" db=991.7ms decode=2.0ms queue=0.5ms idle=244.0ms
+SELECT c0."id", c0."oracle_id", c0."name", c0."mana_cost", c0."cmc", c0."type_line", c0."oracle_text", c0."power", c0."toughness", c0."colors", c0."color_identity", c0."set_code", c0."rarity", c0."foil", c0."image_uris", c0."legalities", c0."inserted_at", c0."updated_at" FROM "cards" AS c0 INNER JOIN "card_metadata" AS c1 ON c0."id" = c1."card_id" WHERE (c0."rarity" = ANY($1)) AND (c1."layout" = ANY($2)) [["basic", "common", "uncommon", "rare", "mythic"], ["normal", "split", "flip", "transform", "modal_dfc", "adventure", "leveler", "saga", "class"]]
+↳ MtgDraftServer.Drafts.PackGenerator.generate_booster_packs/1, at: lib/mtg_draft_server/pack_generator.ex:171
+[debug] QUERY OK source="drafts" db=0.5ms queue=0.1ms idle=1668.9ms
+SELECT d0."id", d0."status", d0."pack_sets", d0."inserted_at", d0."updated_at" FROM "drafts" AS d0 WHERE (d0."id" = $1) ["5fae7f95-6efd-40b5-a308-81ed476513f4"]
+↳ MtgDraftServer.Drafts.get_draft/1, at: lib/mtg_draft_server/drafts.ex:166
+[debug] QUERY OK source="draft_players" db=0.3ms idle=1669.2ms
+SELECT count(d0."id") FROM "draft_players" AS d0 WHERE (d0."draft_id" = $1) ["5fae7f95-6efd-40b5-a308-81ed476513f4"]
+↳ MtgDraftServer.Drafts.validate_player_count/1, at: lib/mtg_draft_server/drafts.ex:466  
+[debug] QUERY OK source="drafts" db=2.2ms queue=0.2ms idle=1444.0ms
+UPDATE "drafts" SET "status" = $1, "updated_at" = $2 WHERE "id" = $3 ["active", ~N[2025-04-20 21:01:36], "5fae7f95-6efd-40b5-a308-81ed476513f4"]
+↳ MtgDraftServer.Drafts.start_draft/1, at: lib/mtg_draft_server/drafts.ex:97
+[info] Sent 200 in 1445ms
+[debug] QUERY OK db=0.6ms queue=0.1ms idle=956.9ms
+begin []
+↳ MtgDraftServer.DraftSession.handle_cast/2, at: lib/mtg_draft_server/draft_session.ex:142
+[debug] QUERY OK source="drafts" db=2.1ms
+SELECT d0."id", d0."status", d0."pack_sets", d0."inserted_at", d0."updated_at" FROM "drafts" AS d0 WHERE (d0."id" = $1) ["5fae7f95-6efd-40b5-a308-81ed476513f4"]
+↳ MtgDraftServer.Drafts.get_draft/1, at: lib/mtg_draft_server/drafts.ex:166
+[debug] QUERY OK source="draft_players" db=1.1ms
+SELECT d0."id", d0."user_id", d0."seat", d0."connected", d0."draft_id", d0."inserted_at", d0."updated_at" FROM "draft_players" AS d0 WHERE ((d0."draft_id" = $1) AND (d0."user_id" = $2)) ["5fae7f95-6efd-40b5-a308-81ed476513f4", "AI_1"]
+↳ MtgDraftServer.Drafts.get_draft_player/2, at: lib/mtg_draft_server/drafts.ex:182       
+[debug] QUERY OK source="drafts" db=1.7ms
+SELECT d0."id", d0."status", d0."pack_sets", d0."inserted_at", d0."updated_at", d0."id" FROM "drafts" AS d0 WHERE (d0."id" = $1) ["5fae7f95-6efd-40b5-a308-81ed476513f4"]
+↳ MtgDraftServer.Drafts.get_draft_player/2, at: lib/mtg_draft_server/drafts.ex:182       
+[debug] QUERY OK source="draft_picks" db=3.0ms
+INSERT INTO "draft_picks" ("draft_id","card_id","pack_number","draft_player_id","expires_at","pick_number","inserted_at","updated_at") VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING "id" ["5fae7f95-6efd-40b5-a308-81ed476513f4", "89396f5e-5bc3-4c8a-976b-2cb2946eb35d", 1, 229, ~U[2025-04-21 21:01:37Z], 1, ~N[2025-04-20 21:01:37], ~N[2025-04-20 21:01:37]]      
+↳ anonymous fn/3 in Ecto.Adapters.SQL.checkout_or_transaction/4, at: lib/ecto/adapters/sql.ex:1400
+[debug] QUERY OK db=0.8ms
+commit []
+↳ MtgDraftServer.DraftSession.handle_cast/2, at: lib/mtg_draft_server/draft_session.ex:142
+[error] GenServer {MtgDraftServer.DraftRegistry, "5fae7f95-6efd-40b5-a308-81ed476513f4"} terminating
+** (ArithmeticError) bad argument in arithmetic expression
+    :erlang.+(nil, 1)
+    (mtg_draft_server 0.1.0) lib/mtg_draft_server/draft_session.ex:139: MtgDraftServer.DraftSession.handle_cast/2
+    (stdlib 6.2) gen_server.erl:2371: :gen_server.try_handle_cast/3
+    (stdlib 6.2) gen_server.erl:2433: :gen_server.handle_msg/6
+    (stdlib 6.2) proc_lib.erl:329: :proc_lib.init_p_do_apply/3
+Last message: {:"$gen_cast", {:pick, "AI_2", "a6e352e9-20ac-485b-bcaf-1d053c4ecb40"}}    
+State: %{status: "active", draft_id: "5fae7f95-6efd-40b5-a308-81ed476513f4", players: %{"AI_1" => %{ai: true}, "AI_2" => %{ai: true}, "AI_3" => %{ai: true}, "AI_4" => %{ai: true}, "AI_5" => %{ai: true}, "AI_6" => %{ai: true}, "AI_7" => %{ai: true}, "wFjsAquDLpP2sSP7kw3uRYOhVlv1" => %{ai: false}}, booster_queues: %{"AI_1" => [{2, [%MtgDraftServer.Cards.Card{__meta__: #Ecto.Schema.Metadata<:loaded, "cards">, id: "52e71c5f-0486-4eae-afcf-4f92fab80861", oracle_id: "1b7d03d5-4592-4188-9e84-91b974159572", name: "Margle, Cousin of Yargle", mana_cost: "{3}{G}{W}", cmc: 5.0, type_line: "Legendary Creature — Frog Noble", oracle_text: "Other creatures you control lose all abilities, can't gain abilities, and get +2/+2.", power: "5", toughness: "2", colors: ["G", "W"], color_identity: ["G", "W"], set_code: "da1", rarity: "rare", foil: false, image_uris: %{"art_crop" => "https://cards.scryfall.io/art_crop/front/5/2/52e71c5f-0486-4eae-afcf-4f92fab80861.jpg?1726916109", "border_crop" => "https://cards.scryfall.io/border_crop/front/5/2/52e71c5f-0486-4eae-afcf-4f92fab80861.jpg?1726916109", "large" => "https://cards.scryfall.io/large/front/5/2/52e71c5f-0486-4eae-afcf-4f92fab80861.jpg?1726916109", "normal" => "https://cards.scryfall.io/normal/front/5/2/52e71c5f-0486-4eae-afcf-4f92fab80861.jpg?1726916109", "png" => "https://cards.scryfall.io/png/front/5/2/52e71c5f-0486-4eae-afcf-4f92fab80861.png?1726916109", "small" => "https://cards.scryfall.io/small/front/5/2/52e71c5f-0486-4eae-afcf-4f92fab80861.jpg?1726916109"}, legalities: %{"alchemy" => "not_legal", "brawl" => "not_legal", "commander" => "not_legal", "duel" => "not_legal", "explorer" => "not_legal", "future" => "not_legal", "gladiator" => "not_legal", "historic" => "not_legal", "legacy" => "not_legal", "modern" => "not_legal", "oathbreaker" => "not_legal", "oldschool" => "not_legal", "pauper" => "not_legal", "paupercommander" => "not_legal", "penny" => "not_legal", "pioneer" => "not_legal", "predh" => "not_legal", "premodern" => "not_legal", "standard" => "not_legal", "standardbrawl" => "not_legal", "timeless" => "not_legal", "vintage" => "not_legal"}, inserted_at: ~N[2025-04-20 17:37:33], updated_at: ~N[2025-04-20 17:37:33]}, %MtgDraftServer.Cards.Card{__meta__: #Ecto.Schema.Metadata<:loaded, "cards">, id: "bc2e0c36-645a-46c8-bd9e-4b8b591dfb58", oracle_id: "0e9864e2-1bb4-4527-b2af-62433a90b669", name: "Odious Trow", mana_cost: "{B/G}", cmc: 1.0, type_line: "Creature — Troll", oracle_text: "{1}{B/G}: Regenerate Odious Trow.", power: "1", toughness: "1", colors: ["B", "G"], color_identity: ["B", "G"], set_code: "eve", rarity: "common", foil: true, image_uris: %{"art_crop" => "https://cards.scryfall.io/art_crop/front/b/c/bc2e0c36-645a-46c8-bd9e-4b8b591dfb58.jpg?1562934778", "border_crop" => "https://cards.scryfall.io/border_crop/front/b/c/bc2e0c36-645a-46c8-bd9e-4b8b591dfb58.jpg?1562934778", "large" => "https://cards.scryfall.io/large/front/b/c/bc2e0c36-645a-46c8-bd9e-4b8b591dfb58.jpg?1562934778", "normal" => "https://cards.scryfall.io/normal/front/b/c/bc2e0c36-645a-46c8-bd9e-4b8b591dfb58.jpg?1562934778", "png" => "https://cards.scryfall.io/png/front/b/c/bc2e0c36-645a-46c8-bd9e-4b8b591dfb58.png?1562934778", "small" => "https://cards.scryfall.io/small/front/b/c/bc2e0c36-645a-46c8-bd9e-4b8b591dfb58.jpg?1562934778"}, legalities: %{"alchemy" => "not_legal", "brawl" => "not_legal", "commander" => "legal", "duel" => "legal", "explorer" => "not_legal", "future" => "not_legal", "gladiator" => "not_legal", "historic" => "not_legal", "legacy" => "legal", "modern" => "legal", "oathbreaker" => "legal", "oldschool" => "not_legal", "pauper" => "legal", "paupercommander" => "legal", "penny" => "legal", "pioneer" => "not_legal", "predh" => "legal", "premodern" => "not_legal", "standard" => "not_legal", "standardbrawl" => "not_legal", "timeless" => "not_legal", "vintage" => "legal"}, inserted_at: ~N[2025-04-20 17:37:30], updated_at: ~N[2025-04-20 17:37:30]}, %MtgDraftServer.Cards.Card{__meta__: #Ecto.Schema.Metadata<:loaded, "cards">, id: "cec3a260-6c50-401d-a0ff-bf49a973e1a1", oracle_id: "7bb5c5af-6943-4958-a666-0c322d5b9f33", name: "Swat", mana_cost: "{1}{B}{B}", cmc: 3.0, type_line: "Instant", oracle_text: "Destroy target creature with power 2 or less.\nCycling {2} ({2}, Discard this card: Draw a card.)", power: nil, toughness: nil, colors: ["B"], color_identity: ["B"], set_code: "ons", rarity: "common", foil: true, image_uris: %{"art_crop" => "https://cards.scryfall.io/art_crop/front/c/e/cec3a260-6c50-401d-a0ff-bf49a973e1a1.jpg?1562943805", "border_crop" => "https://cards.scryfall.io/border_crop/front/c/e/cec3a260-6c50-401d-a0ff-bf49a973e1a1.jpg?1562943805", "large" => "https://cards.scryfall.io/large/front/c/e/cec3a260-6c50-401d-a0ff-bf49a973e1a1.jpg?1562943805", "normal" => "https://cards.scryfall.io/normal/front/c/e/cec3a260-6c50-401d-a0ff-bf49a973e1a1.jpg?1562943805", "png" => "https://cards.scryfall.io/png/front/c/e/cec3a260-6c50-401d-a0ff-bf49a973e1a1.png?1562943805", "small" => "https://cards.scryfall.io/small/front/c/e/cec3a260-6c50-401d-a0ff-bf49a973e1a1.jpg?1562943805"}, legalities: %{"alchemy" => "not_legal", "brawl" => "not_legal", "commander" => "legal", "duel" => "legal", "explorer" => "not_legal", "future" => "not_legal", "gladiator" => "not_legal", "historic" => "not_legal", "legacy" => "legal", "modern" => "not_legal", "oathbreaker" => "legal", "oldschool" => "not_legal", "pauper" => "legal", "paupercommander" => "legal", "penny" => "legal", "pioneer" => "not_legal", "predh" => "legal", "premodern" => "legal", "standard" => "not_legal", "standardbrawl" => "not_legal", "timeless" => "not_legal", "vintage" => "legal"}, inserted_at: ~N[2025-04-20 17:37:54], updated_at: ~N[2025-04-20 17:37:54]}, %MtgDraftServer.Cards.Card{__meta__: #Ecto.Schema.Metadata<:loaded, "cards">, id: "62fbd1bc-3e57-43d5-ad54-443ca740fcc4", oracle_id: "9debaed0-b605-4778-9977-216d194ecdeb", name: "Sun-Collared Raptor", mana_cost: "{1}{R}", cmc: 2.0, type_line: "Creature — Dinosaur", oracle_text: "Trample\n{2}{R}: Sun-Collared Raptor gets +3/+0 until end of turn.", power: "1", toughness: "2", colors: ["R"], color_identity: ["R"], set_code: "rix", rarity: "common", foil: true, image_uris: %{"art_crop" => "https://cards.scryfall.io/art_crop/front/6/2/62fbd1bc-3e57-43d5-ad54-443ca740fcc4.jpg?1555040553", "border_crop" => "https://cards.scryfall.io/border_crop/front/6/2/62fbd1bc-3e57-43d5-ad54-443ca740fcc4.jpg?1555040553", "large" => "https://cards.scryfall.io/large/front/6/2/62fbd1bc-3e57-43d5-ad54-443ca740fcc4.jpg?1555040553", "normal" => "https://cards.scryfall.io/normal/front/6/2/62fbd1bc-3e57-43d5-ad54-443ca740fcc4.jpg?1555040553", "png" => "https://cards.scryfall.io/png/front/6/2/62fbd1bc-3e57-43d5-ad54-443ca740fcc4.png?1555040553", "small" => "https://cards.scryfall.io/small/front/6/2/62fbd1bc-3e57-43d5-ad54-443ca740fcc4.jpg?1555040553"}, legalities: %{"alchemy" => "not_legal", "brawl" => "legal", "commander" => "legal", "duel" => "legal", "explorer" => "legal", "future" => "not_legal", "gladiator" => "legal", "historic" => "legal", "legacy" => "legal", "modern" => "legal", "oathbreaker" => "legal", "oldschool" => "not_legal", "pauper" => "legal", "paupercommander" => "legal", "penny" => "legal", "pioneer" => "legal", "predh" => "not_legal", "premodern" => "not_legal", "standard" => "not_legal", "standardbrawl" => "not_legal", "timeless" => "legal", ...}, inserted_at: ~N[2025-04-20 17:38:02], updated_at: ~N[2025-04-20 17:38:02]}, %MtgDraftServer.Cards.Card{__meta__: #Ec (truncated)
+
+I need your help fixing the problem.
+
+Project Structure:
+/c/Users/jgaly/OneDrive/Code/Elixir/mtg_draft_server/ai/..
+.formatter.exs
+.gitignore
+ai
+ai/context.txt
+ai/game_reqs.txt
+ai/generated_prompt.txt
+ai/prompt.sh
+ai/xml_context_template.txt
+config
+config/config.exs
+config/dev.exs
+config/prod.exs
+config/runtime.exs
+config/test.exs
+devfile.yaml
+export_tests.sh
+export_tests_output.txt
+lib
+lib/mtg_draft_server
+lib/mtg_draft_server/application.ex
+lib/mtg_draft_server/auth_error_handler.ex
+lib/mtg_draft_server/cards
+lib/mtg_draft_server/cards/card.ex
+lib/mtg_draft_server/cards/card_metadata.ex
+lib/mtg_draft_server/drafts
+lib/mtg_draft_server/drafts/draft.ex
+lib/mtg_draft_server/drafts/draft_pick.ex
+lib/mtg_draft_server/drafts/draft_player.ex
+lib/mtg_draft_server/drafts.ex
+lib/mtg_draft_server/draft_session
+lib/mtg_draft_server/draft_session/pack_distributor.ex
+lib/mtg_draft_server/draft_session/turn_logic.ex
+lib/mtg_draft_server/draft_session.ex
+lib/mtg_draft_server/draft_session_supervisor.ex
+lib/mtg_draft_server/firebase_token.ex
+lib/mtg_draft_server/jwks_strategy.ex
+lib/mtg_draft_server/mailer.ex
+lib/mtg_draft_server/pack_generator.ex
+lib/mtg_draft_server/repo.ex
+lib/mtg_draft_server.ex
+lib/mtg_draft_server_web
+lib/mtg_draft_server_web/components
+lib/mtg_draft_server_web/components/error_helpers.ex
+lib/mtg_draft_server_web/components/layouts
+lib/mtg_draft_server_web/components/layouts/app.html.heex
+lib/mtg_draft_server_web/controllers
+lib/mtg_draft_server_web/controllers/default_controller.ex
+lib/mtg_draft_server_web/controllers/draft_controller.ex
+lib/mtg_draft_server_web/controllers/error_json.ex
+lib/mtg_draft_server_web/controllers/fallback_controller.ex
+lib/mtg_draft_server_web/dashboard_live.ex
+lib/mtg_draft_server_web/endpoint.ex
+lib/mtg_draft_server_web/gettext.ex
+lib/mtg_draft_server_web/layouts.ex
+lib/mtg_draft_server_web/plugs
+lib/mtg_draft_server_web/plugs/auth_plug.ex
+lib/mtg_draft_server_web/router.ex
+lib/mtg_draft_server_web/telemetry.ex
+lib/mtg_draft_server_web.ex
+mix.exs
+mix.lock
+priv
+priv/repo
+priv/repo/data
+priv/repo/data/oracle_cards.json
+priv/repo/migrations
+priv/repo/migrations/.formatter.exs
+priv/repo/migrations/20250208230004_create_cards.exs
+priv/repo/migrations/20250209005129_create_drafts.exs
+priv/repo/migrations/20250209005146_create_draft_players.exs
+priv/repo/migrations/20250209005217_create_draft_picks.exs
+priv/repo/migrations/20250413232549_add_card_metadata.exs
+priv/repo/migrations/20250413234823_add_pack_sets_to_drafts.exs
+priv/repo/seeds.exs
+README.md
+test
+test/mtg_draft_server
+test/mtg_draft_server/cards
+test/mtg_draft_server/cards/card_test.exs
+test/mtg_draft_server/cards/drafts_test.exs
+test/mtg_draft_server/cards/draft_session_test.exs
+test/mtg_draft_server/cards/pack_generator_test.exs
+test/mtg_draft_server/draft_session
+test/mtg_draft_server/draft_session/helpers_test.exs
+test/mtg_draft_server_web
+test/mtg_draft_server_web/controllers
+test/mtg_draft_server_web/controllers/controllers
+test/mtg_draft_server_web/controllers/controllers/draft_controller_test.exs
+test/mtg_draft_server_web/controllers/error_json_test.exs
+test/mtg_draft_server_web/controllers/firebase_token_test.exs
+test/support
+test/support/conn_case.ex
+test/support/data_case.ex
+test/test_helper.exs
 
 
-Can you help figure out what's happening? Here is the draft board view on the client:
+=== File: lib/mtg_draft_server.ex ===
 
-<template>
-  <div class="draft-board">
-    <!-- Upper Section: Live Draft Board -->
-    <div class="upper-section">
-      <h1>Draft Board</h1>
-      <div class="draft-info">
-        <p>Draft ID: {{ draftId }}</p>
-        <p>Pack: {{ packNumber }} / Pick: {{ pickNumber }}</p>
-      </div>
+defmodule MtgDraftServer do
+  @moduledoc """
+  MtgDraftServer keeps the contexts that define your domain
+  and business logic.
 
-      <!-- Current Pack for Picking -->
-      <div v-if="currentPack && currentPack.length > 0" class="current-pack">
-        <h2>Pick a Card</h2>
-        <div class="cards-container">
-          <div 
-            v-for="card in currentPack" 
-            :key="card.id" 
-            class="card-slot"
-            @click="selectCard(card.id)"
-          >
-            <img 
-              :src="card.image_uris?.normal || card.image_uris?.small || '/placeholder-card.jpg'" 
-              :alt="card.name" 
-              class="card-image"
-            />
-          </div>
-        </div>
-      </div>
-      <div v-else class="waiting-message">
-        <h2>Waiting for your next pack...</h2>
-        <p>You'll get a new pack to pick from when it's your turn.</p>
-      </div>
+  Contexts are also responsible for managing your data, regardless
+  if it comes from the database, an external API or others.
+  """
+end
 
-      <ErrorDisplay :message="message" v-if="message" />
-    </div>
-
-    <!-- Lower Section: Deck Builder -->
-    <div class="lower-section">
-      <h2>Your Deck ({{ totalCards }})</h2>
-      <div class="deck-columns">
-        <!-- Loop over each mana column -->
-        <div 
-          v-for="(column, colIndex) in deckColumns" 
-          :key="column.mana" 
-          class="deck-column"
-        >
-          <div class="mana-header">Mana: {{ column.mana }}</div>
-          <!-- Use draggable for card ordering -->
-          <draggable 
-            v-model="column.cards" 
-            :group="{ name: 'cards', pull: true, put: true }" 
-            item-key="id" 
-            animation="200" 
-            class="card-stack"
-          >
-            <template #item="{ element }">
-              <div class="deck-card">
-                <img 
-                  :src="element.image_uris?.normal || element.image_uris?.small || '/placeholder-card.jpg'" 
-                  :alt="element.name" 
-                  class="card-image"
-                />
-              </div>
-            </template>
-          </draggable>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
-<script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { useRoute } from 'vue-router'
-import { getPickedCards, pickCard, getDraftState } from '@/api/draft'
-import ErrorDisplay from '@/components/ErrorDisplay.vue'
-import draggable from 'vuedraggable'
-
-const route = useRoute()
-const draftId = ref(route.params.id || localStorage.getItem('draftId'))
-const currentPack = ref([])
-const pickedCards = ref([])
-const message = ref('')
-const isError = ref(false)
-const packNumber = ref(1)
-const pickNumber = ref(1)
-const pollInterval = ref(null)
-
-// Reactive deck builder state – an array of column objects (each with a mana value and an array of cards)
-const deckColumns = ref([])
-
-// Compute total number of cards for display
-const totalCards = computed(() => {
-  return deckColumns.value.reduce((sum, col) => sum + col.cards.length, 0)
-})
-
-// Group picked cards by their mana cost (cmc) and update the deckColumns state
-const initializeDeckColumns = () => {
-  const groups = {}
-  pickedCards.value.forEach(pick => {
-    // Default to 0 if "cmc" is not defined.
-    const mana = pick.card.cmc !== undefined ? pick.card.cmc : 0
-    if (!groups[mana]) groups[mana] = []
-    groups[mana].push(pick.card)
-  })
-  // Create columns sorted by mana cost
-  const sortedKeys = Object.keys(groups).map(Number).sort((a, b) => a - b)
-  deckColumns.value = sortedKeys.map(mana => ({
-    mana,
-    cards: groups[mana]
-  }))
-}
-
-// Fetch the draft state (including the current pack)
-const fetchDraftState = async () => {
-  try {
-    const data = await getDraftState(draftId.value)
-    currentPack.value = data.is_your_turn ? (data.current_pack || []) : []
-    packNumber.value = data.pack_number || 1
-    pickNumber.value = data.pick_number || 1
-    if (data.status === 'complete') {
-      message.value = 'Draft complete! Check your picks.'
-      stopPolling()
-    }
-  } catch (error) {
-    console.error('Error fetching draft state:', error)
-    if (!isError.value) {
-      message.value = error.message
-    }
-  }
-}
-
-// Called when the user picks a card
-const selectCard = async (cardId) => {
-  try {
-    isError.value = false
-    message.value = 'Submitting your pick...'
-    await pickCard(draftId.value, cardId, packNumber.value, pickNumber.value)
-    message.value = 'Card selected!'
-    currentPack.value = []  // Clear pack for immediate feedback
-
-    // Fetch updated picks and update deckColumns
-    await fetchPickedCards()
-    initializeDeckColumns()
-  } catch (error) {
-    message.value = error.message
-  }
-}
-
-// Fetch the player's picked cards
-const fetchPickedCards = async () => {
-  try {
-    const data = await getPickedCards(draftId.value)
-    pickedCards.value = data.picks || []
-  } catch (error) {
-    console.error('Error fetching picked cards:', error)
-  }
-}
-
-// Polling for draft state updates every 2 seconds
-const startPolling = () => {
-  pollInterval.value = setInterval(async () => {
-    await fetchDraftState()
-  }, 2000)
-}
-const stopPolling = () => {
-  if (pollInterval.value) {
-    clearInterval(pollInterval.value)
-    pollInterval.value = null
-  }
-}
-
-// On component mount, fetch the initial state and start polling
-onMounted(async () => {
-  if (!draftId.value) {
-    message.value = error.message
-    return
-  }
-  localStorage.setItem('draftId', draftId.value)
-  try {
-    await fetchPickedCards()
-    initializeDeckColumns()
-    await fetchDraftState()
-    startPolling()
-  } catch (error) {
-    message.value = error.message
-  }
-})
-
-// Clean up when unmounted
-onUnmounted(() => {
-  stopPolling()
-})
-</script>
 === File: lib/mtg_draft_server/application.ex ===
 
 defmodule MtgDraftServer.Application do
@@ -232,7 +215,25 @@ defmodule MtgDraftServer.Application do
     ]
 
     opts = [strategy: :one_for_one, name: MtgDraftServer.Supervisor]
-    Supervisor.start_link(children, opts)
+
+    # start your supervision tree
+    {:ok, sup} = Supervisor.start_link(children, opts)
+
+    # —————————————————————————————————————————————————————————
+    # WIPE DRAFTS + PLAYERS ON EVERY RESTART
+    #
+    # Once the Repo child is up, delete all old drafts.
+    # Because of on_delete: :delete_all FKs, this also removes draft_players
+    # and draft_picks.
+    alias MtgDraftServer.Repo
+    alias MtgDraftServer.Drafts.{Draft, DraftPlayer}
+
+    Repo.delete_all(Draft)
+    Repo.delete_all(DraftPlayer)
+
+    # —————————————————————————————————————————————————————————
+
+    {:ok, sup}
   end
 
   @impl true
@@ -336,111 +337,233 @@ end
 === File: lib/mtg_draft_server/cards/card_metadata.ex ===
 
 defmodule MtgDraftServer.Cards.CardMetadata do
-    use Ecto.Schema
-    import Ecto.Changeset
-  
-    schema "card_metadata" do
-      belongs_to :card, MtgDraftServer.Cards.Card, type: :binary_id
-      field :layout, :string
-      field :is_token, :boolean, default: false
-      field :is_digital, :boolean, default: false
-      field :is_promo, :boolean, default: false
-  
-      timestamps()
-    end
-  
-    def changeset(metadata, attrs) do
-      metadata
-      |> cast(attrs, [:card_id, :layout, :is_token, :is_digital, :is_promo])
-      |> validate_required([:card_id])
-    end
-  end
-=== File: lib/mtg_draft_server/drafts/draft.ex ===
-
-defmodule MtgDraftServer.Drafts.Draft do
   use Ecto.Schema
   import Ecto.Changeset
 
-  @primary_key {:id, :binary_id, autogenerate: true}
-  schema "drafts" do
-    field :status, :string, default: "pending"
-    field :pack_sets, {:array, :string}, default: []
-    timestamps()
-  end
-
-  def changeset(draft, attrs) do
-    draft
-    |> cast(attrs, [:status, :pack_sets])
-    |> validate_required([:status])
-  end
-end
-
-=== File: lib/mtg_draft_server/drafts/draft_pick.ex ===
-
-defmodule MtgDraftServer.Drafts.DraftPick do
-  use Ecto.Schema
-  import Ecto.Changeset
-
-  schema "draft_picks" do
-    field :pack_number, :integer
-    field :pick_number, :integer
-    field :expires_at, :utc_datetime
-
-    belongs_to :draft, MtgDraftServer.Drafts.Draft, type: :binary_id
-    belongs_to :draft_player, MtgDraftServer.Drafts.DraftPlayer
+  schema "card_metadata" do
     belongs_to :card, MtgDraftServer.Cards.Card, type: :binary_id
+    field :layout, :string
+    field :is_token, :boolean, default: false
+    field :is_digital, :boolean, default: false
+    field :is_promo, :boolean, default: false
 
     timestamps()
   end
 
-  def changeset(draft_pick, attrs) do
-    draft_pick
-    |> cast(attrs, [
-      :draft_id,
-      :draft_player_id,
-      :card_id,
-      :pack_number,
-      :pick_number,
-      :expires_at
-    ])
-    |> validate_required([
-      :draft_id,
-      :draft_player_id,
-      :card_id,
-      :pack_number,
-      :pick_number,
-      :expires_at
-    ])
+  def changeset(metadata, attrs) do
+    metadata
+    |> cast(attrs, [:card_id, :layout, :is_token, :is_digital, :is_promo])
+    |> validate_required([:card_id])
   end
 end
 
-=== File: lib/mtg_draft_server/drafts/draft_player.ex ===
+=== File: lib/mtg_draft_server/draft_session.ex ===
 
-defmodule MtgDraftServer.Drafts.DraftPlayer do
-  use Ecto.Schema
-  import Ecto.Changeset
+defmodule MtgDraftServer.DraftSession do
+  @moduledoc """
+  A GenServer that manages a Magic: The Gathering draft session with asynchronous,
+  queue‑based picking. Each player starts with three booster packs. Packs are
+  passed around in alternating directions (left for rounds 1 & 3, right for round 2).
+  Players (human or AI) may pick as soon as they have cards in their head pack,
+  and “pile‑up” behavior is automatic via per‑player FIFO queues.
+  """
 
-  @derive {Jason.Encoder,
-           only: [:id, :user_id, :seat, :connected, :draft_id, :inserted_at, :updated_at]}
-  schema "draft_players" do
-    field :user_id, :string
-    field :seat, :integer
-    field :connected, :boolean, default: true
-    belongs_to :draft, MtgDraftServer.Drafts.Draft, type: :binary_id
+  use GenServer
+  alias MtgDraftServer.Drafts
+  alias MtgDraftServer.Drafts.PackGenerator
+  alias MtgDraftServer.DraftSession.PackDistributor
+  require Logger
 
-    timestamps()
+  ## Client API
+
+  @doc """
+  Start the session process for a given draft ID.
+  """
+  def start_link(draft_id) do
+    GenServer.start_link(__MODULE__, draft_id, name: via_tuple(draft_id))
   end
 
-  def changeset(draft_player, attrs) do
-    draft_player
-    |> cast(attrs, [:draft_id, :user_id, :seat, :connected])
-    |> validate_required([:draft_id, :user_id, :seat])
+  @doc """
+  Join a player (or AI) into the session. Expects a map with "user_id" and
+  optional "ai" boolean (defaults to false).
+  """
+  def join(draft_id, %{"user_id" => uid} = player) do
+    ai_flag = Map.get(player, "ai", false)
+    GenServer.call(via_tuple(draft_id), {:join, uid, ai_flag})
   end
 
-  def create_draft_player(attrs) do
-    %__MODULE__{}
-    |> changeset(attrs)
-    |> MtgDraftServer.Repo.insert()
+  @doc """
+  Kick off the draft by generating booster packs and loading them into state.
+  Call this once all players have joined.
+  """
+  def start_with_boosters(draft_id) do
+    GenServer.call(via_tuple(draft_id), :start_draft_with_boosters)
+  end
+
+  @doc """
+  Submit a pick for a given user and card ID.
+  """
+  def pick(draft_id, user_id, card_id) do
+    GenServer.cast(via_tuple(draft_id), {:pick, user_id, card_id})
+  end
+
+  @doc """
+  Fetch the entire in‑memory session state.
+  """
+  def get_state(draft_id) do
+    GenServer.call(via_tuple(draft_id), :get_state)
+  end
+
+  defp via_tuple(draft_id) do
+    {:via, Registry, {MtgDraftServer.DraftRegistry, draft_id}}
+  end
+
+  ## Server Callbacks
+
+  @impl true
+  def init(draft_id) do
+    {:ok, db_draft} = Drafts.get_draft(draft_id)
+    state = %{
+      draft_id:         draft_id,
+      status:           db_draft.status,
+      players:          %{},    # user_id => %{ai: boolean}
+      booster_queues:   %{},    # user_id => [{round_number, pack_list}, ...]
+      player_positions: [],    # seating order by user_id
+      pick_counters:    %{}    # %{user_id => %{1 => 0, 2 => 0, 3 => 0}}
+    }
+
+    {:ok, state}
+  end
+
+  @impl true
+  def handle_call({:join, uid, ai_flag}, _from, state) do
+    players = Map.put(state.players, uid, %{ai: ai_flag})
+    queues  = Map.put_new(state.booster_queues, uid, [])
+    {:reply, :ok, %{state | players: players, booster_queues: queues}}
+  end
+
+  @impl true
+  def handle_call(:start_draft_with_boosters, _from, state) do
+    # 1) Determine seating and generate packs
+    player_ids  = MtgDraftServer.Drafts.get_draft_players(state.draft_id)
+    booster_map = PackGenerator.generate_and_distribute_booster_packs(%{}, player_ids)
+
+    # 2) Wrap packs with round numbers: Enum.with_index returns {pack, round}
+    wrapped_queues =
+      booster_map
+      |> Enum.map(fn {uid, packs} ->
+        indexed =
+          packs
+          |> Enum.with_index(1)
+          |> Enum.map(fn {pack, round} -> {round, pack} end)
+        {uid, indexed}
+      end)
+      |> Enum.into(%{})
+
+    # 3) Persist draft status and update in-memory state
+    {:ok, _updated} = Drafts.start_draft(state.draft_id)
+    new_state = %{
+      state
+      | booster_queues:   wrapped_queues,
+        status:           "active",
+        player_positions: player_ids,
+        pick_counters:    Enum.into(player_ids, %{}, fn uid -> {uid, %{1 => 0, 2 => 0, 3 => 0}} end)
+    }
+
+    # 4) Broadcast and schedule AI
+    Drafts.notify(state.draft_id, {:draft_started, state.draft_id, []})
+    Enum.each(player_ids, fn uid ->
+      if state.players[uid].ai do
+        Process.send_after(self(), {:ai_pick, uid}, 500)
+      end
+    end)
+
+    {:reply, {:ok, new_state}, new_state}
+  end
+
+  @impl true
+  def handle_call(:get_state, _from, state) do
+    {:reply, state, state}
+  end
+
+  @impl true
+  def handle_cast({:pick, user_id, card_id}, state) do
+    case Map.get(state.booster_queues, user_id, []) do
+      [{round, current_pack} | rest] ->
+        if PackDistributor.card_in_pack?(current_pack, card_id) do
+          updated_pack = PackDistributor.remove_card(current_pack, card_id)
+          direction   = if round == 2, do: :right, else: :left
+          neighbor    = PackDistributor.next_neighbor(user_id, state.player_positions, direction)
+
+          # get and bump pick number
+          user_counters = Map.get(state.pick_counters, user_id)
+          pick_no       = user_counters[round] + 1
+
+          # persist pick with tuple match for {:ok, pick}
+          {:ok, _pick} = Drafts.pick_card(
+            state.draft_id,
+            user_id,
+            card_id,
+            %{"pack_number" => round, "pick_number" => pick_no}
+          )
+
+          Drafts.notify(state.draft_id, {:pack_updated, user_id, neighbor})
+          if state.players[neighbor].ai do
+            Process.send_after(self(), {:ai_pick, neighbor}, 500)
+          end
+
+          q1 = if updated_pack == [], do: rest, else: rest ++ [{round, updated_pack}]
+          q2 = Map.get(state.booster_queues, neighbor, []) ++ [{round, updated_pack}]
+
+          new_queues    = Map.put(state.booster_queues, user_id, q1) |> Map.put(neighbor, q2)
+          new_counters  = put_in(state.pick_counters[user_id][round], pick_no)
+
+          {:noreply, %{state | booster_queues: new_queues, pick_counters: new_counters}}
+        else
+          Logger.error("Invalid pick #{card_id} by #{user_id}")
+          {:noreply, state}
+        end
+
+      [] ->
+        # no packs left
+        {:noreply, state}
+    end
+  end
+
+  @impl true
+  def handle_info({:ai_pick, user_id}, state) do
+    case Map.get(state.booster_queues, user_id, []) do
+      [{_, [_ | _] = pack} | _] ->
+        card_id = Enum.random(pack) |> Map.get(:id)
+        GenServer.cast(self(), {:pick, user_id, card_id})
+      _ ->
+        :ok
+    end
+
+    {:noreply, state}
+  end
+end
+
+=== File: lib/mtg_draft_server/draft_session_supervisor.ex ===
+
+defmodule MtgDraftServer.DraftSessionSupervisor do
+  use DynamicSupervisor
+
+  def start_link(_args) do
+    DynamicSupervisor.start_link(__MODULE__, :ok, name: __MODULE__)
+  end
+
+  @impl true
+  def init(:ok) do
+    DynamicSupervisor.init(strategy: :one_for_one)
+  end
+
+  @doc """
+  Starts a new draft session.
+  """
+  def start_new_session(draft_id) do
+    spec = {MtgDraftServer.DraftSession, draft_id}
+    DynamicSupervisor.start_child(__MODULE__, spec)
   end
 end
 
@@ -506,21 +629,10 @@ defmodule MtgDraftServer.Drafts do
     end
     |> case do
       :ok ->
-        Repo.transaction(fn ->
-          with {:ok, draft} <- do_create_draft(attrs),
-               {:ok, _player} <- maybe_create_player(draft, attrs[:creator]) do
-            {:ok, _pid} = MtgDraftServer.DraftSessionSupervisor.start_new_session(draft.id)
-
-            if attrs[:creator] do
-              :ok =
-                MtgDraftServer.DraftSession.join(draft.id, %{user_id: attrs[:creator], seat: 1})
-            end
-
-            draft
-          else
-            error -> Repo.rollback(error)
-          end
-        end)
+        Ecto.Multi.new()
+        |> Ecto.Multi.insert(:draft, Draft.changeset(%Draft{}, attrs))
+        |> maybe_multi_insert_player(attrs[:creator])
+        |> Repo.transaction()
 
       error ->
         error
@@ -561,23 +673,16 @@ defmodule MtgDraftServer.Drafts do
 
   @doc """
   Records a card pick in the draft.
-  Validates that the pick is legal and updates the draft state accordingly.
+
+  Validates that the pick is legal by using the in-memory session state
+  (when provided) so we never call back into the server from inside itself.
   """
+  @spec pick_card(binary(), String.t(), String.t(), map()) :: pick_result
   def pick_card(draft_id, user_id, card_id, extra_attrs \\ %{}) do
     Repo.transaction(fn ->
-      with {:ok, draft} <- get_draft(draft_id),
-           :ok <- validate_draft_status(draft),
-           {:ok, draft_player} <- get_draft_player(draft_id, user_id),
-           :ok <- validate_player_turn(draft_id, user_id),
-           :ok <- validate_card_availability(draft_id, card_id),
-           :ok <- validate_pack_number(extra_attrs["pack_number"]),
-           :ok <- validate_pick_number(extra_attrs["pick_number"]),
-           :ok <-
-             validate_no_duplicate_pick(
-               draft_player.id,
-               extra_attrs["pack_number"],
-               extra_attrs["pick_number"]
-             ) do
+        with {:ok, draft} <- get_draft(draft_id),
+             :ok <- validate_draft_active(draft),
+             {:ok, draft_player} <- get_draft_player(draft_id, user_id) do
         now = DateTime.utc_now() |> DateTime.truncate(:second)
         expires_at = DateTime.add(now, @one_day_in_seconds, :second)
 
@@ -586,7 +691,9 @@ defmodule MtgDraftServer.Drafts do
             "draft_id" => draft_id,
             "draft_player_id" => draft_player.id,
             "card_id" => card_id,
-            "expires_at" => expires_at
+            "expires_at" => expires_at,
+            "pack_number"        => extra_attrs["pack_number"]  || 1,
+            "pick_number"        => extra_attrs["pick_number"]  || 1
           })
 
         %DraftPick{}
@@ -718,6 +825,57 @@ defmodule MtgDraftServer.Drafts do
     |> Repo.all()
   end
 
+  @doc """
+  Broadcasts a draft event over PubSub.
+  """
+  @spec notify(binary(), any()) :: :ok
+  def notify(draft_id, event) when is_atom(event) do
+    Phoenix.PubSub.broadcast(
+      MtgDraftServer.PubSub,
+      "draft:#{draft_id}",
+      {event, draft_id}
+    )
+
+    :ok
+  end
+
+  def notify(draft_id, event) do
+    Phoenix.PubSub.broadcast(
+      MtgDraftServer.PubSub,
+      "draft:#{draft_id}",
+      event
+    )
+
+    :ok
+  end
+
+  @doc """
+  Returns a list of active drafts, each as a map:
+    %{id: draft_id, players: [%{user_id: uid, seat: seat}, …]}
+  """
+  def list_active_drafts_with_players do
+    # 1) get all active drafts
+    active =
+      from(d in Draft,
+        where: d.status == "active",
+        select: d.id
+      )
+      |> Repo.all()
+
+    # 2) for each draft, load its players (ordered by seat)
+    Enum.map(active, fn draft_id ->
+      players =
+        from(dp in DraftPlayer,
+          where: dp.draft_id == ^draft_id,
+          order_by: dp.seat,
+          select: %{user_id: dp.user_id, seat: dp.seat}
+        )
+        |> Repo.all()
+
+      %{id: draft_id, players: players}
+    end)
+  end
+
   # ============================================================================
   # Private functions
   # ============================================================================
@@ -751,8 +909,22 @@ defmodule MtgDraftServer.Drafts do
     end
   end
 
+  defp maybe_multi_insert_player(multi, nil), do: multi
+
+  defp maybe_multi_insert_player(multi, creator) do
+    Ecto.Multi.run(multi, :player, fn repo, %{draft: draft} ->
+      %DraftPlayer{}
+      |> DraftPlayer.changeset(%{
+        draft_id: draft.id,
+        user_id: creator,
+        seat: 1
+      })
+      |> repo.insert()
+    end)
+  end
+
   # ============================================================================
-  # Refactored Validation Functions
+  # Validation Functions
   # ============================================================================
 
   @doc """
@@ -836,23 +1008,6 @@ defmodule MtgDraftServer.Drafts do
     end)
   end
 
-  defp validate_no_duplicate_pick(draft_player_id, pack_number, pick_number) do
-    existing_pick =
-      Repo.one(
-        from p in DraftPick,
-          where:
-            p.draft_player_id == ^draft_player_id and
-              p.pack_number == ^pack_number and
-              p.pick_number == ^pick_number
-      )
-
-    if existing_pick do
-      {:error, "Already made a pick for this pack/pick combination"}
-    else
-      :ok
-    end
-  end
-
   defp validate_draft_can_start(draft) do
     with :ok <- validate_draft_status(draft),
          :ok <- validate_player_count(draft) do
@@ -868,6 +1023,15 @@ defmodule MtgDraftServer.Drafts do
     end
   end
 
+  @doc false
+  defp validate_draft_active(draft) do
+    if draft.status == "active" do
+      :ok
+    else
+      {:error, "Draft is not active (current status: #{draft.status})"}
+    end
+  end
+
   defp validate_player_count(draft) do
     player_count =
       Repo.one(from dp in DraftPlayer, where: dp.draft_id == ^draft.id, select: count(dp.id))
@@ -878,406 +1042,110 @@ defmodule MtgDraftServer.Drafts do
       {:error, "Draft needs at least 2 players to start"}
     end
   end
-
-  defp validate_pack_number(pack_number) when pack_number in 1..3, do: :ok
-  defp validate_pack_number(_), do: {:error, "Invalid pack number"}
-
-  defp validate_pick_number(pick_number) when pick_number in 1..15, do: :ok
-  defp validate_pick_number(_), do: {:error, "Invalid pick number"}
-
+  
   defp broadcast_draft_update(draft_id, event) do
-    Phoenix.PubSub.broadcast(
-      MtgDraftServer.PubSub,
-      "draft:#{draft_id}",
-      {event, draft_id}
-    )
+    notify(draft_id, event)
   end
 end
 
-=== File: lib/mtg_draft_server/draft_session.ex ===
+=== File: lib/mtg_draft_server/drafts/draft.ex ===
 
-defmodule MtgDraftServer.DraftSession do
-  @moduledoc """
-  A GenServer that represents a draft session and manages picking order.
+defmodule MtgDraftServer.Drafts.Draft do
+  use Ecto.Schema
+  import Ecto.Changeset
 
-  The session state includes:
-    - the current (simulation) pack (a list of card IDs or card data) used before the draft starts
-    - the turn order (a list of user IDs)
-    - the current turn index
-    - the pack number (1, 2, or 3) and pick number within the pack
-
-  **New behavior:** When a player joins the session and the total number of players reaches 8, the draft
-  automatically “starts” by generating 8×3 booster packs (24 packs total, each containing 15 cards)
-  via the `MtgDraftServer.Drafts.PackGenerator`. The resulting booster pack distribution (a map of
-  player ID to a list of 3 packs) is stored in the session state (in the `booster_packs` field) and a
-  broadcast is issued to notify connected clients that the draft has started.
-  """
-
-  use GenServer
-  alias MtgDraftServer.Drafts
-
-  ## Client API
-
-  def start_link(draft_id) do
-    GenServer.start_link(__MODULE__, draft_id, name: via_tuple(draft_id))
+  @primary_key {:id, :binary_id, autogenerate: true}
+  schema "drafts" do
+    field :status, :string, default: "pending"
+    field :pack_sets, {:array, :string}, default: []
+    timestamps()
   end
 
-  def join(draft_id, player) do
-    GenServer.call(via_tuple(draft_id), {:join, player})
-  end
-
-  def pick(draft_id, user_id, card_id) do
-    GenServer.cast(via_tuple(draft_id), {:pick, user_id, card_id})
-  end
-
-  def get_state(draft_id) do
-    GenServer.call(via_tuple(draft_id), :get_state)
-  end
-
-  defp via_tuple(draft_id) do
-    {:via, Registry, {MtgDraftServer.DraftRegistry, draft_id}}
-  end
-
-  ## Server Callbacks
-
-  @impl true
-  def init(draft_id) do
-    state = %{
-      draft_id: draft_id,
-      players: %{},
-      turn_order: [],
-      current_turn_index: 0,
-      pack: [],
-      pack_number: 1,
-      pick_number: 1,
-      status: :pending,
-      booster_packs: nil,
-      draft_started: false,
-      current_pack_direction: :left
-    }
-
-    {:ok, state}
-  end
-
-  @impl true
-  def handle_call({:join, player}, _from, state) do
-    user_id = player["user_id"] || player[:user_id]
-    new_players = Map.put(state.players, user_id, player)
-    new_turn_order = state.turn_order ++ [user_id]
-    new_state = %{state | players: new_players, turn_order: new_turn_order}
-
-    if map_size(new_players) == 8 and not state.draft_started do
-      booster_packs =
-        MtgDraftServer.Drafts.PackGenerator.generate_and_distribute_booster_packs(
-          %{},
-          new_turn_order
-        )
-
-      updated_state =
-        new_state
-        |> Map.put(:booster_packs, booster_packs)
-        |> Map.put(:draft_started, true)
-        |> Map.put(:status, :active)
-        |> Map.put(:current_pack_direction, :left)
-
-      Phoenix.PubSub.broadcast(
-        MtgDraftServer.PubSub,
-        "draft:#{state.draft_id}",
-        {:draft_started, updated_state.draft_id}
-      )
-
-      Drafts.start_draft(state.draft_id)
-
-      {:reply, :ok, updated_state}
-    else
-      {:reply, :ok, new_state}
-    end
-  end
-
-  @impl true
-  def handle_call(:start_draft_with_boosters, _from, state) do
-    if not state.draft_started and length(state.turn_order) >= 2 do
-      # Get the draft to check if it has specific set configurations
-      {:ok, draft} = Drafts.get_draft(state.draft_id)
-      player_count = length(state.turn_order)
-
-      booster_packs =
-        if draft.pack_sets && length(draft.pack_sets) > 0 do
-          # Use specific set configuration
-          MtgDraftServer.Drafts.PackGenerator.generate_multi_set_packs(
-            player_count,
-            draft.pack_sets
-          )
-        else
-          # Use default method (all sets)
-          MtgDraftServer.Drafts.PackGenerator.generate_and_distribute_booster_packs(
-            %{},
-            state.turn_order
-          )
-        end
-
-      updated_state =
-        state
-        |> Map.put(:booster_packs, booster_packs)
-        |> Map.put(:draft_started, true)
-        |> Map.put(:status, :active)
-        |> Map.put(:current_pack_direction, :left)
-        |> Map.put(:pack, [])
-        |> Map.put(:pack_sets, draft.pack_sets)
-
-      Drafts.start_draft(state.draft_id)
-
-      Phoenix.PubSub.broadcast(
-        MtgDraftServer.PubSub,
-        "draft:#{state.draft_id}",
-        {:draft_started, updated_state.draft_id, updated_state.pack_sets}
-      )
-
-      {:reply, {:ok, updated_state}, updated_state}
-    else
-      {:reply, {:error, "Cannot start draft"}, state}
-    end
-  end
-
-  @impl true
-  def handle_call(:get_state, _from, state) do
-    {:reply, state, state}
-  end
-
-  @impl true
-  def handle_cast({:pick, user_id, card_id}, state) do
-    with :ok <- Drafts.validate_player_turn(state.draft_id, user_id, state),
-         :ok <- Drafts.validate_card_availability(state.draft_id, card_id, state) do
-      new_state = handle_real_booster_pick(state, user_id, card_id)
-      {:noreply, new_state}
-    else
-      _error ->
-        {:noreply, state}
-    end
-  end
-
-  @impl true
-  def handle_info({:ai_pick, user_id}, state) do
-    if Enum.at(state.turn_order, state.current_turn_index) == user_id do
-      if state.booster_packs do
-        player_packs = Map.get(state.booster_packs, user_id, [])
-        current_pack = Enum.at(player_packs, state.pack_number - 1, [])
-
-        if current_pack != [] do
-          random_card = Enum.random(current_pack)
-
-          card_id =
-            case random_card do
-              %{id: id} -> id
-              %{"id" => id} -> id
-              simple_id when is_binary(simple_id) -> simple_id
-              _ -> nil
-            end
-
-          if card_id do
-            IO.puts("AI #{user_id} auto-picks card #{card_id}.")
-            GenServer.cast(self(), {:pick, user_id, card_id})
-          end
-        end
-      end
-    end
-
-    {:noreply, state}
-  end
-
-  # ============================================================================
-  # Private functions
-  # ============================================================================
-
-  defp handle_real_booster_pick(state, user_id, card_id) do
-    current_player_packs = Map.get(state.booster_packs, user_id, [])
-    current_pack_index = state.pack_number - 1
-    current_pack = Enum.at(current_player_packs, current_pack_index, [])
-
-    picked_card =
-      Enum.find(current_pack, fn card ->
-        case card do
-          %{id: id} -> id == card_id
-          %{"id" => id} -> id == card_id
-          _ -> false
-        end
-      end)
-
-    if picked_card do
-      _ =
-        Drafts.pick_card(state.draft_id, user_id, card_id, %{
-          "pack_number" => state.pack_number,
-          "pick_number" => state.pick_number
-        })
-
-      updated_pack =
-        Enum.reject(current_pack, fn card ->
-          case card do
-            %{id: id} -> id == card_id
-            %{"id" => id} -> id == card_id
-            _ -> false
-          end
-        end)
-
-      updated_player_packs =
-        List.replace_at(current_player_packs, current_pack_index, updated_pack)
-
-      updated_booster_packs = Map.put(state.booster_packs, user_id, updated_player_packs)
-      next_player_index = next_player_index(state)
-      next_player = Enum.at(state.turn_order, next_player_index)
-
-      cond do
-        updated_pack != [] ->
-          updated_booster_packs =
-            pass_pack(
-              updated_booster_packs,
-              user_id,
-              next_player,
-              updated_pack,
-              current_pack_index
-            )
-
-          updated_state = %{
-            state
-            | booster_packs: updated_booster_packs,
-              current_turn_index: next_player_index,
-              pick_number: state.pick_number + 1
-          }
-
-          Phoenix.PubSub.broadcast(
-            MtgDraftServer.PubSub,
-            "draft:#{state.draft_id}",
-            {:pack_updated, next_player, state.pack_number, state.pick_number + 1}
-          )
-
-          maybe_schedule_ai(updated_state)
-          updated_state
-
-        current_pack_empty?(updated_booster_packs) and state.pack_number < 3 ->
-          new_pack_number = state.pack_number + 1
-          new_direction = if new_pack_number == 2, do: :right, else: :left
-
-          updated_state = %{
-            state
-            | booster_packs: updated_booster_packs,
-              pack_number: new_pack_number,
-              pick_number: 1,
-              current_turn_index: 0,
-              current_pack_direction: new_direction
-          }
-
-          Phoenix.PubSub.broadcast(
-            MtgDraftServer.PubSub,
-            "draft:#{state.draft_id}",
-            {:new_pack, new_pack_number}
-          )
-
-          maybe_schedule_ai(updated_state)
-          updated_state
-
-        current_pack_empty?(updated_booster_packs) and state.pack_number >= 3 ->
-          # Final pack is empty; complete the draft.
-          complete_draft(state)
-
-        true ->
-          updated_state = %{
-            state
-            | booster_packs: updated_booster_packs,
-              current_turn_index: next_player_index
-          }
-
-          updated_state
-      end
-    else
-      state
-    end
-  end
-
-  defp pass_pack(booster_packs, _from_player, to_player, pack, pack_index) do
-    to_player_packs = Map.get(booster_packs, to_player, [])
-
-    updated_to_player_packs =
-      if Enum.count(to_player_packs) > pack_index do
-        List.replace_at(to_player_packs, pack_index, pack)
-      else
-        pad_list(to_player_packs, pack_index, []) ++ [pack]
-      end
-
-    Map.put(booster_packs, to_player, updated_to_player_packs)
-  end
-
-  defp pad_list(list, target_index, padding) do
-    current_length = length(list)
-
-    if current_length <= target_index do
-      list ++ List.duplicate(padding, target_index - current_length)
-    else
-      list
-    end
-  end
-
-  defp next_player_index(state) do
-    player_count = length(state.turn_order)
-    current_index = state.current_turn_index
-
-    case state.current_pack_direction do
-      :left ->
-        rem(current_index + 1, player_count)
-
-      :right ->
-        rem(player_count + current_index - 1, player_count)
-    end
-  end
-
-  defp current_pack_empty?(booster_packs) do
-    Enum.all?(booster_packs, fn {_player_id, packs} ->
-      current_pack = Enum.at(packs, 0, [])
-      current_pack == []
-    end)
-  end
-
-  defp maybe_schedule_ai(state) do
-    next_player = Enum.at(state.turn_order, state.current_turn_index)
-    next_player_info = Map.get(state.players, next_player, %{})
-
-    if Map.get(next_player_info, "ai") || Map.get(next_player_info, :ai) do
-      Process.send_after(self(), {:ai_pick, next_player}, 1_000)
-    end
-  end
-
-  defp complete_draft(state) do
-    Drafts.complete_draft(state.draft_id)
-
-    Phoenix.PubSub.broadcast(
-      MtgDraftServer.PubSub,
-      "draft:#{state.draft_id}",
-      {:draft_complete, state.draft_id}
-    )
-
-    %{state | status: :complete}
+  def changeset(draft, attrs) do
+    draft
+    |> cast(attrs, [:status, :pack_sets])
+    |> validate_required([:status])
   end
 end
 
-=== File: lib/mtg_draft_server/draft_session_supervisor.ex ===
+=== File: lib/mtg_draft_server/drafts/draft_pick.ex ===
 
-defmodule MtgDraftServer.DraftSessionSupervisor do
-  use DynamicSupervisor
+defmodule MtgDraftServer.Drafts.DraftPick do
+  @derive {Jason.Encoder,
+           only: [
+             :id,
+             :pack_number,
+             :pick_number,
+             :draft_id,
+             :draft_player_id,
+             :card_id,
+             :card,
+             :inserted_at,
+             :updated_at
+           ]}
+  use Ecto.Schema
+  import Ecto.Changeset
 
-  def start_link(_args) do
-    DynamicSupervisor.start_link(__MODULE__, :ok, name: __MODULE__)
+  schema "draft_picks" do
+    field :pack_number, :integer
+    field :pick_number, :integer
+    field :expires_at, :utc_datetime
+
+    belongs_to :draft, MtgDraftServer.Drafts.Draft, type: :binary_id
+    belongs_to :draft_player, MtgDraftServer.Drafts.DraftPlayer
+    belongs_to :card, MtgDraftServer.Cards.Card, type: :binary_id
+
+    timestamps()
   end
 
-  @impl true
-  def init(:ok) do
-    DynamicSupervisor.init(strategy: :one_for_one)
+  def changeset(draft_pick, attrs) do
+    draft_pick
+    |> cast(attrs, [
+      :draft_id,
+      :draft_player_id,
+      :card_id,
+      :pack_number,
+      :pick_number,
+      :expires_at
+    ])
+    |> validate_required([
+      :draft_id,
+      :draft_player_id,
+      :card_id,
+      :pack_number,
+      :pick_number,
+      :expires_at
+    ])
+  end
+end
+
+=== File: lib/mtg_draft_server/drafts/draft_player.ex ===
+
+defmodule MtgDraftServer.Drafts.DraftPlayer do
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  @derive {Jason.Encoder,
+           only: [:id, :user_id, :seat, :connected, :draft_id, :inserted_at, :updated_at]}
+  schema "draft_players" do
+    field :user_id, :string
+    field :seat, :integer
+    field :connected, :boolean, default: true
+    belongs_to :draft, MtgDraftServer.Drafts.Draft, type: :binary_id
+
+    timestamps()
   end
 
-  @doc """
-  Starts a new draft session.
-  """
-  def start_new_session(draft_id) do
-    spec = {MtgDraftServer.DraftSession, draft_id}
-    DynamicSupervisor.start_child(__MODULE__, spec)
+  def changeset(draft_player, attrs) do
+    draft_player
+    |> cast(attrs, [:draft_id, :user_id, :seat, :connected])
+    |> validate_required([:draft_id, :user_id, :seat])
+  end
+
+  def create_draft_player(attrs) do
+    %__MODULE__{}
+    |> changeset(attrs)
+    |> MtgDraftServer.Repo.insert()
   end
 end
 
@@ -1327,6 +1195,12 @@ defmodule MtgDraftServer.JWKSStrategy do
         "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"
     ]
   end
+end
+
+=== File: lib/mtg_draft_server/mailer.ex ===
+
+defmodule MtgDraftServer.Mailer do
+  use Swoosh.Mailer, otp_app: :mtg_draft_server
 end
 
 === File: lib/mtg_draft_server/pack_generator.ex ===
@@ -1508,50 +1382,40 @@ defmodule MtgDraftServer.Drafts.PackGenerator do
   end
 
   @doc """
-  Generates packs from multiple different sets for a draft.
+  Generates booster packs for each of the given players across multiple set rounds.
 
-  This function:
-    1. Generates packs for each set in the pack_sets list
-    2. Groups and distributes the packs among players
+    * `players`      – a list of player IDs (strings), in draft‑seat order.
+    * `pack_sets`    – a list of set codes, one per round.
 
-  Parameters:
-    - player_count - the number of players in the draft
-    - pack_sets - a list of set codes, one for each round of the draft
-
-  Returns a map where keys are player IDs and values are lists of packs, with one pack
-  from each set for each player.
+  Returns a map `%{ user_id => [pack_round1, pack_round2, …] }`.
   """
-  def generate_multi_set_packs(player_count, pack_sets) do
+  def generate_multi_set_packs(players, pack_sets) when is_list(players) do
+    player_count = length(players)
     packs_per_player = length(pack_sets)
 
-    # Ensure the number of packs is a multiple of player_count
     if rem(packs_per_player, player_count) != 0 do
-      raise ArgumentError, "Number of packs per player must be a multiple of player_count"
+      raise ArgumentError,
+            "Number of sets (#{packs_per_player}) must be a multiple of player_count (#{player_count})"
     end
 
-    # Generate packs for each set configuration
+    # 1) Generate player_count packs for each set_code
     all_packs =
       Enum.flat_map(pack_sets, fn set_code ->
-        # Generate player_count packs from this set
+        # this helper already makes exactly player_count packs from one set
         generate_packs_for_set(player_count, set_code)
       end)
 
-    # Group packs by set in order
+    # 2) Group the flat list of packs into chunks of size player_count
+    #    so each chunk corresponds to one set round
     grouped_packs = Enum.chunk_every(all_packs, player_count)
 
-    # Distribute to players
-    player_ids = Enum.map(1..player_count, &Integer.to_string/1)
-
-    # Structure: %{"player_id" => [[pack1_cards], [pack2_cards], [pack3_cards]]}
-    Enum.reduce(player_ids, %{}, fn player_id, acc ->
-      player_packs =
-        grouped_packs
-        |> Enum.map(fn set_packs ->
-          # Take one pack from each set for this player
-          Enum.at(set_packs, String.to_integer(player_id) - 1)
-        end)
-
-      Map.put(acc, player_id, player_packs)
+    # 3) For each player, pick their index from each round
+    players
+    |> Enum.with_index()
+    |> Enum.into(%{}, fn {user_id, idx} ->
+      # build a list of "that player's pack" from each round
+      packs_for_player = Enum.map(grouped_packs, &Enum.at(&1, idx))
+      {user_id, packs_for_player}
     end)
   end
 
@@ -1619,16 +1483,85 @@ defmodule MtgDraftServer.Repo do
     adapter: Ecto.Adapters.Postgres
 end
 
-=== File: lib/mtg_draft_server.ex ===
+=== File: lib/mtg_draft_server_web.ex ===
 
-defmodule MtgDraftServer do
+defmodule MtgDraftServerWeb do
   @moduledoc """
-  MtgDraftServer keeps the contexts that define your domain
-  and business logic.
-
-  Contexts are also responsible for managing your data, regardless
-  if it comes from the database, an external API or others.
+  The entrypoint for defining your web interface:
+    use MtgDraftServerWeb, :controller
+    use MtgDraftServerWeb, :live_view
+    use MtgDraftServerWeb, :html
   """
+
+  def static_paths, do: ~w(assets fonts images favicon.ico robots.txt)
+
+  def router do
+    quote do
+      use Phoenix.Router
+      import Plug.Conn
+      import Phoenix.Controller
+      import Phoenix.LiveView.Router
+    end
+  end
+
+  def channel do
+    quote do
+      use Phoenix.Channel
+    end
+  end
+
+  def controller do
+    quote do
+      use Phoenix.Controller,
+        formats: [:html, :json],
+        layouts: [html: MtgDraftServerWeb.Layouts]
+
+      import Plug.Conn
+      import MtgDraftServerWeb.Gettext
+      unquote(verified_routes())
+    end
+  end
+
+  def live_view do
+    quote do
+      use Phoenix.LiveView,
+        layout: {MtgDraftServerWeb.Layouts, :app}
+
+      # No more Phoenix.View import
+      import Phoenix.Component
+      import Phoenix.HTML
+      import Phoenix.LiveView.Helpers
+
+      import MtgDraftServerWeb.ErrorHelpers
+      import MtgDraftServerWeb.Gettext
+
+      unquote(verified_routes())
+    end
+  end
+
+  def html do
+    quote do
+      use Phoenix.Component
+
+      import Phoenix.HTML
+      import MtgDraftServerWeb.Gettext
+
+      unquote(verified_routes())
+    end
+  end
+
+  def verified_routes do
+    quote do
+      use Phoenix.VerifiedRoutes,
+        endpoint: MtgDraftServerWeb.Endpoint,
+        router: MtgDraftServerWeb.Router,
+        statics: MtgDraftServerWeb.static_paths()
+    end
+  end
+
+  defmacro __using__(which) when is_atom(which) do
+    apply(__MODULE__, which, [])
+  end
 end
 
 === File: lib/mtg_draft_server_web/controllers/default_controller.ex ===
@@ -1660,94 +1593,95 @@ defmodule MtgDraftServerWeb.DraftController do
 
   alias MtgDraftServer.Drafts
   alias MtgDraftServer.DraftSession
+  alias MtgDraftServer.DraftSessionSupervisor
 
   action_fallback MtgDraftServerWeb.FallbackController
 
   @doc """
-  Create a new draft with specific set configuration.
+  Create a new draft, auto‑add 7 AIs, and return the draft info.
   """
-  def create(conn, %{"pack_sets" => pack_sets} = _params) do
-    case conn.assigns[:current_user] do
-      %{"uid" => uid} ->
-        with {:ok, draft} <-
-               Drafts.create_and_join_draft(%{
-                 creator: uid,
-                 pack_sets: pack_sets
-               }) do
-          conn
-          |> put_status(:created)
-          |> put_resp_header("location", "/api/drafts/#{draft.id}")
-          |> json(%{draft_id: draft.id, status: draft.status, pack_sets: pack_sets})
-        end
+  def create(conn, params) do
+    %{"uid" => uid} = conn.assigns.current_user
 
-      _ ->
-        conn
-        |> put_status(:unauthorized)
-        |> json(%{"error" => "Authentication required"})
-    end
-  end
+    # Build the args for DB insert (merging in pack_sets if provided)
+    args =
+      %{creator: uid}
+      |> Map.merge(Map.take(params, ["pack_sets"]))
 
-  # Handles request without pack_sets parameter (default)
-  def create(conn, _params) do
-    case conn.assigns[:current_user] do
-      %{"uid" => uid} ->
-        with {:ok, draft} <- Drafts.create_and_join_draft(%{creator: uid}) do
-          conn
-          |> put_status(:created)
-          |> put_resp_header("location", "/api/drafts/#{draft.id}")
-          |> json(%{draft_id: draft.id, status: draft.status})
-        end
+    with {:ok, %{draft: draft, player: _human_player}} <- Drafts.create_and_join_draft(args) do
+      # 1) Start the GenServer
+      {:ok, _pid} = DraftSessionSupervisor.start_new_session(draft.id)
 
-      _ ->
-        conn
-        |> put_status(:unauthorized)
-        |> json(%{"error" => "Authentication required"})
+      # 2) Join the human player into the session
+      :ok = DraftSession.join(draft.id, %{"user_id" => uid, "ai" => false})
+
+      # 3) Persist + join 7 AIs
+      1..7
+      |> Enum.each(fn i ->
+        ai_id = "AI_#{i}"
+
+        # persist AI player in DB
+        {:ok, _ai_player} = Drafts.join_draft(draft, ai_id)
+
+        # add AI to in-memory session
+        :ok = DraftSession.join(draft.id, %{"user_id" => ai_id, "ai" => true})
+      end)
+
+      # 4) Render response
+      response =
+        %{draft_id: draft.id, status: draft.status}
+        |> Map.merge(if draft.pack_sets != [], do: %{pack_sets: draft.pack_sets}, else: %{})
+
+      conn
+      |> put_status(:created)
+      |> put_resp_header("location", "/api/drafts/#{draft.id}")
+      |> json(response)
     end
   end
 
   @doc """
-  Start the draft by updating its status to "active".
+  Start the draft by updating its status to "active" and loading all players into session.
   """
   def start(conn, %{"id" => draft_id}) do
-    case conn.assigns[:current_user] do
-      %{"uid" => uid} ->
-        with {:ok, draft} <- Drafts.get_draft(draft_id),
-             {:ok, _authorized} <- authorize_draft_action(draft, uid) do
-          # Call the draft session to start with booster packs
-          case Registry.lookup(MtgDraftServer.DraftRegistry, draft_id) do
-            [{pid, _}] ->
-              case GenServer.call(pid, :start_draft_with_boosters) do
-                {:ok, _state} ->
-                  json(conn, %{
-                    draft_id: draft_id,
-                    status: "active",
-                    message: "Draft started with booster packs"
-                  })
+    %{"uid" => uid} = conn.assigns.current_user
 
-                {:error, reason} ->
-                  conn |> put_status(:bad_request) |> json(%{error: reason})
-              end
+    with {:ok, draft} <- Drafts.get_draft(draft_id),
+         {:ok, _} <- authorize_draft_action(draft, uid) do
+      # 1) Ensure the session process exists
+      pid =
+        case Registry.lookup(MtgDraftServer.DraftRegistry, draft_id) do
+          [{pid, _}] ->
+            pid
 
-            [] ->
-              # Start a new session if one doesn't exist
-              {:ok, pid} = MtgDraftServer.DraftSessionSupervisor.start_new_session(draft_id)
-
-              case GenServer.call(pid, :start_draft_with_boosters) do
-                {:ok, _state} ->
-                  json(conn, %{
-                    draft_id: draft_id,
-                    status: "active",
-                    message: "Draft started with booster packs"
-                  })
-
-                {:error, reason} ->
-                  conn |> put_status(:bad_request) |> json(%{error: reason})
-              end
-          end
+          [] ->
+            {:ok, pid} = DraftSessionSupervisor.start_new_session(draft_id)
+            pid
         end
 
-      _ ->
-        conn |> put_status(:unauthorized) |> json(%{"error" => "Authentication required"})
+      # 2) Pull all players (human + AI) from the DB and join them into the GenServer
+      player_ids = Drafts.get_draft_players(draft_id)
+
+      Enum.each(player_ids, fn user_id ->
+        # mark AI by prefix, if that matters for your schedule logic
+        is_ai = String.starts_with?(user_id, "AI_")
+        :ok = DraftSession.join(draft_id, %{"user_id" => user_id, "ai" => is_ai})
+      end)
+
+      # 3) Now kick off booster generation (idempotent in your GenServer)
+      case GenServer.call(pid, :start_draft_with_boosters) do
+        {:ok, _state} ->
+          conn
+          |> json(%{
+            draft_id: draft_id,
+            status: "active",
+            message: "Draft started with booster packs"
+          })
+
+        {:error, reason} ->
+          conn
+          |> put_status(:bad_request)
+          |> json(%{error: reason})
+      end
     end
   end
 
@@ -1759,8 +1693,7 @@ defmodule MtgDraftServerWeb.DraftController do
       %{"uid" => uid} ->
         with {:ok, _} <- ensure_in_draft_session(draft_id, uid),
              {:ok, draft} <- Drafts.get_draft(draft_id),
-             {:ok, _authorized} <- authorize_draft_action(draft, uid) do
-          # Delegate the pick to the DraftSession.
+             {:ok, _} <- authorize_draft_action(draft, uid) do
           DraftSession.pick(draft_id, uid, card_id)
           json(conn, %{message: "Pick registered"})
         end
@@ -1779,7 +1712,7 @@ defmodule MtgDraftServerWeb.DraftController do
     case conn.assigns[:current_user] do
       %{"uid" => uid} ->
         with {:ok, draft} <- Drafts.get_draft(draft_id),
-             {:ok, _authorized} <- authorize_draft_action(draft, uid) do
+             {:ok, _} <- authorize_draft_action(draft, uid) do
           picks = Drafts.get_picked_cards(draft_id, uid)
           json(conn, %{picks: picks})
         end
@@ -1810,22 +1743,28 @@ defmodule MtgDraftServerWeb.DraftController do
         })
     }
 
-    packs_distribution = Drafts.PackGenerator.generate_and_distribute_booster_packs(opts, players)
+    packs_distribution =
+      Drafts.PackGenerator.generate_and_distribute_booster_packs(opts, players)
+
     json(conn, packs_distribution)
   end
 
   @doc """
   Add an AI player to an active draft.
-
-  Expects JSON with:
-    - "id": the draft id
-    - "ai_id": a unique identifier for the AI (e.g. "AI_1")
   """
   def add_ai(conn, %{"id" => draft_id, "ai_id" => ai_id}) do
     case conn.assigns[:current_user] do
       %{"uid" => _uid} ->
-        :ok = DraftSession.join(draft_id, %{"user_id" => ai_id, "ai" => true})
-        json(conn, %{message: "AI player #{ai_id} added to draft", draft_id: draft_id})
+        with {:ok, draft} <- Drafts.get_draft(draft_id),
+             {:ok, _player} <- Drafts.join_draft(draft, ai_id) do
+          :ok = DraftSession.join(draft_id, %{"user_id" => ai_id, "ai" => true})
+          json(conn, %{message: "AI player #{ai_id} added to draft", draft_id: draft_id})
+        else
+          {:error, reason} ->
+            conn
+            |> put_status(:bad_request)
+            |> json(%{error: reason})
+        end
 
       _ ->
         conn
@@ -1850,21 +1789,19 @@ defmodule MtgDraftServerWeb.DraftController do
       %{"uid" => uid} ->
         with {:ok, draft} <- Drafts.get_draft(draft_id),
              {:ok, player} <- Drafts.join_draft(draft, uid) do
-          # Check if draft session exists, start it if it doesn't
           case Registry.lookup(MtgDraftServer.DraftRegistry, draft_id) do
             [] ->
-              # Session doesn't exist, start a new one
-              {:ok, _pid} = MtgDraftServer.DraftSessionSupervisor.start_new_session(draft_id)
+              {:ok, _pid} = DraftSessionSupervisor.start_new_session(draft_id)
               :ok = DraftSession.join(draft_id, %{"user_id" => uid})
 
             [{_pid, _}] ->
-              # Session exists, join it
               :ok = DraftSession.join(draft_id, %{"user_id" => uid})
           end
 
           json(conn, %{draft_id: draft.id, message: "Joined draft", player: player})
         else
-          error -> conn |> put_status(:bad_request) |> json(%{error: error})
+          error ->
+            conn |> put_status(:bad_request) |> json(%{error: error})
         end
 
       _ ->
@@ -1875,41 +1812,38 @@ defmodule MtgDraftServerWeb.DraftController do
   end
 
   @doc """
-  Get the current state of the draft, including if it's the user's turn and the current pack if applicable.
+  Get the current state of the draft, including your queue and current pack.
   """
   def state(conn, %{"id" => draft_id}) do
     case conn.assigns[:current_user] do
       %{"uid" => uid} ->
         with {:ok, draft} <- Drafts.get_draft(draft_id),
-             {:ok, _authorized} <- authorize_draft_action(draft, uid) do
-          # Get draft session state
-          case Registry.lookup(MtgDraftServer.DraftRegistry, draft_id) do
-            [{pid, _}] ->
-              state = GenServer.call(pid, :get_state)
-              current_user_index = Enum.find_index(state.turn_order, fn id -> id == uid end)
-              is_your_turn = state.current_turn_index == current_user_index
+             {:ok, _} <- authorize_draft_action(draft, uid),
+             [{pid, _}] <- Registry.lookup(MtgDraftServer.DraftRegistry, draft_id) do
+          # fetch our new queue‑based state
+          state = GenServer.call(pid, :get_state)
+          user_queue = Map.get(state.booster_queues, uid, [])
 
-              # Only include current pack if it's the user's turn
-              current_pack =
-                if is_your_turn do
-                  get_current_pack_for_user(state, uid)
-                else
-                  []
-                end
+          # head of our queue is {round, pack}
+          {current_round, current_pack} = List.first(user_queue) || {nil, []}
 
-              json(conn, %{
-                status: state.status,
-                pack_number: state.pack_number,
-                pick_number: state.pick_number,
-                is_your_turn: is_your_turn,
-                current_pack: current_pack
-              })
+          json(conn, %{
+            status: state.status,
+            has_pack: current_pack != [],
+            round: current_round,
+            queue_length: length(user_queue),
+            current_pack: current_pack
+          })
+        else
+          [] ->
+            conn
+            |> put_status(:not_found)
+            |> json(%{error: "Draft session not found"})
 
-            [] ->
-              conn
-              |> put_status(:not_found)
-              |> json(%{error: "Draft session not found"})
-          end
+          _ ->
+            conn
+            |> put_status(:unauthorized)
+            |> json(%{error: "Authentication required"})
         end
 
       _ ->
@@ -1938,10 +1872,11 @@ defmodule MtgDraftServerWeb.DraftController do
               [{_pid, _}] ->
                 :ok = DraftSession.join(draft_id, %{"user_id" => uid})
                 players = Drafts.get_draft_players(draft_id)
+
                 json(conn, %{message: "Rejoined draft", draft_id: draft_id, players: players})
 
               [] ->
-                {:ok, _pid} = MtgDraftServer.DraftSessionSupervisor.start_new_session(draft_id)
+                {:ok, _pid} = DraftSessionSupervisor.start_new_session(draft_id)
                 :ok = DraftSession.join(draft_id, %{"user_id" => uid})
                 players = Drafts.get_draft_players(draft_id)
 
@@ -1973,18 +1908,6 @@ defmodule MtgDraftServerWeb.DraftController do
     case Drafts.get_draft_player(draft.id, user_id) do
       {:ok, _player} -> {:ok, true}
       _ -> {:error, "Unauthorized"}
-    end
-  end
-
-  defp get_current_pack_for_user(state, user_id) do
-    if state.booster_packs do
-      # Get the player's packs
-      player_packs = Map.get(state.booster_packs, user_id, [])
-      # Get the current pack based on pack_number (1-indexed, so subtract 1)
-      current_pack = Enum.at(player_packs, state.pack_number - 1, [])
-      current_pack
-    else
-      []
     end
   end
 end
@@ -2037,6 +1960,14 @@ end
 defmodule MtgDraftServerWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :mtg_draft_server
 
+  plug CORSPlug,
+    origin: ["http://localhost:5173"],
+    methods: ["GET", "POST"],
+    headers: ["Authorization", "Content-Type", "Accept"],
+    expose: ["Authorization"],
+    credentials: true,
+    max_age: 86400
+
   # Force SSL in production if configured
   if Application.compile_env(:mtg_draft_server, :force_ssl, false) do
     plug Plug.SSL, rewrite_on: [:x_forwarded_proto]
@@ -2085,42 +2016,7 @@ defmodule MtgDraftServerWeb.Endpoint do
   plug Plug.Head
   plug Plug.Session, @session_options
 
-  plug CORSPlug,
-    origin: ["http://localhost:5173"],
-    methods: ["GET", "POST"],
-    headers: ["Authorization", "Content-Type", "Accept"],
-    expose: ["Authorization"],
-    credentials: true,
-    max_age: 86400
-
   plug MtgDraftServerWeb.Router
-end
-
-=== File: lib/mtg_draft_server_web/gettext.ex ===
-
-defmodule MtgDraftServerWeb.Gettext do
-  @moduledoc """
-  A module providing Internationalization with a gettext-based API.
-
-  By using [Gettext](https://hexdocs.pm/gettext),
-  your module gains a set of macros for translations, for example:
-
-      import MtgDraftServerWeb.Gettext
-
-      # Simple translation
-      gettext("Here is the string to translate")
-
-      # Plural translation
-      ngettext("Here is the string to translate",
-               "Here are the strings to translate",
-               3)
-
-      # Domain-based translation
-      dgettext("errors", "Here is the error message to translate")
-
-  See the [Gettext Docs](https://hexdocs.pm/gettext) for detailed usage.
-  """
-  use Gettext.Backend, otp_app: :mtg_draft_server
 end
 
 === File: lib/mtg_draft_server_web/plugs/auth_plug.ex ===
@@ -2170,8 +2066,15 @@ end
 
 defmodule MtgDraftServerWeb.Router do
   use MtgDraftServerWeb, :router
+  import Phoenix.LiveView.Router
 
-  alias MtgDraftServerWeb.AuthPlug
+  pipeline :browser do
+    plug :accepts, ["html"]
+    plug :fetch_session
+    plug :fetch_flash
+    plug :protect_from_forgery
+    plug :put_secure_browser_headers
+  end
 
   pipeline :api do
     plug :accepts, ["json"]
@@ -2179,12 +2082,19 @@ defmodule MtgDraftServerWeb.Router do
 
   pipeline :auth_api do
     plug :accepts, ["json"]
-    plug AuthPlug
+    plug MtgDraftServerWeb.AuthPlug
   end
 
   scope "/", MtgDraftServerWeb do
-    pipe_through :api
+    pipe_through :browser
+
     get "/", DefaultController, :index
+  end
+
+  scope "/admin", MtgDraftServerWeb do
+    pipe_through :browser
+
+    live "/", DashboardLive, :index
   end
 
   scope "/api", MtgDraftServerWeb, as: :api do
@@ -2196,174 +2106,11 @@ defmodule MtgDraftServerWeb.Router do
 
     post "/drafts", DraftController, :create
     post "/drafts/:id/start", DraftController, :start
-    post "/drafts/:id/start_with_boosters", DraftController, :start_draft_with_boosters
     post "/drafts/:id/pick", DraftController, :pick
     post "/drafts/reconnect", DraftController, :reconnect
     post "/drafts/booster_packs", DraftController, :generate_booster_packs
     post "/drafts/:id/add_ai", DraftController, :add_ai
     post "/drafts/:id/join", DraftController, :join
-  end
-end
-
-=== File: lib/mtg_draft_server_web/telemetry.ex ===
-
-defmodule MtgDraftServerWeb.Telemetry do
-  use Supervisor
-  import Telemetry.Metrics
-
-  def start_link(arg) do
-    Supervisor.start_link(__MODULE__, arg, name: __MODULE__)
-  end
-
-  @impl true
-  def init(_arg) do
-    children = [
-      # Telemetry poller will execute the given period measurements
-      # every 10_000ms. Learn more here: https://hexdocs.pm/telemetry_metrics
-      {:telemetry_poller, measurements: periodic_measurements(), period: 10_000}
-      # Add reporters as children of your supervision tree.
-      # {Telemetry.Metrics.ConsoleReporter, metrics: metrics()}
-    ]
-
-    Supervisor.init(children, strategy: :one_for_one)
-  end
-
-  def metrics do
-    [
-      # Phoenix Metrics
-      summary("phoenix.endpoint.start.system_time",
-        unit: {:native, :millisecond}
-      ),
-      summary("phoenix.endpoint.stop.duration",
-        unit: {:native, :millisecond}
-      ),
-      summary("phoenix.router_dispatch.start.system_time",
-        tags: [:route],
-        unit: {:native, :millisecond}
-      ),
-      summary("phoenix.router_dispatch.exception.duration",
-        tags: [:route],
-        unit: {:native, :millisecond}
-      ),
-      summary("phoenix.router_dispatch.stop.duration",
-        tags: [:route],
-        unit: {:native, :millisecond}
-      ),
-      summary("phoenix.socket_connected.duration",
-        unit: {:native, :millisecond}
-      ),
-      summary("phoenix.channel_joined.duration",
-        unit: {:native, :millisecond}
-      ),
-      summary("phoenix.channel_handled_in.duration",
-        tags: [:event],
-        unit: {:native, :millisecond}
-      ),
-
-      # Database Metrics
-      summary("mtg_draft_server.repo.query.total_time",
-        unit: {:native, :millisecond},
-        description: "The sum of the other measurements"
-      ),
-      summary("mtg_draft_server.repo.query.decode_time",
-        unit: {:native, :millisecond},
-        description: "The time spent decoding the data received from the database"
-      ),
-      summary("mtg_draft_server.repo.query.query_time",
-        unit: {:native, :millisecond},
-        description: "The time spent executing the query"
-      ),
-      summary("mtg_draft_server.repo.query.queue_time",
-        unit: {:native, :millisecond},
-        description: "The time spent waiting for a database connection"
-      ),
-      summary("mtg_draft_server.repo.query.idle_time",
-        unit: {:native, :millisecond},
-        description:
-          "The time the connection spent waiting before being checked out for the query"
-      ),
-
-      # VM Metrics
-      summary("vm.memory.total", unit: {:byte, :kilobyte}),
-      summary("vm.total_run_queue_lengths.total"),
-      summary("vm.total_run_queue_lengths.cpu"),
-      summary("vm.total_run_queue_lengths.io")
-    ]
-  end
-
-  defp periodic_measurements do
-    [
-      # A module, function and arguments to be invoked periodically.
-      # This function must call :telemetry.execute/3 and a metric must be added above.
-      # {MtgDraftServerWeb, :count_users, []}
-    ]
-  end
-end
-
-=== File: lib/mtg_draft_server_web.ex ===
-
-defmodule MtgDraftServerWeb do
-  @moduledoc """
-  The entrypoint for defining your web interface, such
-  as controllers, components, channels, and so on.
-
-  This can be used in your application as:
-
-      use MtgDraftServerWeb, :controller
-      use MtgDraftServerWeb, :html
-
-  The definitions below will be executed for every controller,
-  component, etc, so keep them short and clean, focused
-  on imports, uses and aliases.
-
-  Do NOT define functions inside the quoted expressions
-  below. Instead, define additional modules and import
-  those modules here.
-  """
-
-  def static_paths, do: ~w(assets fonts images favicon.ico robots.txt)
-
-  def router do
-    quote do
-      use Phoenix.Router
-      import Plug.Conn
-      import Phoenix.Controller
-    end
-  end
-
-  def channel do
-    quote do
-      use Phoenix.Channel
-    end
-  end
-
-  def controller do
-    quote do
-      use Phoenix.Controller,
-        formats: [:html, :json],
-        layouts: [html: MtgDraftServerWeb.Layouts]
-
-      import Plug.Conn
-      import MtgDraftServerWeb.Gettext
-
-      unquote(verified_routes())
-    end
-  end
-
-  def verified_routes do
-    quote do
-      use Phoenix.VerifiedRoutes,
-        endpoint: MtgDraftServerWeb.Endpoint,
-        router: MtgDraftServerWeb.Router,
-        statics: MtgDraftServerWeb.static_paths()
-    end
-  end
-
-  @doc """
-  When used, dispatch to the appropriate controller/live_view/etc.
-  """
-  defmacro __using__(which) when is_atom(which) do
-    apply(__MODULE__, which, [])
   end
 end
 
@@ -2405,6 +2152,8 @@ defmodule MtgDraftServer.MixProject do
     [
       {:phoenix, "~> 1.7.14"},
       {:phoenix_ecto, "~> 4.5"},
+      {:phoenix_live_view, "~> 1.0"},
+      {:phoenix_html, "~> 4.2"},
       {:ecto_sql, "~> 3.10"},
       {:postgrex, ">= 0.0.0"},
       {:swoosh, "~> 1.5"},
@@ -2437,233 +2186,6 @@ defmodule MtgDraftServer.MixProject do
     ]
   end
 end
-
-=== File: priv/gettext/en/LC_MESSAGES/errors.po ===
-
-## `msgid`s in this file come from POT (.pot) files.
-##
-## Do not add, change, or remove `msgid`s manually here as
-## they're tied to the ones in the corresponding POT file
-## (with the same domain).
-##
-## Use `mix gettext.extract --merge` or `mix gettext.merge`
-## to merge POT files into PO files.
-msgid ""
-msgstr ""
-"Language: en\n"
-
-## From Ecto.Changeset.cast/4
-msgid "can't be blank"
-msgstr ""
-
-## From Ecto.Changeset.unique_constraint/3
-msgid "has already been taken"
-msgstr ""
-
-## From Ecto.Changeset.put_change/3
-msgid "is invalid"
-msgstr ""
-
-## From Ecto.Changeset.validate_acceptance/3
-msgid "must be accepted"
-msgstr ""
-
-## From Ecto.Changeset.validate_format/3
-msgid "has invalid format"
-msgstr ""
-
-## From Ecto.Changeset.validate_subset/3
-msgid "has an invalid entry"
-msgstr ""
-
-## From Ecto.Changeset.validate_exclusion/3
-msgid "is reserved"
-msgstr ""
-
-## From Ecto.Changeset.validate_confirmation/3
-msgid "does not match confirmation"
-msgstr ""
-
-## From Ecto.Changeset.no_assoc_constraint/3
-msgid "is still associated with this entry"
-msgstr ""
-
-msgid "are still associated with this entry"
-msgstr ""
-
-## From Ecto.Changeset.validate_length/3
-msgid "should have %{count} item(s)"
-msgid_plural "should have %{count} item(s)"
-msgstr[0] ""
-msgstr[1] ""
-
-msgid "should be %{count} character(s)"
-msgid_plural "should be %{count} character(s)"
-msgstr[0] ""
-msgstr[1] ""
-
-msgid "should be %{count} byte(s)"
-msgid_plural "should be %{count} byte(s)"
-msgstr[0] ""
-msgstr[1] ""
-
-msgid "should have at least %{count} item(s)"
-msgid_plural "should have at least %{count} item(s)"
-msgstr[0] ""
-msgstr[1] ""
-
-msgid "should be at least %{count} character(s)"
-msgid_plural "should be at least %{count} character(s)"
-msgstr[0] ""
-msgstr[1] ""
-
-msgid "should be at least %{count} byte(s)"
-msgid_plural "should be at least %{count} byte(s)"
-msgstr[0] ""
-msgstr[1] ""
-
-msgid "should have at most %{count} item(s)"
-msgid_plural "should have at most %{count} item(s)"
-msgstr[0] ""
-msgstr[1] ""
-
-msgid "should be at most %{count} character(s)"
-msgid_plural "should be at most %{count} character(s)"
-msgstr[0] ""
-msgstr[1] ""
-
-msgid "should be at most %{count} byte(s)"
-msgid_plural "should be at most %{count} byte(s)"
-msgstr[0] ""
-msgstr[1] ""
-
-## From Ecto.Changeset.validate_number/3
-msgid "must be less than %{number}"
-msgstr ""
-
-msgid "must be greater than %{number}"
-msgstr ""
-
-msgid "must be less than or equal to %{number}"
-msgstr ""
-
-msgid "must be greater than or equal to %{number}"
-msgstr ""
-
-msgid "must be equal to %{number}"
-msgstr ""
-
-=== File: priv/gettext/errors.pot ===
-
-## This is a PO Template file.
-##
-## `msgid`s here are often extracted from source code.
-## Add new translations manually only if they're dynamic
-## translations that can't be statically extracted.
-##
-## Run `mix gettext.extract` to bring this file up to
-## date. Leave `msgstr`s empty as changing them here has no
-## effect: edit them in PO (`.po`) files instead.
-## From Ecto.Changeset.cast/4
-msgid "can't be blank"
-msgstr ""
-
-## From Ecto.Changeset.unique_constraint/3
-msgid "has already been taken"
-msgstr ""
-
-## From Ecto.Changeset.put_change/3
-msgid "is invalid"
-msgstr ""
-
-## From Ecto.Changeset.validate_acceptance/3
-msgid "must be accepted"
-msgstr ""
-
-## From Ecto.Changeset.validate_format/3
-msgid "has invalid format"
-msgstr ""
-
-## From Ecto.Changeset.validate_subset/3
-msgid "has an invalid entry"
-msgstr ""
-
-## From Ecto.Changeset.validate_exclusion/3
-msgid "is reserved"
-msgstr ""
-
-## From Ecto.Changeset.validate_confirmation/3
-msgid "does not match confirmation"
-msgstr ""
-
-## From Ecto.Changeset.no_assoc_constraint/3
-msgid "is still associated with this entry"
-msgstr ""
-
-msgid "are still associated with this entry"
-msgstr ""
-
-## From Ecto.Changeset.validate_length/3
-msgid "should have %{count} item(s)"
-msgid_plural "should have %{count} item(s)"
-msgstr[0] ""
-msgstr[1] ""
-
-msgid "should be %{count} character(s)"
-msgid_plural "should be %{count} character(s)"
-msgstr[0] ""
-msgstr[1] ""
-
-msgid "should be %{count} byte(s)"
-msgid_plural "should be %{count} byte(s)"
-msgstr[0] ""
-msgstr[1] ""
-
-msgid "should have at least %{count} item(s)"
-msgid_plural "should have at least %{count} item(s)"
-msgstr[0] ""
-msgstr[1] ""
-
-msgid "should be at least %{count} character(s)"
-msgid_plural "should be at least %{count} character(s)"
-msgstr[0] ""
-msgstr[1] ""
-
-msgid "should be at least %{count} byte(s)"
-msgid_plural "should be at least %{count} byte(s)"
-msgstr[0] ""
-msgstr[1] ""
-
-msgid "should have at most %{count} item(s)"
-msgid_plural "should have at most %{count} item(s)"
-msgstr[0] ""
-msgstr[1] ""
-
-msgid "should be at most %{count} character(s)"
-msgid_plural "should be at most %{count} character(s)"
-msgstr[0] ""
-msgstr[1] ""
-
-msgid "should be at most %{count} byte(s)"
-msgid_plural "should be at most %{count} byte(s)"
-msgstr[0] ""
-msgstr[1] ""
-
-## From Ecto.Changeset.validate_number/3
-msgid "must be less than %{number}"
-msgstr ""
-
-msgid "must be greater than %{number}"
-msgstr ""
-
-msgid "must be less than or equal to %{number}"
-msgstr ""
-
-msgid "must be greater than or equal to %{number}"
-msgstr ""
-
-msgid "must be equal to %{number}"
-msgstr ""
 
 === File: priv/repo/migrations/.formatter.exs ===
 
@@ -2853,9 +2375,10 @@ end
     {:ok, card} ->
       # Check if the card actually exists in the database
       case Repo.get(Card, card.id) do
-        nil -> 
+        nil ->
           # Card doesn't exist, skip metadata
           :ok
+
         _ ->
           # Card exists, add metadata
           %CardMetadata{}
@@ -2868,16 +2391,9 @@ end
           })
           |> Repo.insert(on_conflict: :nothing)
       end
-    
+
     _ ->
       # Card was not inserted, skip
       :ok
   end
 end)
-=== File: priv/static/robots.txt ===
-
-# See https://www.robotstxt.org/robotstxt.html for documentation on how to use the robots.txt file
-#
-# To ban all spiders from the entire site uncomment the next two lines:
-# User-agent: *
-# Disallow: /

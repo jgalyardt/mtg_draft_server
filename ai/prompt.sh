@@ -1,198 +1,179 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
+trap 'echo "[ERROR] Script failed at line $LINENO." >&2' ERR
 
-# Show usage information
+# =========================================
+# prompt.sh — Generate AI prompt with filtered project context
+# =========================================
+
+# Usage: prompt.sh [options]
+# Options:
+#   -h, --help             Show help
+#   -o, --output FILE      Set output file (default: generated_prompt.txt)
+#   -c, --context FILE     Set context file (default: context.txt)
+#   --no-tree              Skip printing project tree
+#   --max-size N           Skip files larger than N bytes (default: 1000000)
+#   --include-config       Include config/ directory
+
+# -----------------------------------------
+# Defaults
+# -----------------------------------------
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="${SCRIPT_DIR}/.."
+CONTEXT_FILE="${SCRIPT_DIR}/context.txt"
+OUTPUT_FILE="${SCRIPT_DIR}/generated_prompt.txt"
+PRINT_TREE=true
+MAX_SIZE=1000000
+INCLUDE_CONFIG=false
+
+# -----------------------------------------
+# Help
+# -----------------------------------------
 show_help() {
-    cat << EOF
+  cat << EOF
 Usage: $(basename "$0") [OPTIONS]
 
-Generates a comprehensive prompt file by combining:
-1. Context from a context file
-2. Project directory structure (excluding irrelevant directories/files)
-3. Contents of all relevant source files
-
-The generated prompt will be saved as 'generated_prompt.txt' by default.
+Generates a filtered prompt by combining:
+  1. A context file
+  2. (Optional) Project tree
+  3. Contents of relevant source files
 
 Options:
-    -h, --help              Show this help message
-    -o, --output FILE       Specify output file (default: generated_prompt.txt)
-    -c, --context FILE      Specify context file (default: context.txt)
-    --no-stats              Skip generation statistics
-    --max-file-size SIZE   Skip files larger than SIZE in bytes (default: 1000000)
-
-Examples:
-    $(basename "$0")                    # Generate using defaults
-    $(basename "$0") -o custom.txt      # Save output to custom.txt
-    $(basename "$0") -c my_context.txt  # Use different context file
+  -h, --help            Show this message
+  -o, --output FILE     Output file (default: generated_prompt.txt)
+  -c, --context FILE    Context file (default: context.txt)
+  --no-tree             Do not include project structure tree
+  --max-size N          Skip files larger than N bytes (default: 1000000)
+  --include-config      Include config/ directory
 EOF
 }
 
-# Built-in tree function to replace the external tree command
-print_tree() {
-    local dir="${1:-.}"
-    local prefix="${2}"
-    # Expanded excluded patterns to ignore extra irrelevant files (e.g. .DS_Store, coverage, image files)
-    local excluded="${3:-node_modules|_build|deps|.git|*.beam|*.ez|ai|.DS_Store|coverage|*.lock|*.ico|*.svg|*.png|*.jpg}"
-
-    # List items excluding hidden files and matching excluded patterns
-    local items=($(ls -A "$dir" 2>/dev/null | grep -Ev "$excluded" | sort))
-    local total=${#items[@]}
-
-    local i
-    for ((i=0; i<$total; i++)); do
-        local item="${items[$i]}"
-        local path="$dir/$item"
-        local is_last=$((i == total-1))
-
-        if [ $is_last -eq 1 ]; then
-            echo "${prefix}└── $item"
-            new_prefix="${prefix}    "
-        else
-            echo "${prefix}├── $item"
-            new_prefix="${prefix}│   "
-        fi
-
-        if [ -d "$path" ]; then
-            print_tree "$path" "$new_prefix" "$excluded"
-        fi
-    done
-}
-
-# Default values
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -W)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd -W)"
-CONTEXT_FILE="$SCRIPT_DIR/context.txt"
-OUTPUT_FILE="$SCRIPT_DIR/generated_prompt.txt"
-INCLUDE_STATS=true
-MAX_FILE_SIZE=1000000
-
-# Parse command line arguments
+# -----------------------------------------
+# Parse args
+# -----------------------------------------
+echo "[LOG] Parsing arguments: $@"
 while [[ $# -gt 0 ]]; do
-    case $1 in
-        -h|--help)
-            show_help
-            exit 0
-            ;;
-        -o|--output)
-            OUTPUT_FILE="$2"
-            shift 2
-            ;;
-        -c|--context)
-            CONTEXT_FILE="$2"
-            shift 2
-            ;;
-        --no-stats)
-            INCLUDE_STATS=false
-            shift
-            ;;
-        --max-file-size)
-            MAX_FILE_SIZE="$2"
-            shift 2
-            ;;
-        *)
-            echo "Error: Unknown option $1"
-            show_help
-            exit 1
-            ;;
-    esac
+  case "$1" in
+    -h|--help) show_help; exit 0 ;;
+    -o|--output) OUTPUT_FILE="$2"; shift 2 ;;
+    -c|--context) CONTEXT_FILE="$2"; shift 2 ;;
+    --no-tree) PRINT_TREE=false; shift ;;
+    --max-size) MAX_SIZE="$2"; shift 2 ;;
+    --include-config) INCLUDE_CONFIG=true; shift ;;
+    *) echo "Unknown option: $1"; show_help; exit 1 ;;
+  esac
 done
 
-# Verify context file exists
-if [ ! -f "$CONTEXT_FILE" ]; then
-    echo "Error: Context file not found: $CONTEXT_FILE"
-    echo "Create the file or specify a different one with -c option"
-    exit 1
+echo "[LOG] Context file: $CONTEXT_FILE"
+
+# -----------------------------------------
+# Validate context file
+# -----------------------------------------
+[[ -f "$CONTEXT_FILE" ]] || { echo "[ERROR] Context file not found: $CONTEXT_FILE" >&2; exit 1; }
+
+# -----------------------------------------
+# Prepare output
+# -----------------------------------------
+echo "[LOG] Starting prompt build: output -> $OUTPUT_FILE"
+cp "$CONTEXT_FILE" "$OUTPUT_FILE"
+echo >> "$OUTPUT_FILE"
+
+# -----------------------------------------
+# Optional: print project tree
+# -----------------------------------------
+if [[ "$PRINT_TREE" == true ]]; then
+  echo "[LOG] Generating project tree"
+  echo -e "\nProject Structure:" >> "$OUTPUT_FILE"
+  find "$PROJECT_ROOT" \( \
+      -path "*/_build" -o -path "*/deps" -o -path "*/.git" -o -path "*/node_modules" \
+      -o -path "*/.elixir_ls" -o -name ".DS_Store" \
+      -o -path "*/priv/static*" -o -path "*/priv/gettext*" \
+  \) -prune -o -print | sed "s|^$PROJECT_ROOT/||" >> "$OUTPUT_FILE"
+  echo >> "$OUTPUT_FILE"
+  echo "[LOG] Tree printed"
 fi
 
-# Print initial directory information
-echo "Script running from: $SCRIPT_DIR"
-echo "Project root: $PROJECT_ROOT"
-echo
+# -----------------------------------------
+# Detect source files
+# -----------------------------------------
+echo "[LOG] Detecting source files in $PROJECT_ROOT"
+if git -C "$PROJECT_ROOT" rev-parse --is-inside-work-tree &>/dev/null; then
+  echo "[LOG] Using git ls-files"
+  mapfile -t files < <(git -C "$PROJECT_ROOT" ls-files)
+else
+  echo "[LOG] Falling back to find"
+  pushd "$PROJECT_ROOT" >/dev/null
+  mapfile -t files < <(find . -type f | sed 's|^\./||')
+  popd >/dev/null
+fi
 
-# Create or clear the output file by copying the context
-cp "$CONTEXT_FILE" "$OUTPUT_FILE"
+echo "[LOG] Found ${#files[@]} files"
 
-# Uncomment if you want to include the project structure tree in the prompt:
-# echo -e "\n\nProject Structure:\n" >> "$OUTPUT_FILE"
-# print_tree "$PROJECT_ROOT" "" 'node_modules|_build|deps|.git|*.beam|*.ez|ai|.DS_Store|coverage|*.lock|*.ico|*.svg|*.png|*.jpg' >> "$OUTPUT_FILE"
+# -----------------------------------------
+# Pre-calc total files
+# -----------------------------------------
+TOTAL=0
+for rel in "${files[@]}"; do
+  case "$rel" in
+    mix.exs|lib/*|priv/*) ;;
+    config/*)
+      [[ "$INCLUDE_CONFIG" == true ]] || continue
+      ;;
+    *) continue ;;
+  esac
 
-# Function to decide if a file path should be processed (only include mix.exs, lib/, or priv/)
-should_process_path() {
-    local path="$1"
-    local rel_path="${path#$PROJECT_ROOT/}"
+  case "$rel" in
+    priv/static/*|priv/gettext/*|*gettext.ex|*telemetry.ex) continue ;;
+  esac
 
-    if [[ "$rel_path" == "mix.exs" ]] || [[ "$rel_path" == lib/* ]] || [[ "$rel_path" == priv/* ]]; then
-        return 0
-    fi
-    return 1
-}
+  if [[ -f "$PROJECT_ROOT/$rel" ]] && (( $(wc -c < "$PROJECT_ROOT/$rel") > MAX_SIZE )); then
+    continue
+  fi
 
-# Function to decide if a file should be included
-should_include_file() {
-    local file="$1"
+  case "$rel" in
+    *.beam|*.ez|*.png|*.jpg|*.svg|*.lock|deps/*|_build/*) continue ;;
+  esac
 
-    # Ignore directories
-    if [ -d "$file" ]; then
-        return 1
-    fi
+  ((++TOTAL))
+done
 
-    # Exclude files based on patterns (hidden files, build artifacts, images, etc.)
-    case "$file" in
-        *node_modules*|*_build*|*deps*|*.git*|*.beam|*.ez|*ai*|*.ico|*.svg|*.lock|*.heex|.*|*coverage*)
-            return 1
-            ;;
-    esac
+echo "[LOG] Eligible files: $TOTAL"
 
-    # Check file size
-    local size
-    size=$(stat --format=%s "$file" 2>/dev/null)
-    if [ $? -eq 0 ] && [ "$size" -gt "$MAX_FILE_SIZE" ]; then
-        echo "Skipping large file: $file ($size bytes)"
-        return 1
-    fi
+# -----------------------------------------
+# Process and append files
+# -----------------------------------------
+echo "[LOG] Processing files..."
+CURRENT=0
+for rel in "${files[@]}"; do
+  case "$rel" in
+    mix.exs|lib/*|priv/*) ;;
+    config/*)
+      [[ "$INCLUDE_CONFIG" == true ]] || continue
+      ;;
+    *) continue ;;
+  esac
 
-    # Check if file is binary
-    if file "$file" | grep -q "binary"; then
-        return 1
-    fi
+  case "$rel" in
+    priv/static/*|priv/gettext/*|*gettext.ex|*telemetry.ex) continue ;;
+  esac
 
-    return 0
-}
+  if [[ -f "$PROJECT_ROOT/$rel" ]] && (( $(wc -c < "$PROJECT_ROOT/$rel") > MAX_SIZE )); then
+    continue
+  fi
 
-# Function to process and append a file's content to the output file
-process_file() {
-    local file="$1"
-    local rel_path="${file#$PROJECT_ROOT/}"
-    
-    if should_include_file "$file"; then
-        echo -e "\n=== File: $rel_path ===\n" >> "$OUTPUT_FILE"
-        cat "$file" >> "$OUTPUT_FILE"
-    fi
-}
+  case "$rel" in
+    *.beam|*.ez|*.png|*.jpg|*.svg|*.lock|deps/*|_build/*) continue ;;
+  esac
 
-# Simple progress counter
-print_progress() {
-    local current=$1
-    local total=$2
-    printf "\rProcessing files: [%d/%d]" "$current" "$total"
-}
+  ((++CURRENT))
+  printf "\rProcessing files: [%d/%d]" "$CURRENT" "$TOTAL"
+  echo "[LOG] Including: $rel"
 
-# Count total files to process (only from mix.exs, lib/, and priv/ directories)
-total_files=$(find "$PROJECT_ROOT" \( -name "mix.exs" -o -path "*/lib/*" -o -path "*/priv/*" \) \
-    -type f ! -path "*/deps/*" ! -path "*/_build/*" ! -path "*/node_modules/*" ! -path "*/.git/*" | wc -l)
-current_file=0
+  {
+    echo -e "\n=== File: $rel ===\n"
+    cat "$PROJECT_ROOT/$rel"
+  } >> "$OUTPUT_FILE"
+done
 
-echo "Starting file processing from $(dirname "$PROJECT_ROOT")..."
-echo "Including: mix.exs, lib/, and priv/ directories"
-
-# Process each file found
-while IFS= read -r file; do
-    if should_process_path "$file"; then
-        ((current_file++))
-        print_progress "$current_file" "$total_files"
-        process_file "$file"
-    fi
-done < <(find "$PROJECT_ROOT" \( -name "mix.exs" -o -path "*/lib/*" -o -path "*/priv/*" \) \
-    -type f ! -path "*/deps/*" ! -path "*/_build/*" ! -path "*/node_modules/*" ! -path "*/.git/*")
-
-printf "\rFile processing completed! Processed %d files.\n" "$total_files"
-echo "Prompt has been generated in $OUTPUT_FILE"
+printf "\rProcessing files: [%d/%d]\n" "$CURRENT" "$TOTAL"
+echo "[LOG] Prompt generation complete: $OUTPUT_FILE"

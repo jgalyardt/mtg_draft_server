@@ -175,50 +175,40 @@ defmodule MtgDraftServer.Drafts.PackGenerator do
   end
 
   @doc """
-  Generates packs from multiple different sets for a draft.
+  Generates booster packs for each of the given players across multiple set rounds.
 
-  This function:
-    1. Generates packs for each set in the pack_sets list
-    2. Groups and distributes the packs among players
+    * `players`      – a list of player IDs (strings), in draft‑seat order.
+    * `pack_sets`    – a list of set codes, one per round.
 
-  Parameters:
-    - player_count - the number of players in the draft
-    - pack_sets - a list of set codes, one for each round of the draft
-
-  Returns a map where keys are player IDs and values are lists of packs, with one pack
-  from each set for each player.
+  Returns a map `%{ user_id => [pack_round1, pack_round2, …] }`.
   """
-  def generate_multi_set_packs(player_count, pack_sets) do
+  def generate_multi_set_packs(players, pack_sets) when is_list(players) do
+    player_count = length(players)
     packs_per_player = length(pack_sets)
 
-    # Ensure the number of packs is a multiple of player_count
     if rem(packs_per_player, player_count) != 0 do
-      raise ArgumentError, "Number of packs per player must be a multiple of player_count"
+      raise ArgumentError,
+            "Number of sets (#{packs_per_player}) must be a multiple of player_count (#{player_count})"
     end
 
-    # Generate packs for each set configuration
+    # 1) Generate player_count packs for each set_code
     all_packs =
       Enum.flat_map(pack_sets, fn set_code ->
-        # Generate player_count packs from this set
+        # this helper already makes exactly player_count packs from one set
         generate_packs_for_set(player_count, set_code)
       end)
 
-    # Group packs by set in order
+    # 2) Group the flat list of packs into chunks of size player_count
+    #    so each chunk corresponds to one set round
     grouped_packs = Enum.chunk_every(all_packs, player_count)
 
-    # Distribute to players
-    player_ids = Enum.map(1..player_count, &Integer.to_string/1)
-
-    # Structure: %{"player_id" => [[pack1_cards], [pack2_cards], [pack3_cards]]}
-    Enum.reduce(player_ids, %{}, fn player_id, acc ->
-      player_packs =
-        grouped_packs
-        |> Enum.map(fn set_packs ->
-          # Take one pack from each set for this player
-          Enum.at(set_packs, String.to_integer(player_id) - 1)
-        end)
-
-      Map.put(acc, player_id, player_packs)
+    # 3) For each player, pick their index from each round
+    players
+    |> Enum.with_index()
+    |> Enum.into(%{}, fn {user_id, idx} ->
+      # build a list of "that player's pack" from each round
+      packs_for_player = Enum.map(grouped_packs, &Enum.at(&1, idx))
+      {user_id, packs_for_player}
     end)
   end
 

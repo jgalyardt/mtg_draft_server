@@ -15,7 +15,25 @@ defmodule MtgDraftServer.Application do
     ]
 
     opts = [strategy: :one_for_one, name: MtgDraftServer.Supervisor]
-    Supervisor.start_link(children, opts)
+
+    # start your supervision tree
+    {:ok, sup} = Supervisor.start_link(children, opts)
+
+    # —————————————————————————————————————————————————————————
+    # WIPE DRAFTS + PLAYERS ON EVERY RESTART
+    #
+    # Once the Repo child is up, delete all old drafts.
+    # Because of on_delete: :delete_all FKs, this also removes draft_players
+    # and draft_picks.
+    alias MtgDraftServer.Repo
+    alias MtgDraftServer.Drafts.{Draft, DraftPlayer}
+
+    Repo.delete_all(Draft)
+    Repo.delete_all(DraftPlayer)
+
+    # —————————————————————————————————————————————————————————
+
+    {:ok, sup}
   end
 
   @impl true

@@ -44,4 +44,31 @@ defmodule MtgDraftServer.DraftsTest do
     pending = Drafts.list_pending_drafts()
     assert Enum.any?(pending, fn d -> d.id == draft.id and d.player_count == 0 end)
   end
+
+  test "notify/2 broadcasts atom events with draft_id" do
+    draft_id = Ecto.UUID.generate()
+
+    # Subscribe to the topic
+    Phoenix.PubSub.subscribe(MtgDraftServer.PubSub, "draft:#{draft_id}")
+
+    # Send a notification with an atom event
+    Drafts.notify(draft_id, :test_event)
+
+    # Assert we receive the expected message
+    assert_receive {:test_event, ^draft_id}, 500
+  end
+
+  test "notify/2 broadcasts complex event structures" do
+    draft_id = Ecto.UUID.generate()
+
+    # Subscribe to the topic
+    Phoenix.PubSub.subscribe(MtgDraftServer.PubSub, "draft:#{draft_id}")
+
+    # Send a notification with a complex event
+    complex_event = {:pack_updated, "player1", 1, 2}
+    Drafts.notify(draft_id, complex_event)
+
+    # Assert we receive the expected message
+    assert_receive ^complex_event, 500
+  end
 end

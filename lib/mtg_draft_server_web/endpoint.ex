@@ -1,6 +1,14 @@
 defmodule MtgDraftServerWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :mtg_draft_server
 
+  plug CORSPlug,
+    origin: ["http://localhost:5173"],
+    methods: ["GET", "POST"],
+    headers: ["Authorization", "Content-Type", "Accept"],
+    expose: ["Authorization"],
+    credentials: true,
+    max_age: 86400
+
   # Force SSL in production if configured
   if Application.compile_env(:mtg_draft_server, :force_ssl, false) do
     plug Plug.SSL, rewrite_on: [:x_forwarded_proto]
@@ -48,14 +56,6 @@ defmodule MtgDraftServerWeb.Endpoint do
   plug Plug.MethodOverride
   plug Plug.Head
   plug Plug.Session, @session_options
-
-  plug CORSPlug,
-    origin: ["http://localhost:5173"],
-    methods: ["GET", "POST"],
-    headers: ["Authorization", "Content-Type", "Accept"],
-    expose: ["Authorization"],
-    credentials: true,
-    max_age: 86400
 
   plug MtgDraftServerWeb.Router
 end

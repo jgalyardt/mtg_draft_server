@@ -1,0 +1,29 @@
+schemaVersion: 2.0.0
+metadata:
+  name: mtg-draft-server
+  description: Elixir/Phoenix MTG Draft Server
+components:
+  - name: dev
+    container:
+      image: public.ecr.aws/aws-mde/universal-image:latest
+      env:
+        - name: MIX_HOME
+          value: /home/user/.mix
+        - name: HEX_HOME
+          value: /home/user/.hex
+commands:
+  - id: install
+    exec:
+      component: dev
+      commandLine: "mix local.hex --force && mix local.rebar --force && mix deps.get"
+      workingDir: ${PROJECT_SOURCE}
+  - id: build
+    exec:
+      component: dev
+      commandLine: "mix compile"
+      workingDir: ${PROJECT_SOURCE}
+  - id: test
+    exec:
+      component: dev
+      commandLine: "mix test"
+      workingDir: ${PROJECT_SOURCE}

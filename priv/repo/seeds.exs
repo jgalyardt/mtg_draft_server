@@ -45,9 +45,10 @@ end
     {:ok, card} ->
       # Check if the card actually exists in the database
       case Repo.get(Card, card.id) do
-        nil -> 
+        nil ->
           # Card doesn't exist, skip metadata
           :ok
+
         _ ->
           # Card exists, add metadata
           %CardMetadata{}
@@ -60,7 +61,7 @@ end
           })
           |> Repo.insert(on_conflict: :nothing)
       end
-    
+
     _ ->
       # Card was not inserted, skip
       :ok

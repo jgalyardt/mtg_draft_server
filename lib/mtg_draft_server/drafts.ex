@@ -58,21 +58,10 @@ defmodule MtgDraftServer.Drafts do
     end
     |> case do
       :ok ->
-        Repo.transaction(fn ->
-          with {:ok, draft} <- do_create_draft(attrs),
-               {:ok, _player} <- maybe_create_player(draft, attrs[:creator]) do
-            {:ok, _pid} = MtgDraftServer.DraftSessionSupervisor.start_new_session(draft.id)
-
-            if attrs[:creator] do
-              :ok =
-                MtgDraftServer.DraftSession.join(draft.id, %{user_id: attrs[:creator], seat: 1})
-            end
-
-            draft
-          else
-            error -> Repo.rollback(error)
-          end
-        end)
+        Ecto.Multi.new()
+        |> Ecto.Multi.insert(:draft, Draft.changeset(%Draft{}, attrs))
+        |> maybe_multi_insert_player(attrs[:creator])
+        |> Repo.transaction()
 
       error ->
         error
@@ -113,23 +102,16 @@ defmodule MtgDraftServer.Drafts do
 
   @doc """
   Records a card pick in the draft.
-  Validates that the pick is legal and updates the draft state accordingly.
+
+  Validates that the pick is legal by using the in-memory session state
+  (when provided) so we never call back into the server from inside itself.
   """
+  @spec pick_card(binary(), String.t(), String.t(), map()) :: pick_result
   def pick_card(draft_id, user_id, card_id, extra_attrs \\ %{}) do
     Repo.transaction(fn ->
-      with {:ok, draft} <- get_draft(draft_id),
-           :ok <- validate_draft_status(draft),
-           {:ok, draft_player} <- get_draft_player(draft_id, user_id),
-           :ok <- validate_player_turn(draft_id, user_id),
-           :ok <- validate_card_availability(draft_id, card_id),
-           :ok <- validate_pack_number(extra_attrs["pack_number"]),
-           :ok <- validate_pick_number(extra_attrs["pick_number"]),
-           :ok <-
-             validate_no_duplicate_pick(
-               draft_player.id,
-               extra_attrs["pack_number"],
-               extra_attrs["pick_number"]
-             ) do
+        with {:ok, draft} <- get_draft(draft_id),
+             :ok <- validate_draft_active(draft),
+             {:ok, draft_player} <- get_draft_player(draft_id, user_id) do
         now = DateTime.utc_now() |> DateTime.truncate(:second)
         expires_at = DateTime.add(now, @one_day_in_seconds, :second)
 
@@ -138,7 +120,9 @@ defmodule MtgDraftServer.Drafts do
             "draft_id" => draft_id,
             "draft_player_id" => draft_player.id,
             "card_id" => card_id,
-            "expires_at" => expires_at
+            "expires_at" => expires_at,
+            "pack_number"        => extra_attrs["pack_number"]  || 1,
+            "pick_number"        => extra_attrs["pick_number"]  || 1
           })
 
         %DraftPick{}
@@ -266,8 +250,62 @@ defmodule MtgDraftServer.Drafts do
   Returns a list of user IDs for all players in the specified draft.
   """
   def get_draft_players(draft_id) do
-    from(dp in DraftPlayer, where: dp.draft_id == ^draft_id, select: dp.user_id)
+    from(dp in DraftPlayer,
+         where: dp.draft_id == ^draft_id,
+         order_by: dp.seat,
+         select: dp.user_id)
     |> Repo.all()
+  end
+
+  @doc """
+  Broadcasts a draft event over PubSub.
+  """
+  @spec notify(binary(), any()) :: :ok
+  def notify(draft_id, event) when is_atom(event) do
+    Phoenix.PubSub.broadcast(
+      MtgDraftServer.PubSub,
+      "draft:#{draft_id}",
+      {event, draft_id}
+    )
+
+    :ok
+  end
+
+  def notify(draft_id, event) do
+    Phoenix.PubSub.broadcast(
+      MtgDraftServer.PubSub,
+      "draft:#{draft_id}",
+      event
+    )
+
+    :ok
+  end
+
+  @doc """
+  Returns a list of active drafts, each as a map:
+    %{id: draft_id, players: [%{user_id: uid, seat: seat}, …]}
+  """
+  def list_active_drafts_with_players do
+    # 1) get all active drafts
+    active =
+      from(d in Draft,
+        where: d.status == "active",
+        select: d.id
+      )
+      |> Repo.all()
+
+    # 2) for each draft, load its players (ordered by seat)
+    Enum.map(active, fn draft_id ->
+      players =
+        from(dp in DraftPlayer,
+          where: dp.draft_id == ^draft_id,
+          order_by: dp.seat,
+          select: %{user_id: dp.user_id, seat: dp.seat}
+        )
+        |> Repo.all()
+
+      %{id: draft_id, players: players}
+    end)
   end
 
   # ============================================================================
@@ -303,8 +341,22 @@ defmodule MtgDraftServer.Drafts do
     end
   end
 
+  defp maybe_multi_insert_player(multi, nil), do: multi
+
+  defp maybe_multi_insert_player(multi, creator) do
+    Ecto.Multi.run(multi, :player, fn repo, %{draft: draft} ->
+      %DraftPlayer{}
+      |> DraftPlayer.changeset(%{
+        draft_id: draft.id,
+        user_id: creator,
+        seat: 1
+      })
+      |> repo.insert()
+    end)
+  end
+
   # ============================================================================
-  # Refactored Validation Functions
+  # Validation Functions
   # ============================================================================
 
   @doc """
@@ -388,23 +440,6 @@ defmodule MtgDraftServer.Drafts do
     end)
   end
 
-  defp validate_no_duplicate_pick(draft_player_id, pack_number, pick_number) do
-    existing_pick =
-      Repo.one(
-        from p in DraftPick,
-          where:
-            p.draft_player_id == ^draft_player_id and
-              p.pack_number == ^pack_number and
-              p.pick_number == ^pick_number
-      )
-
-    if existing_pick do
-      {:error, "Already made a pick for this pack/pick combination"}
-    else
-      :ok
-    end
-  end
-
   defp validate_draft_can_start(draft) do
     with :ok <- validate_draft_status(draft),
          :ok <- validate_player_count(draft) do
@@ -420,6 +455,15 @@ defmodule MtgDraftServer.Drafts do
     end
   end
 
+  @doc false
+  defp validate_draft_active(draft) do
+    if draft.status == "active" do
+      :ok
+    else
+      {:error, "Draft is not active (current status: #{draft.status})"}
+    end
+  end
+
   defp validate_player_count(draft) do
     player_count =
       Repo.one(from dp in DraftPlayer, where: dp.draft_id == ^draft.id, select: count(dp.id))
@@ -431,17 +475,7 @@ defmodule MtgDraftServer.Drafts do
     end
   end
 
-  defp validate_pack_number(pack_number) when pack_number in 1..3, do: :ok
-  defp validate_pack_number(_), do: {:error, "Invalid pack number"}
-
-  defp validate_pick_number(pick_number) when pick_number in 1..15, do: :ok
-  defp validate_pick_number(_), do: {:error, "Invalid pick number"}
-
   defp broadcast_draft_update(draft_id, event) do
-    Phoenix.PubSub.broadcast(
-      MtgDraftServer.PubSub,
-      "draft:#{draft_id}",
-      {event, draft_id}
-    )
+    notify(draft_id, event)
   end
 end
