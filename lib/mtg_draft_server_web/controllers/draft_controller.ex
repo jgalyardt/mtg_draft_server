@@ -12,49 +12,37 @@ defmodule MtgDraftServerWeb.DraftController do
   """
   def create(conn, params) do
     %{"uid" => uid} = conn.assigns.current_user
-
-    # Build the args for DB insert (merging in pack_sets if provided)
-    args =
-      %{creator: uid}
-      |> Map.merge(Map.take(params, ["pack_sets"]))
-
+  
+    # Build a map with only atom keys
+    args = %{
+      creator: uid,
+      pack_sets:        Map.get(params, "pack_sets", []),
+      allowed_rarities: Map.get(params, "allowed_rarities", [])
+    }
+  
     with {:ok, %{draft: draft, player: _human_player}} <- Drafts.create_and_join_draft(args) do
-      # 1) Start the GenServer
+      # start GenServer and join players as before…
       {:ok, _pid} = DraftSessionSupervisor.start_new_session(draft.id)
-
-      # 2) Join the human player into the session
       :ok = DraftSession.join(draft.id, %{"user_id" => uid, "ai" => false})
-
-      # 3) Persist + join 7 AIs
-      1..7
-      |> Enum.each(fn i ->
-        ai_id = "AI_#{i}"
-
-        # persist AI player in DB
-        {:ok, _ai_player} = Drafts.join_draft(draft, ai_id)
-
-        # add AI to in-memory session
-        :ok = DraftSession.join(draft.id, %{"user_id" => ai_id, "ai" => true})
-      end)
-
-      # 4) Render response
+    
+      # render the new draft
       response =
         %{draft_id: draft.id, status: draft.status}
         |> Map.merge(if draft.pack_sets != [], do: %{pack_sets: draft.pack_sets}, else: %{})
-
+  
       conn
       |> put_status(:created)
       |> put_resp_header("location", "/api/drafts/#{draft.id}")
       |> json(response)
     end
-  end
+  end  
 
   @doc """
   Start the draft by updating its status to "active" and loading all players into session.
   """
   def start(conn, %{"id" => draft_id}) do
     %{"uid" => uid} = conn.assigns.current_user
-
+  
     with {:ok, draft} <- Drafts.get_draft(draft_id),
          {:ok, _} <- authorize_draft_action(draft, uid) do
       # 1) Ensure the session process exists
@@ -62,31 +50,34 @@ defmodule MtgDraftServerWeb.DraftController do
         case Registry.lookup(MtgDraftServer.DraftRegistry, draft_id) do
           [{pid, _}] ->
             pid
-
+  
           [] ->
             {:ok, pid} = DraftSessionSupervisor.start_new_session(draft_id)
             pid
         end
-
-      # 2) Pull all players (human + AI) from the DB and join them into the GenServer
-      player_ids = Drafts.get_draft_players(draft_id)
-
-      Enum.each(player_ids, fn user_id ->
-        # mark AI by prefix, if that matters for your schedule logic
+  
+      # 2) Join all players into the session
+      Drafts.get_draft_players(draft_id)
+      |> Enum.each(fn user_id ->
         is_ai = String.starts_with?(user_id, "AI_")
         :ok = DraftSession.join(draft_id, %{"user_id" => user_id, "ai" => is_ai})
       end)
-
-      # 3) Now kick off booster generation (idempotent in your GenServer)
-      case GenServer.call(pid, :start_draft_with_boosters) do
+  
+      # 3) Kick off booster generation with options
+      opts = %{
+        set_codes:        draft.pack_sets,
+        allowed_rarities: draft.allowed_rarities
+      }
+  
+      case GenServer.call(pid, {:start_with_options, opts}) do
         {:ok, _state} ->
           conn
           |> json(%{
             draft_id: draft_id,
-            status: "active",
-            message: "Draft started with booster packs"
+            status:   "active",
+            message:  "Draft started with booster packs"
           })
-
+  
         {:error, reason} ->
           conn
           |> put_status(:bad_request)
@@ -94,6 +85,7 @@ defmodule MtgDraftServerWeb.DraftController do
       end
     end
   end
+  
 
   @doc """
   Persist a card pick.
@@ -133,6 +125,27 @@ defmodule MtgDraftServerWeb.DraftController do
         |> json(%{"error" => "Authentication required"})
     end
   end
+
+  @doc "Get your completed deck (all picks) once draft is done"
+  def deck(conn, %{"id" => draft_id}) do
+    %{"uid" => uid} = conn.assigns.current_user
+
+    case Drafts.get_draft(draft_id) do
+      {:ok, %{status: "complete"}} ->
+        picks = Drafts.get_picked_cards(draft_id, uid)
+        cards = Enum.map(picks, & &1.card)
+        json(conn, %{deck: cards})
+
+      {:ok, draft} ->
+        conn
+        |> put_status(:bad_request)
+        |> json(%{error: "Draft not complete (status: #{draft.status})"})
+
+      {:error, reason} ->
+        conn |> put_status(:not_found) |> json(%{error: reason})
+    end
+  end
+
 
   @doc """
   Generate booster packs and distribute them among players.
@@ -305,8 +318,14 @@ defmodule MtgDraftServerWeb.DraftController do
     end
   end
 
+  @doc "List all set codes for drafts"
+  def sets(conn, _params) do
+    sets = Drafts.list_available_sets()
+    json(conn, %{sets: sets})
+  end
+
   # --------------------
-  # Helper Functions
+  # Private Functions
   # --------------------
 
   defp ensure_in_draft_session(draft_id, user_id) do

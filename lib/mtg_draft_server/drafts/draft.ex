@@ -6,12 +6,13 @@ defmodule MtgDraftServer.Drafts.Draft do
   schema "drafts" do
     field :status, :string, default: "pending"
     field :pack_sets, {:array, :string}, default: []
+    field :allowed_rarities, {:array, :string}, default: ["basic","common","uncommon","rare","mythic"]
     timestamps()
   end
 
   def changeset(draft, attrs) do
     draft
-    |> cast(attrs, [:status, :pack_sets])
+    |> cast(attrs, [:status, :pack_sets, :allowed_rarities])
     |> validate_required([:status])
   end
 end

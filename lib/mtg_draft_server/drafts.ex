@@ -308,6 +308,20 @@ defmodule MtgDraftServer.Drafts do
     end)
   end
 
+  @doc """
+    Returns a list of all supported set codes
+  """
+  def list_available_sets do
+    import Ecto.Query
+  
+    from(c in MtgDraftServer.Cards.Card,
+      distinct: true,
+      select: c.set_code,
+      order_by: c.set_code
+    )
+    |> Repo.all()
+  end
+
   # ============================================================================
   # Private functions
   # ============================================================================

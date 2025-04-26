@@ -45,5 +45,7 @@ defmodule MtgDraftServerWeb.Router do
     post "/drafts/booster_packs", DraftController, :generate_booster_packs
     post "/drafts/:id/add_ai", DraftController, :add_ai
     post "/drafts/:id/join", DraftController, :join
+    get "/drafts/sets", DraftController, :sets
+    get "/drafts/:id/deck", DraftController, :deck
   end
 end

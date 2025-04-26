@@ -84,10 +84,15 @@ defmodule MtgDraftServer.DraftSession do
   end
 
   @impl true
-  def handle_call(:start_draft_with_boosters, _from, state) do
+  def handle_call(:start_draft_with_boosters, _from, _state) do
+
+  end
+
+  @impl true
+  def handle_call({:start_with_options, opts}, _from, state) do
     # 1) Determine seating and generate packs
-    player_ids  = MtgDraftServer.Drafts.get_draft_players(state.draft_id)
-    booster_map = PackGenerator.generate_and_distribute_booster_packs(%{}, player_ids)
+    player_ids = MtgDraftServer.Drafts.get_draft_players(state.draft_id)
+    booster_map = PackGenerator.generate_and_distribute_booster_packs(opts, player_ids)
 
     # 2) Wrap packs with round numbers: Enum.with_index returns {pack, round}
     wrapped_queues =
@@ -161,8 +166,18 @@ defmodule MtgDraftServer.DraftSession do
             state.booster_queues
             |> Map.put(user_id, q1)
             |> Map.put(neighbor, q2)
-          
-          # 2) Safely update pick_counters: if there's no entry for this user
+
+          # 2) Check if draft has ended
+          all_empty? = new_queues |> Map.values() |> Enum.all?(&(&1 == []))
+
+          if all_empty? do
+            # mark complete in DB
+            {:ok, _} = MtgDraftServer.Drafts.complete_draft(state.draft_id)
+            # broadcast completion
+            MtgDraftServer.Drafts.notify(state.draft_id, {:draft_completed, state.draft_id})
+          end
+                    
+          # 3) Safely update pick_counters: if there's no entry for this user
           #    we default to a {1=>0,2=>0,3=>0} map, then put the new pick_no.
           new_counters =
             state.pick_counters

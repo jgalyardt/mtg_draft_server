@@ -1,90 +1,15 @@
 I am building an elixir phoenix server to host Magic the Gathering drafts.
 Players can join, and once the draft hits 8 players, it will start.
 
-I have the following error:
+So far, I've created a protoype that fills a lobby with AI players when the user creates a draft.
+Before I update the front-end, I want to ensure the following is true:
 
-[info] Sent 200 in 9ms
-[info] POST /api/drafts/5fae7f95-6efd-40b5-a308-81ed476513f4/start
-[debug] Processing with MtgDraftServerWeb.DraftController.start/2
-  Parameters: %{"id" => "5fae7f95-6efd-40b5-a308-81ed476513f4"}
-  Pipelines: [:auth_api]
-✅ Firebase Token Claims: %{
-  "aud" => "draft-client",
-  "auth_time" => 1738809178,
-  "email" => "jgalyardt@gmail.com",
-  "email_verified" => true,
-  "exp" => 1745184953,
-  "firebase" => %{
-    "identities" => %{
-      "email" => ["jgalyardt@gmail.com"],
-      "google.com" => ["107056192664110810176"]
-    },
-    "sign_in_provider" => "google.com"
-  },
-  "iat" => 1745181353,
-  "iss" => "https://securetoken.google.com/draft-client",
-  "name" => "Jackson Galyardt",
-  "picture" => "https://lh3.googleusercontent.com/a/ACg8ocJ51M6mLGN8ChVUbfcDe1L9ryfqPxhe47EjOSeeahi9YBLtZ6Q=s96-c",
-  "sub" => "wFjsAquDLpP2sSP7kw3uRYOhVlv1",
-  "user_id" => "wFjsAquDLpP2sSP7kw3uRYOhVlv1"
-}
-[debug] QUERY OK source="drafts" db=0.5ms idle=233.1ms
-SELECT d0."id", d0."status", d0."pack_sets", d0."inserted_at", d0."updated_at" FROM "drafts" AS d0 WHERE (d0."id" = $1) ["5fae7f95-6efd-40b5-a308-81ed476513f4"]
-↳ MtgDraftServer.Drafts.get_draft/1, at: lib/mtg_draft_server/drafts.ex:166
-[debug] QUERY OK source="draft_players" db=0.2ms idle=233.7ms
-SELECT d0."id", d0."user_id", d0."seat", d0."connected", d0."draft_id", d0."inserted_at", d0."updated_at" FROM "draft_players" AS d0 WHERE ((d0."draft_id" = $1) AND (d0."user_id" = $2)) ["5fae7f95-6efd-40b5-a308-81ed476513f4", "wFjsAquDLpP2sSP7kw3uRYOhVlv1"]
-↳ MtgDraftServer.Drafts.get_draft_player/2, at: lib/mtg_draft_server/drafts.ex:182       
-[debug] QUERY OK source="drafts" db=0.4ms idle=233.9ms
-SELECT d0."id", d0."status", d0."pack_sets", d0."inserted_at", d0."updated_at", d0."id" FROM "drafts" AS d0 WHERE (d0."id" = $1) ["5fae7f95-6efd-40b5-a308-81ed476513f4"]
-↳ MtgDraftServer.Drafts.get_draft_player/2, at: lib/mtg_draft_server/drafts.ex:182       
-[debug] QUERY OK source="draft_players" db=0.4ms queue=0.1ms idle=234.2ms
-SELECT d0."user_id" FROM "draft_players" AS d0 WHERE (d0."draft_id" = $1) ["5fae7f95-6efd-40b5-a308-81ed476513f4"]
-↳ MtgDraftServerWeb.DraftController.start/2, at: lib/mtg_draft_server_web/controllers/draft_controller.ex:72
-[debug] QUERY OK source="draft_players" db=0.4ms idle=234.8ms
-SELECT d0."user_id" FROM "draft_players" AS d0 WHERE (d0."draft_id" = $1) ["5fae7f95-6efd-40b5-a308-81ed476513f4"]
-↳ MtgDraftServer.DraftSession.handle_call/3, at: lib/mtg_draft_server/draft_session.ex:87
-[debug] QUERY OK source="cards" db=991.7ms decode=2.0ms queue=0.5ms idle=244.0ms
-SELECT c0."id", c0."oracle_id", c0."name", c0."mana_cost", c0."cmc", c0."type_line", c0."oracle_text", c0."power", c0."toughness", c0."colors", c0."color_identity", c0."set_code", c0."rarity", c0."foil", c0."image_uris", c0."legalities", c0."inserted_at", c0."updated_at" FROM "cards" AS c0 INNER JOIN "card_metadata" AS c1 ON c0."id" = c1."card_id" WHERE (c0."rarity" = ANY($1)) AND (c1."layout" = ANY($2)) [["basic", "common", "uncommon", "rare", "mythic"], ["normal", "split", "flip", "transform", "modal_dfc", "adventure", "leveler", "saga", "class"]]
-↳ MtgDraftServer.Drafts.PackGenerator.generate_booster_packs/1, at: lib/mtg_draft_server/pack_generator.ex:171
-[debug] QUERY OK source="drafts" db=0.5ms queue=0.1ms idle=1668.9ms
-SELECT d0."id", d0."status", d0."pack_sets", d0."inserted_at", d0."updated_at" FROM "drafts" AS d0 WHERE (d0."id" = $1) ["5fae7f95-6efd-40b5-a308-81ed476513f4"]
-↳ MtgDraftServer.Drafts.get_draft/1, at: lib/mtg_draft_server/drafts.ex:166
-[debug] QUERY OK source="draft_players" db=0.3ms idle=1669.2ms
-SELECT count(d0."id") FROM "draft_players" AS d0 WHERE (d0."draft_id" = $1) ["5fae7f95-6efd-40b5-a308-81ed476513f4"]
-↳ MtgDraftServer.Drafts.validate_player_count/1, at: lib/mtg_draft_server/drafts.ex:466  
-[debug] QUERY OK source="drafts" db=2.2ms queue=0.2ms idle=1444.0ms
-UPDATE "drafts" SET "status" = $1, "updated_at" = $2 WHERE "id" = $3 ["active", ~N[2025-04-20 21:01:36], "5fae7f95-6efd-40b5-a308-81ed476513f4"]
-↳ MtgDraftServer.Drafts.start_draft/1, at: lib/mtg_draft_server/drafts.ex:97
-[info] Sent 200 in 1445ms
-[debug] QUERY OK db=0.6ms queue=0.1ms idle=956.9ms
-begin []
-↳ MtgDraftServer.DraftSession.handle_cast/2, at: lib/mtg_draft_server/draft_session.ex:142
-[debug] QUERY OK source="drafts" db=2.1ms
-SELECT d0."id", d0."status", d0."pack_sets", d0."inserted_at", d0."updated_at" FROM "drafts" AS d0 WHERE (d0."id" = $1) ["5fae7f95-6efd-40b5-a308-81ed476513f4"]
-↳ MtgDraftServer.Drafts.get_draft/1, at: lib/mtg_draft_server/drafts.ex:166
-[debug] QUERY OK source="draft_players" db=1.1ms
-SELECT d0."id", d0."user_id", d0."seat", d0."connected", d0."draft_id", d0."inserted_at", d0."updated_at" FROM "draft_players" AS d0 WHERE ((d0."draft_id" = $1) AND (d0."user_id" = $2)) ["5fae7f95-6efd-40b5-a308-81ed476513f4", "AI_1"]
-↳ MtgDraftServer.Drafts.get_draft_player/2, at: lib/mtg_draft_server/drafts.ex:182       
-[debug] QUERY OK source="drafts" db=1.7ms
-SELECT d0."id", d0."status", d0."pack_sets", d0."inserted_at", d0."updated_at", d0."id" FROM "drafts" AS d0 WHERE (d0."id" = $1) ["5fae7f95-6efd-40b5-a308-81ed476513f4"]
-↳ MtgDraftServer.Drafts.get_draft_player/2, at: lib/mtg_draft_server/drafts.ex:182       
-[debug] QUERY OK source="draft_picks" db=3.0ms
-INSERT INTO "draft_picks" ("draft_id","card_id","pack_number","draft_player_id","expires_at","pick_number","inserted_at","updated_at") VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING "id" ["5fae7f95-6efd-40b5-a308-81ed476513f4", "89396f5e-5bc3-4c8a-976b-2cb2946eb35d", 1, 229, ~U[2025-04-21 21:01:37Z], 1, ~N[2025-04-20 21:01:37], ~N[2025-04-20 21:01:37]]      
-↳ anonymous fn/3 in Ecto.Adapters.SQL.checkout_or_transaction/4, at: lib/ecto/adapters/sql.ex:1400
-[debug] QUERY OK db=0.8ms
-commit []
-↳ MtgDraftServer.DraftSession.handle_cast/2, at: lib/mtg_draft_server/draft_session.ex:142
-[error] GenServer {MtgDraftServer.DraftRegistry, "5fae7f95-6efd-40b5-a308-81ed476513f4"} terminating
-** (ArithmeticError) bad argument in arithmetic expression
-    :erlang.+(nil, 1)
-    (mtg_draft_server 0.1.0) lib/mtg_draft_server/draft_session.ex:139: MtgDraftServer.DraftSession.handle_cast/2
-    (stdlib 6.2) gen_server.erl:2371: :gen_server.try_handle_cast/3
-    (stdlib 6.2) gen_server.erl:2433: :gen_server.handle_msg/6
-    (stdlib 6.2) proc_lib.erl:329: :proc_lib.init_p_do_apply/3
-Last message: {:"$gen_cast", {:pick, "AI_2", "a6e352e9-20ac-485b-bcaf-1d053c4ecb40"}}    
-State: %{status: "active", draft_id: "5fae7f95-6efd-40b5-a308-81ed476513f4", players: %{"AI_1" => %{ai: true}, "AI_2" => %{ai: true}, "AI_3" => %{ai: true}, "AI_4" => %{ai: true}, "AI_5" => %{ai: true}, "AI_6" => %{ai: true}, "AI_7" => %{ai: true}, "wFjsAquDLpP2sSP7kw3uRYOhVlv1" => %{ai: false}}, booster_queues: %{"AI_1" => [{2, [%MtgDraftServer.Cards.Card{__meta__: #Ecto.Schema.Metadata<:loaded, "cards">, id: "52e71c5f-0486-4eae-afcf-4f92fab80861", oracle_id: "1b7d03d5-4592-4188-9e84-91b974159572", name: "Margle, Cousin of Yargle", mana_cost: "{3}{G}{W}", cmc: 5.0, type_line: "Legendary Creature — Frog Noble", oracle_text: "Other creatures you control lose all abilities, can't gain abilities, and get +2/+2.", power: "5", toughness: "2", colors: ["G", "W"], color_identity: ["G", "W"], set_code: "da1", rarity: "rare", foil: false, image_uris: %{"art_crop" => "https://cards.scryfall.io/art_crop/front/5/2/52e71c5f-0486-4eae-afcf-4f92fab80861.jpg?1726916109", "border_crop" => "https://cards.scryfall.io/border_crop/front/5/2/52e71c5f-0486-4eae-afcf-4f92fab80861.jpg?1726916109", "large" => "https://cards.scryfall.io/large/front/5/2/52e71c5f-0486-4eae-afcf-4f92fab80861.jpg?1726916109", "normal" => "https://cards.scryfall.io/normal/front/5/2/52e71c5f-0486-4eae-afcf-4f92fab80861.jpg?1726916109", "png" => "https://cards.scryfall.io/png/front/5/2/52e71c5f-0486-4eae-afcf-4f92fab80861.png?1726916109", "small" => "https://cards.scryfall.io/small/front/5/2/52e71c5f-0486-4eae-afcf-4f92fab80861.jpg?1726916109"}, legalities: %{"alchemy" => "not_legal", "brawl" => "not_legal", "commander" => "not_legal", "duel" => "not_legal", "explorer" => "not_legal", "future" => "not_legal", "gladiator" => "not_legal", "historic" => "not_legal", "legacy" => "not_legal", "modern" => "not_legal", "oathbreaker" => "not_legal", "oldschool" => "not_legal", "pauper" => "not_legal", "paupercommander" => "not_legal", "penny" => "not_legal", "pioneer" => "not_legal", "predh" => "not_legal", "premodern" => "not_legal", "standard" => "not_legal", "standardbrawl" => "not_legal", "timeless" => "not_legal", "vintage" => "not_legal"}, inserted_at: ~N[2025-04-20 17:37:33], updated_at: ~N[2025-04-20 17:37:33]}, %MtgDraftServer.Cards.Card{__meta__: #Ecto.Schema.Metadata<:loaded, "cards">, id: "bc2e0c36-645a-46c8-bd9e-4b8b591dfb58", oracle_id: "0e9864e2-1bb4-4527-b2af-62433a90b669", name: "Odious Trow", mana_cost: "{B/G}", cmc: 1.0, type_line: "Creature — Troll", oracle_text: "{1}{B/G}: Regenerate Odious Trow.", power: "1", toughness: "1", colors: ["B", "G"], color_identity: ["B", "G"], set_code: "eve", rarity: "common", foil: true, image_uris: %{"art_crop" => "https://cards.scryfall.io/art_crop/front/b/c/bc2e0c36-645a-46c8-bd9e-4b8b591dfb58.jpg?1562934778", "border_crop" => "https://cards.scryfall.io/border_crop/front/b/c/bc2e0c36-645a-46c8-bd9e-4b8b591dfb58.jpg?1562934778", "large" => "https://cards.scryfall.io/large/front/b/c/bc2e0c36-645a-46c8-bd9e-4b8b591dfb58.jpg?1562934778", "normal" => "https://cards.scryfall.io/normal/front/b/c/bc2e0c36-645a-46c8-bd9e-4b8b591dfb58.jpg?1562934778", "png" => "https://cards.scryfall.io/png/front/b/c/bc2e0c36-645a-46c8-bd9e-4b8b591dfb58.png?1562934778", "small" => "https://cards.scryfall.io/small/front/b/c/bc2e0c36-645a-46c8-bd9e-4b8b591dfb58.jpg?1562934778"}, legalities: %{"alchemy" => "not_legal", "brawl" => "not_legal", "commander" => "legal", "duel" => "legal", "explorer" => "not_legal", "future" => "not_legal", "gladiator" => "not_legal", "historic" => "not_legal", "legacy" => "legal", "modern" => "legal", "oathbreaker" => "legal", "oldschool" => "not_legal", "pauper" => "legal", "paupercommander" => "legal", "penny" => "legal", "pioneer" => "not_legal", "predh" => "legal", "premodern" => "not_legal", "standard" => "not_legal", "standardbrawl" => "not_legal", "timeless" => "not_legal", "vintage" => "legal"}, inserted_at: ~N[2025-04-20 17:37:30], updated_at: ~N[2025-04-20 17:37:30]}, %MtgDraftServer.Cards.Card{__meta__: #Ecto.Schema.Metadata<:loaded, "cards">, id: "cec3a260-6c50-401d-a0ff-bf49a973e1a1", oracle_id: "7bb5c5af-6943-4958-a666-0c322d5b9f33", name: "Swat", mana_cost: "{1}{B}{B}", cmc: 3.0, type_line: "Instant", oracle_text: "Destroy target creature with power 2 or less.\nCycling {2} ({2}, Discard this card: Draw a card.)", power: nil, toughness: nil, colors: ["B"], color_identity: ["B"], set_code: "ons", rarity: "common", foil: true, image_uris: %{"art_crop" => "https://cards.scryfall.io/art_crop/front/c/e/cec3a260-6c50-401d-a0ff-bf49a973e1a1.jpg?1562943805", "border_crop" => "https://cards.scryfall.io/border_crop/front/c/e/cec3a260-6c50-401d-a0ff-bf49a973e1a1.jpg?1562943805", "large" => "https://cards.scryfall.io/large/front/c/e/cec3a260-6c50-401d-a0ff-bf49a973e1a1.jpg?1562943805", "normal" => "https://cards.scryfall.io/normal/front/c/e/cec3a260-6c50-401d-a0ff-bf49a973e1a1.jpg?1562943805", "png" => "https://cards.scryfall.io/png/front/c/e/cec3a260-6c50-401d-a0ff-bf49a973e1a1.png?1562943805", "small" => "https://cards.scryfall.io/small/front/c/e/cec3a260-6c50-401d-a0ff-bf49a973e1a1.jpg?1562943805"}, legalities: %{"alchemy" => "not_legal", "brawl" => "not_legal", "commander" => "legal", "duel" => "legal", "explorer" => "not_legal", "future" => "not_legal", "gladiator" => "not_legal", "historic" => "not_legal", "legacy" => "legal", "modern" => "not_legal", "oathbreaker" => "legal", "oldschool" => "not_legal", "pauper" => "legal", "paupercommander" => "legal", "penny" => "legal", "pioneer" => "not_legal", "predh" => "legal", "premodern" => "legal", "standard" => "not_legal", "standardbrawl" => "not_legal", "timeless" => "not_legal", "vintage" => "legal"}, inserted_at: ~N[2025-04-20 17:37:54], updated_at: ~N[2025-04-20 17:37:54]}, %MtgDraftServer.Cards.Card{__meta__: #Ecto.Schema.Metadata<:loaded, "cards">, id: "62fbd1bc-3e57-43d5-ad54-443ca740fcc4", oracle_id: "9debaed0-b605-4778-9977-216d194ecdeb", name: "Sun-Collared Raptor", mana_cost: "{1}{R}", cmc: 2.0, type_line: "Creature — Dinosaur", oracle_text: "Trample\n{2}{R}: Sun-Collared Raptor gets +3/+0 until end of turn.", power: "1", toughness: "2", colors: ["R"], color_identity: ["R"], set_code: "rix", rarity: "common", foil: true, image_uris: %{"art_crop" => "https://cards.scryfall.io/art_crop/front/6/2/62fbd1bc-3e57-43d5-ad54-443ca740fcc4.jpg?1555040553", "border_crop" => "https://cards.scryfall.io/border_crop/front/6/2/62fbd1bc-3e57-43d5-ad54-443ca740fcc4.jpg?1555040553", "large" => "https://cards.scryfall.io/large/front/6/2/62fbd1bc-3e57-43d5-ad54-443ca740fcc4.jpg?1555040553", "normal" => "https://cards.scryfall.io/normal/front/6/2/62fbd1bc-3e57-43d5-ad54-443ca740fcc4.jpg?1555040553", "png" => "https://cards.scryfall.io/png/front/6/2/62fbd1bc-3e57-43d5-ad54-443ca740fcc4.png?1555040553", "small" => "https://cards.scryfall.io/small/front/6/2/62fbd1bc-3e57-43d5-ad54-443ca740fcc4.jpg?1555040553"}, legalities: %{"alchemy" => "not_legal", "brawl" => "legal", "commander" => "legal", "duel" => "legal", "explorer" => "legal", "future" => "not_legal", "gladiator" => "legal", "historic" => "legal", "legacy" => "legal", "modern" => "legal", "oathbreaker" => "legal", "oldschool" => "not_legal", "pauper" => "legal", "paupercommander" => "legal", "penny" => "legal", "pioneer" => "legal", "predh" => "not_legal", "premodern" => "not_legal", "standard" => "not_legal", "standardbrawl" => "not_legal", "timeless" => "legal", ...}, inserted_at: ~N[2025-04-20 17:38:02], updated_at: ~N[2025-04-20 17:38:02]}, %MtgDraftServer.Cards.Card{__meta__: #Ec (truncated)
-
-I need your help fixing the problem.
+1: AI players are not automatically added, but a route exists to add one to a lobby
+2: A route exists for the user to specify which draft sets will be included in the draft
+3: A route exists that will power the dropdowns on the client with the list of sets
+4: The draft options also supports rarity filters, e.g. normal + uncommon only
+4a: Ensure AI players heuristics work with these options. For now, you can leave the pick fully random.
+5: The server properly informs clients when the draft is complete and provides them with access to their deck.
 
 Project Structure:
 /c/Users/jgaly/OneDrive/Code/Elixir/mtg_draft_server/ai/..
@@ -103,6 +28,7 @@ config/prod.exs
 config/runtime.exs
 config/test.exs
 devfile.yaml
+erl_crash.dump
 export_tests.sh
 export_tests_output.txt
 lib
@@ -437,9 +363,11 @@ defmodule MtgDraftServer.DraftSession do
 
   @impl true
   def handle_call({:join, uid, ai_flag}, _from, state) do
-    players = Map.put(state.players, uid, %{ai: ai_flag})
-    queues  = Map.put_new(state.booster_queues, uid, [])
-    {:reply, :ok, %{state | players: players, booster_queues: queues}}
+    players  = Map.put(state.players, uid, %{ai: ai_flag})
+    queues   = Map.put_new(state.booster_queues, uid, [])
+    counters = Map.put_new(state.pick_counters, uid, %{1 => 0, 2 => 0, 3 => 0})
+
+    {:reply, :ok, %{state | players: players, booster_queues: queues, pick_counters: counters}}
   end
 
   @impl true
@@ -496,7 +424,7 @@ defmodule MtgDraftServer.DraftSession do
           neighbor    = PackDistributor.next_neighbor(user_id, state.player_positions, direction)
 
           # get and bump pick number
-          user_counters = Map.get(state.pick_counters, user_id)
+          user_counters = Map.get(state.pick_counters, user_id, %{1 => 0, 2 => 0, 3 => 0})
           pick_no       = user_counters[round] + 1
 
           # persist pick with tuple match for {:ok, pick}
@@ -515,8 +443,20 @@ defmodule MtgDraftServer.DraftSession do
           q1 = if updated_pack == [], do: rest, else: rest ++ [{round, updated_pack}]
           q2 = Map.get(state.booster_queues, neighbor, []) ++ [{round, updated_pack}]
 
-          new_queues    = Map.put(state.booster_queues, user_id, q1) |> Map.put(neighbor, q2)
-          new_counters  = put_in(state.pick_counters[user_id][round], pick_no)
+          # 1) Update the booster queues as before
+          new_queues =
+            state.booster_queues
+            |> Map.put(user_id, q1)
+            |> Map.put(neighbor, q2)
+          
+          # 2) Safely update pick_counters: if there's no entry for this user
+          #    we default to a {1=>0,2=>0,3=>0} map, then put the new pick_no.
+          new_counters =
+            state.pick_counters
+            |> Map.put_new(user_id, %{1 => 0, 2 => 0, 3 => 0})
+            |> Map.update!(user_id, fn counters ->
+              Map.put(counters, round, pick_no)
+            end)
 
           {:noreply, %{state | booster_queues: new_queues, pick_counters: new_counters}}
         else
@@ -542,6 +482,58 @@ defmodule MtgDraftServer.DraftSession do
 
     {:noreply, state}
   end
+end
+
+=== File: lib/mtg_draft_server/draft_session/pack_distributor.ex ===
+
+# lib/mtg_draft_server/draft_session/pack_distributor.ex
+defmodule MtgDraftServer.DraftSession.PackDistributor do
+  @moduledoc false
+
+  @doc "Remove a card_id from a pack (list of card structs or IDs)."
+  def remove_card(pack, card_id) do
+    Enum.reject(pack, fn
+      %{id: ^card_id} -> true
+      ^card_id -> true
+      _ -> false
+    end)
+  end
+
+  @doc "True if card_id exists in pack."
+  def card_in_pack?(pack, card_id) do
+    Enum.any?(pack, fn
+      %{id: ^card_id} -> true
+      ^card_id -> true
+      _ -> false
+    end)
+  end
+
+  @doc """
+  Given the full list of players (in seating order) and a direction,
+  return the neighbor to the :left or :right (wrap around).
+  """
+  def next_neighbor(user_id, players, direction) do
+    n = length(players)
+    idx = Enum.find_index(players, &(&1 == user_id))
+
+    next_idx =
+      case direction do
+        :right -> rem(idx + 1, n)
+        :left -> rem(idx - 1 + n, n)
+      end
+
+    Enum.at(players, next_idx)
+  end
+end
+
+=== File: lib/mtg_draft_server/draft_session/turn_logic.ex ===
+
+defmodule MtgDraftServer.DraftSession.TurnLogic do
+  @spec next_index(integer(), integer(), :left | :right) :: integer()
+  def next_index(current_index, player_count, :left), do: rem(current_index + 1, player_count)
+
+  def next_index(current_index, player_count, :right),
+    do: rem(player_count + current_index - 1, player_count)
 end
 
 === File: lib/mtg_draft_server/draft_session_supervisor.ex ===
@@ -821,7 +813,10 @@ defmodule MtgDraftServer.Drafts do
   Returns a list of user IDs for all players in the specified draft.
   """
   def get_draft_players(draft_id) do
-    from(dp in DraftPlayer, where: dp.draft_id == ^draft_id, select: dp.user_id)
+    from(dp in DraftPlayer,
+         where: dp.draft_id == ^draft_id,
+         order_by: dp.seat,
+         select: dp.user_id)
     |> Repo.all()
   end
 
@@ -1042,7 +1037,7 @@ defmodule MtgDraftServer.Drafts do
       {:error, "Draft needs at least 2 players to start"}
     end
   end
-  
+
   defp broadcast_draft_update(draft_id, event) do
     notify(draft_id, event)
   end
@@ -1564,6 +1559,75 @@ defmodule MtgDraftServerWeb do
   end
 end
 
+=== File: lib/mtg_draft_server_web/components/error_helpers.ex ===
+
+defmodule MtgDraftServerWeb.ErrorHelpers do
+  @moduledoc """
+  Function component for rendering form field errors.
+
+  Usage in HEEx:
+      <.error_tag form={@form} field={:email} />
+  """
+
+  use MtgDraftServerWeb, :html
+
+  # Define component assigns
+  attr :form, Phoenix.HTML.Form, required: true
+  attr :field, :atom, required: true
+
+  @doc """
+  Renders each error for the given field inside a <span> with class "form-error".
+  """
+  def error_tag(assigns) do
+    errors = Keyword.get_values(assigns.form.errors, assigns.field)
+    assigns = assign(assigns, :errors, errors)
+
+    ~H"""
+    <%= for {msg, opts} <- @errors do %>
+      <span class="form-error"><%= translate_error({msg, opts}) %></span>
+    <% end %>
+    """
+  end
+
+  @doc """
+  Translates an error tuple or string via Gettext.
+  """
+  def translate_error({msg, opts}) when is_binary(msg) and is_list(opts) do
+    if count = opts[:count] do
+      Gettext.dngettext(MtgDraftServerWeb.Gettext, "errors", msg, msg, count, opts)
+    else
+      Gettext.dgettext(MtgDraftServerWeb.Gettext, "errors", msg, opts)
+    end
+  end
+
+  def translate_error(msg) when is_binary(msg) do
+    Gettext.dgettext(MtgDraftServerWeb.Gettext, "errors", msg)
+  end
+end
+
+=== File: lib/mtg_draft_server_web/components/layouts/app.html.heex ===
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title><%= assigns[:page_title] || "MTG Draft Server" %></title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+  <!-- CSRF token -->
+  <meta name="csrf-token" content={get_csrf_token()}/>
+
+  <!-- safe live_title fallback -->
+  <.live_title><%= assigns[:page_title] || "MTG Draft Server" %></.live_title>
+
+  <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
+  <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}></script>
+</head>
+<body>
+  <%= @inner_content %>
+</body>
+</html>
+
 === File: lib/mtg_draft_server_web/controllers/default_controller.ex ===
 
 # lib/mtg_draft_server_web/controllers/default_controller.ex
@@ -1955,6 +2019,111 @@ defmodule MtgDraftServerWeb.FallbackController do
   end
 end
 
+=== File: lib/mtg_draft_server_web/dashboard_live.ex ===
+
+defmodule MtgDraftServerWeb.DashboardLive do
+  use MtgDraftServerWeb, :live_view
+
+  alias MtgDraftServer.Drafts
+
+  @impl true
+  def mount(_params, _session, socket) do
+    drafts = Drafts.list_active_drafts_with_players()
+
+    socket =
+      socket
+      |> assign(:page_title, "Admin Dashboard")
+      |> assign(:drafts, drafts)
+      |> assign(:expanded_drafts, %{})
+      |> assign(:expanded_players, %{})
+      |> assign(:player_picks, %{})
+
+    {:ok, socket}
+  end
+
+  @impl true
+  def handle_event("toggle_draft", %{"draft_id" => draft_id}, socket) do
+    expanded =
+      socket.assigns.expanded_drafts
+      |> Map.update(draft_id, true, &(!&1))
+
+    {:noreply, assign(socket, :expanded_drafts, expanded)}
+  end
+
+  @impl true
+  def handle_event("toggle_player", %{"draft_id" => draft_id, "user_id" => user_id}, socket) do
+    key = {draft_id, user_id}
+
+    expanded_players =
+      socket.assigns.expanded_players
+      |> Map.update(key, true, &(!&1))
+
+    player_picks =
+      if expanded_players[key] do
+        picks = Drafts.get_picked_cards(draft_id, user_id)
+        Map.put(socket.assigns.player_picks, key, picks)
+      else
+        Map.delete(socket.assigns.player_picks, key)
+      end
+
+    {:noreply,
+     socket
+     |> assign(:expanded_players, expanded_players)
+     |> assign(:player_picks, player_picks)}
+  end
+
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <div class="p-4">
+      <h1 class="text-2xl font-bold mb-4">Active Drafts</h1>
+      <ul class="space-y-2">
+        <%= for draft <- @drafts do %>
+          <li class="border rounded p-2">
+            <button
+              class="font-mono"
+              phx-click="toggle_draft"
+              phx-value-draft_id={draft.id}
+            >
+              <%= if @expanded_drafts[draft.id], do: "▾", else: "▸" %>
+              Draft <%= draft.id %>
+            </button>
+
+            <%= if @expanded_drafts[draft.id] do %>
+              <ul class="ml-6 mt-2 space-y-1">
+                <%= for player <- draft.players do %>
+                  <li>
+                    <button
+                      class="font-mono"
+                      phx-click="toggle_player"
+                      phx-value-draft_id={draft.id}
+                      phx-value-user_id={player.user_id}
+                    >
+                      <%= if @expanded_players[{draft.id, player.user_id}], do: "▾", else: "▸" %>
+                      Player <%= player.user_id %>
+                    </button>
+
+                    <%= if @expanded_players[{draft.id, player.user_id}] do %>
+                      <ul class="ml-6 mt-1 list-disc list-inside">
+                        <%= for pick <- @player_picks[{draft.id, player.user_id}] || [] do %>
+                          <li>
+                            Pick <%= pick.pick_number %>: <%= pick.card.name %>
+                          </li>
+                        <% end %>
+                      </ul>
+                    <% end %>
+                  </li>
+                <% end %>
+              </ul>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    </div>
+    """
+  end
+end
+
 === File: lib/mtg_draft_server_web/endpoint.ex ===
 
 defmodule MtgDraftServerWeb.Endpoint do
@@ -2017,6 +2186,18 @@ defmodule MtgDraftServerWeb.Endpoint do
   plug Plug.Session, @session_options
 
   plug MtgDraftServerWeb.Router
+end
+
+=== File: lib/mtg_draft_server_web/layouts.ex ===
+
+defmodule MtgDraftServerWeb.Layouts do
+  use MtgDraftServerWeb, :html
+
+  # bring in get_csrf_token/0 for your meta tag
+  import Phoenix.Controller, only: [get_csrf_token: 0]
+
+  # embed all of your HEEx layouts under components/layouts/
+  embed_templates "components/layouts/*"
 end
 
 === File: lib/mtg_draft_server_web/plugs/auth_plug.ex ===
