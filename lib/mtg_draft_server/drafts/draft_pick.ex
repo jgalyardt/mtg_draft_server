@@ -26,6 +26,21 @@ defmodule MtgDraftServer.Drafts.DraftPick do
     timestamps()
   end
 
+  @type t :: %__MODULE__{
+    id: integer() | nil,
+    pack_number: integer() | nil,
+    pick_number: integer() | nil,
+    expires_at: DateTime.t() | nil,
+    draft_id: Ecto.UUID.t() | nil,
+    draft_player_id: integer() | nil, 
+    card_id: Ecto.UUID.t() | nil,
+    draft: MtgDraftServer.Drafts.Draft.t() | Ecto.Association.NotLoaded.t() | nil,
+    draft_player: MtgDraftServer.Drafts.DraftPlayer.t() | Ecto.Association.NotLoaded.t() | nil,
+    card: MtgDraftServer.Cards.Card.t() | Ecto.Association.NotLoaded.t() | nil,
+    inserted_at: DateTime.t() | nil,
+    updated_at: DateTime.t() | nil
+  }
+
   def changeset(draft_pick, attrs) do
     draft_pick
     |> cast(attrs, [

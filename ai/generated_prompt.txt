@@ -1,0 +1,2907 @@
+I am building an elixir phoenix server to host Magic the Gathering drafts.
+Players can join, and once the draft hits 8 players, it will start.
+
+Help me fix these docs errors:
+
+$ mix docs
+==> earmark_parser
+Compiling 2 files (.xrl)
+Compiling 1 file (.yrl)
+Compiling 3 files (.erl)
+Compiling 47 files (.ex)
+Generated earmark_parser app
+==> nimble_parsec
+Compiling 4 files (.ex)
+Generated nimble_parsec app
+==> makeup
+Compiling 15 files (.ex)
+Generated makeup app
+==> makeup_elixir
+Compiling 6 files (.ex)
+Compiling lib/makeup/lexers/elixir_lexer.ex (it's taking more than 10s)
+Generated makeup_elixir app
+==> makeup_erlang
+Compiling 4 files (.ex)
+Compiling lib/makeup/lexers/erlang_lexer.ex (it's taking more than 10s)
+Generated makeup_erlang app
+==> ex_doc
+Compiling 26 files (.ex)
+Generated ex_doc app
+==> mtg_draft_server
+Compiling 5 files (.ex)
+    warning: redefining @doc attribute previously set at line 10.     
+
+    Please remove the duplicate docs. If instead you want to override a previously defined @doc, attach the @doc attribute to a function head (the function signature not followed by any do-block). For example: 
+
+        @doc """
+        new docs
+        """
+        def next_index(...)        
+
+    │
+ 24 │   @doc """
+    │   ~~~~~~~~
+    │
+    └─ lib/mtg_draft_server/draft_session/turn_logic.ex:24: MtgDraftServer.DraftSession.TurnLogic.next_index/3
+
+Generated mtg_draft_server app
+Generating docs...
+     warning: documentation references type "MtgDraftServer.Drafts.Draft.t()" but it is undefined or private
+     │
+ 192 │   @doc """
+     │   ~~~~~~~~
+     │
+     └─ (mtg_draft_server 0.1.0) lib/mtg_draft_server/drafts.ex:192: MtgDraftServer.Drafts.complete_draft/1
+
+    warning: documentation references type "MtgDraftServer.Drafts.Draft.t()" but it is undefined or private
+    │
+ 42 │   @doc """
+    │   ~~~~~~~~
+    │
+    └─ (mtg_draft_server 0.1.0) lib/mtg_draft_server/drafts.ex:42: MtgDraftServer.Drafts.create_and_join_draft/1
+
+    warning: documentation references type "MtgDraftServer.Drafts.Draft.t()" but it is undefined or private
+    │
+ 19 │   @type draft_result :: {:ok, Draft.t()} | error
+    │   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/mtg_draft_server/drafts.ex:19: MtgDraftServer.Drafts (module)
+
+    warning: documentation references type "MtgDraftServer.Drafts.DraftPlayer.t()" but it is undefined or private
+    │
+ 71 │   @doc """
+    │   ~~~~~~~~
+    │
+    └─ (mtg_draft_server 0.1.0) lib/mtg_draft_server/drafts.ex:71: MtgDraftServer.Drafts.get_active_draft_for_player/1
+
+     warning: documentation references type "MtgDraftServer.Drafts.DraftPick.t()" but it is undefined or private
+     │
+ 137 │   @doc """
+     │   ~~~~~~~~
+     │
+     └─ (mtg_draft_server 0.1.0) lib/mtg_draft_server/drafts.ex:137: MtgDraftServer.Drafts.get_picked_cards/2
+
+    warning: documentation references type "MtgDraftServer.Drafts.DraftPick.t()" but it is undefined or private
+    │
+ 20 │   @type pick_result :: {:ok, DraftPick.t()} | error
+    │   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/mtg_draft_server/drafts.ex:20: MtgDraftServer.Drafts (module)
+
+    warning: documentation references type "MtgDraftServer.Drafts.DraftPlayer.t()" but it is undefined or private
+    │
+ 21 │   @type player_result :: {:ok, DraftPlayer.t()} | error
+    │   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/mtg_draft_server/drafts.ex:21: MtgDraftServer.Drafts (module)
+
+View "html" docs at "doc/index.html"
+     warning: documentation references type "MtgDraftServer.Drafts.Draft.t()" but it is undefined or private
+     │
+ 192 │   @doc """
+     │   ~~~~~~~~
+     │
+     └─ (mtg_draft_server 0.1.0) lib/mtg_draft_server/drafts.ex:192: MtgDraftServer.Drafts.complete_draft/1
+
+    warning: documentation references type "MtgDraftServer.Drafts.Draft.t()" but it is undefined or private
+    │
+ 42 │   @doc """
+    │   ~~~~~~~~
+    │
+    └─ (mtg_draft_server 0.1.0) lib/mtg_draft_server/drafts.ex:42: MtgDraftServer.Drafts.create_and_join_draft/1
+
+    warning: documentation references type "MtgDraftServer.Drafts.Draft.t()" but it is undefined or private
+    │
+ 19 │   @type draft_result :: {:ok, Draft.t()} | error
+    │   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/mtg_draft_server/drafts.ex:19: MtgDraftServer.Drafts (module)
+
+    warning: documentation references type "MtgDraftServer.Drafts.DraftPlayer.t()" but     │
+    └─ (mtg_draft_server 0.1.0) lib/mtg_draft_server/drafts.ex:71: MtgDraftServer.Drafts.get_active_draft_for_player/1
+
+     warning: documentation references type "MtgDraftServer.Drafts.DraftPick.t()" but it is undefined or private
+     │
+ 137 │   @doc """
+     │   ~~~~~~~~
+     │
+     └─ (mtg_draft_server 0.1.0) lib/mtg_draft_server/drafts.ex:137: MtgDraftServer.Drafts.get_picked_cards/2
+
+    warning: documentation references type "MtgDraftServer.Drafts.DraftPick.t()" but it is undefined or private
+    │
+ 20 │   @type pick_result :: {:ok, DraftPick.t()} | error
+    │   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/mtg_draft_server/drafts.ex:20: MtgDraftServer.Drafts (module)
+
+    warning: documentation references type "MtgDraftServer.Drafts.DraftPlayer.t()" but it is undefined or private
+    │
+ 21 │   @type player_result :: {:ok, DraftPlayer.t()} | error
+    │   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/mtg_draft_server/drafts.ex:21: MtgDraftServer.Drafts (module)
+
+View "epub" docs at "doc/MTG Draft Server.epub"
+
+
+Project Structure:
+/c/Users/jgaly/OneDrive/Code/Elixir/mtg_draft_server/ai/..
+.formatter.exs
+.gitignore
+ai
+ai/context.txt
+ai/game_reqs.txt
+ai/generated_prompt.txt
+ai/prompt.sh
+ai/xml_context_template.txt
+config
+config/config.exs
+config/dev.exs
+config/prod.exs
+config/runtime.exs
+config/test.exs
+devfile.yaml
+doc
+doc/.build
+doc/404.html
+doc/api-reference.html
+doc/dist
+doc/dist/html-ALU6OERS.js
+doc/dist/html-elixir-6X3L5KMG.css
+doc/dist/lato-latin-400-normal-W7754I4D.woff2
+doc/dist/lato-latin-700-normal-2XVSBPG4.woff2
+doc/dist/lato-latin-ext-400-normal-N27NCBWW.woff2
+doc/dist/lato-latin-ext-700-normal-Q2L5DVMW.woff2
+doc/dist/remixicon-NKANDIL5.woff2
+doc/dist/search_data-73A91595.js
+doc/dist/sidebar_items-E89958C8.js
+doc/index.html
+doc/MTG Draft Server.epub
+doc/MtgDraftServer.Application.html
+doc/MtgDraftServer.AuthErrorHandler.html
+doc/MtgDraftServer.Cards.Card.html
+doc/MtgDraftServer.Cards.CardMetadata.html
+doc/MtgDraftServer.Drafts.Draft.html
+doc/MtgDraftServer.Drafts.DraftPick.html
+doc/MtgDraftServer.Drafts.DraftPlayer.html
+doc/MtgDraftServer.Drafts.html
+doc/MtgDraftServer.Drafts.PackGenerator.html
+doc/MtgDraftServer.DraftSession.html
+doc/MtgDraftServer.DraftSession.PackDistributor.html
+doc/MtgDraftServer.DraftSession.TurnLogic.html
+doc/MtgDraftServer.DraftSessionSupervisor.html
+doc/MtgDraftServer.FirebaseToken.html
+doc/MtgDraftServer.html
+doc/MtgDraftServer.JWKSStrategy.html
+doc/MtgDraftServer.Mailer.html
+doc/MtgDraftServer.Repo.html
+doc/MtgDraftServerWeb.AuthPlug.html
+doc/MtgDraftServerWeb.DashboardLive.html
+doc/MtgDraftServerWeb.DefaultController.html
+doc/MtgDraftServerWeb.DraftController.html
+doc/MtgDraftServerWeb.Endpoint.html
+doc/MtgDraftServerWeb.ErrorHelpers.html
+doc/MtgDraftServerWeb.ErrorJSON.html
+doc/MtgDraftServerWeb.FallbackController.html
+doc/MtgDraftServerWeb.Gettext.html
+doc/MtgDraftServerWeb.html
+doc/MtgDraftServerWeb.Layouts.html
+doc/MtgDraftServerWeb.Router.html
+doc/MtgDraftServerWeb.Telemetry.html
+doc/readme.html
+doc/search.html
+erl_crash.dump
+export_tests.sh
+export_tests_output.txt
+lib
+lib/mtg_draft_server
+lib/mtg_draft_server/application.ex
+lib/mtg_draft_server/auth_error_handler.ex
+lib/mtg_draft_server/cards
+lib/mtg_draft_server/cards/card.ex
+lib/mtg_draft_server/cards/card_metadata.ex
+lib/mtg_draft_server/drafts
+lib/mtg_draft_server/drafts/draft.ex
+lib/mtg_draft_server/drafts/draft_pick.ex
+lib/mtg_draft_server/drafts/draft_player.ex
+lib/mtg_draft_server/drafts.ex
+lib/mtg_draft_server/draft_session
+lib/mtg_draft_server/draft_session/pack_distributor.ex
+lib/mtg_draft_server/draft_session/turn_logic.ex
+lib/mtg_draft_server/draft_session.ex
+lib/mtg_draft_server/draft_session_supervisor.ex
+lib/mtg_draft_server/firebase_token.ex
+lib/mtg_draft_server/jwks_strategy.ex
+lib/mtg_draft_server/mailer.ex
+lib/mtg_draft_server/pack_generator.ex
+lib/mtg_draft_server/repo.ex
+lib/mtg_draft_server.ex
+lib/mtg_draft_server_web
+lib/mtg_draft_server_web/components
+lib/mtg_draft_server_web/components/error_helpers.ex
+lib/mtg_draft_server_web/components/layouts
+lib/mtg_draft_server_web/components/layouts/app.html.heex
+lib/mtg_draft_server_web/controllers
+lib/mtg_draft_server_web/controllers/default_controller.ex
+lib/mtg_draft_server_web/controllers/draft_controller.ex
+lib/mtg_draft_server_web/controllers/error_json.ex
+lib/mtg_draft_server_web/controllers/fallback_controller.ex
+lib/mtg_draft_server_web/dashboard_live.ex
+lib/mtg_draft_server_web/endpoint.ex
+lib/mtg_draft_server_web/gettext.ex
+lib/mtg_draft_server_web/layouts.ex
+lib/mtg_draft_server_web/plugs
+lib/mtg_draft_server_web/plugs/auth_plug.ex
+lib/mtg_draft_server_web/router.ex
+lib/mtg_draft_server_web/telemetry.ex
+lib/mtg_draft_server_web.ex
+mix.exs
+mix.lock
+priv
+priv/repo
+priv/repo/data
+priv/repo/data/oracle_cards.json
+priv/repo/migrations
+priv/repo/migrations/.formatter.exs
+priv/repo/migrations/20250208230004_create_cards.exs
+priv/repo/migrations/20250209005129_create_drafts.exs
+priv/repo/migrations/20250209005146_create_draft_players.exs
+priv/repo/migrations/20250209005217_create_draft_picks.exs
+priv/repo/migrations/20250413232549_add_card_metadata.exs
+priv/repo/migrations/20250413234823_add_pack_sets_to_drafts.exs
+priv/repo/migrations/20250426164808_add_allowed_rarities_to_drafts.exs
+priv/repo/seeds.exs
+README.md
+test
+test/mtg_draft_server
+test/mtg_draft_server/cards
+test/mtg_draft_server/cards/card_test.exs
+test/mtg_draft_server/cards/drafts_test.exs
+test/mtg_draft_server/cards/draft_session_test.exs
+test/mtg_draft_server/cards/pack_generator_test.exs
+test/mtg_draft_server/draft_session
+test/mtg_draft_server/draft_session/helpers_test.exs
+test/mtg_draft_server_web
+test/mtg_draft_server_web/controllers
+test/mtg_draft_server_web/controllers/controllers
+test/mtg_draft_server_web/controllers/controllers/draft_controller_test.exs
+test/mtg_draft_server_web/controllers/error_json_test.exs
+test/mtg_draft_server_web/controllers/firebase_token_test.exs
+test/support
+test/support/conn_case.ex
+test/support/data_case.ex
+test/test_helper.exs
+
+
+=== File: lib/mtg_draft_server.ex ===
+
+defmodule MtgDraftServer do
+  @moduledoc """
+  MtgDraftServer keeps the contexts that define your domain
+  and business logic.
+
+  Contexts are also responsible for managing your data, regardless
+  if it comes from the database, an external API or others.
+  """
+end
+
+=== File: lib/mtg_draft_server/application.ex ===
+
+defmodule MtgDraftServer.Application do
+  @moduledoc """
+  The MtgDraftServer Application module.
+  
+  This module is responsible for starting and supervising all the processes
+  required by the MTG Draft Server application, including:
+  
+  - The Phoenix endpoint
+  - The Ecto repository
+  - The PubSub system
+  - The Registry for draft sessions
+  - The DraftSessionSupervisor for managing draft sessions
+  
+  It also handles cleaning up draft data on application restart.
+  """
+  use Application
+
+  @impl true
+  def start(_type, _args) do
+    children = [
+      MtgDraftServerWeb.Telemetry,
+      MtgDraftServer.Repo,
+      {DNSCluster, query: Application.get_env(:mtg_draft_server, :dns_cluster_query) || :ignore},
+      {Phoenix.PubSub, name: MtgDraftServer.PubSub},
+      {Finch, name: MtgDraftServer.Finch},
+      MtgDraftServerWeb.Endpoint,
+      {Registry, keys: :unique, name: MtgDraftServer.DraftRegistry},
+      MtgDraftServer.DraftSessionSupervisor
+    ]
+
+    opts = [strategy: :one_for_one, name: MtgDraftServer.Supervisor]
+
+    # start your supervision tree
+    {:ok, sup} = Supervisor.start_link(children, opts)
+
+    # —————————————————————————————————————————————————————————
+    # WIPE DRAFTS + PLAYERS ON EVERY RESTART
+    #
+    # Once the Repo child is up, delete all old drafts.
+    # Because of on_delete: :delete_all FKs, this also removes draft_players
+    # and draft_picks.
+    alias MtgDraftServer.Repo
+    alias MtgDraftServer.Drafts.{Draft, DraftPlayer}
+
+    Repo.delete_all(Draft)
+    Repo.delete_all(DraftPlayer)
+
+    # —————————————————————————————————————————————————————————
+
+    {:ok, sup}
+  end
+
+  @impl true
+  def config_change(changed, _new, removed) do
+    MtgDraftServerWeb.Endpoint.config_change(changed, removed)
+    :ok
+  end
+end
+
+=== File: lib/mtg_draft_server/auth_error_handler.ex ===
+
+defmodule MtgDraftServer.AuthErrorHandler do
+  import Plug.Conn
+
+  def auth_error(conn, {type, _reason}, _opts) do
+    body = Jason.encode!(%{error: to_string(type)})
+
+    conn
+    |> put_resp_content_type("application/json")
+    |> send_resp(401, body)
+  end
+end
+
+=== File: lib/mtg_draft_server/cards/card.ex ===
+
+defmodule MtgDraftServer.Cards.Card do
+  @derive {Jason.Encoder,
+           only: [
+             :id,
+             :oracle_id,
+             :name,
+             :mana_cost,
+             :cmc,
+             :type_line,
+             :oracle_text,
+             :power,
+             :toughness,
+             :colors,
+             :color_identity,
+             :set_code,
+             :rarity,
+             :foil,
+             :image_uris,
+             :legalities,
+             :inserted_at,
+             :updated_at
+           ]}
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  # Ensures id is binary_id
+  @primary_key {:id, :binary_id, autogenerate: true}
+  # Ensures foreign keys also use binary_id
+  @foreign_key_type :binary_id
+  schema "cards" do
+    field :oracle_id, Ecto.UUID
+    field :name, :string
+    field :mana_cost, :string
+    field :cmc, :float
+    field :type_line, :string
+    field :oracle_text, :string
+    field :power, :string
+    field :toughness, :string
+    field :colors, {:array, :string}
+    field :color_identity, {:array, :string}
+    field :set_code, :string
+    field :rarity, :string
+    field :foil, :boolean, default: false
+    field :image_uris, :map
+    field :legalities, :map
+
+    timestamps()
+  end
+
+  @doc false
+  def changeset(card, attrs) do
+    card
+    |> cast(attrs, [
+      # Keep id here to allow it to be cast
+      :id,
+      :oracle_id,
+      :name,
+      :mana_cost,
+      :cmc,
+      :type_line,
+      :oracle_text,
+      :power,
+      :toughness,
+      :colors,
+      :color_identity,
+      :set_code,
+      :rarity,
+      :foil,
+      :image_uris,
+      :legalities
+    ])
+    |> validate_required([:oracle_id, :name, :set_code, :rarity])
+  end
+end
+
+=== File: lib/mtg_draft_server/cards/card_metadata.ex ===
+
+defmodule MtgDraftServer.Cards.CardMetadata do
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  schema "card_metadata" do
+    belongs_to :card, MtgDraftServer.Cards.Card, type: :binary_id
+    field :layout, :string
+    field :is_token, :boolean, default: false
+    field :is_digital, :boolean, default: false
+    field :is_promo, :boolean, default: false
+
+    timestamps()
+  end
+
+  def changeset(metadata, attrs) do
+    metadata
+    |> cast(attrs, [:card_id, :layout, :is_token, :is_digital, :is_promo])
+    |> validate_required([:card_id])
+  end
+end
+
+=== File: lib/mtg_draft_server/draft_session.ex ===
+
+defmodule MtgDraftServer.DraftSession do
+  @moduledoc """
+  A GenServer that manages a Magic: The Gathering draft session with asynchronous,
+  queue‑based picking. Each player starts with three booster packs. Packs are
+  passed around in alternating directions (left for rounds 1 & 3, right for round 2).
+  Players (human or AI) may pick as soon as they have cards in their head pack,
+  and “pile‑up” behavior is automatic via per‑player FIFO queues.
+  """
+
+  use GenServer
+  alias MtgDraftServer.Drafts
+  alias MtgDraftServer.Drafts.PackGenerator
+  alias MtgDraftServer.DraftSession.PackDistributor
+  require Logger
+
+  ## Client API
+
+  @doc """
+  Start the session process for a given draft ID.
+  """
+  def start_link(draft_id) do
+    GenServer.start_link(__MODULE__, draft_id, name: via_tuple(draft_id))
+  end
+
+  @doc """
+  Join a player (or AI) into the session. Expects a map with "user_id" and
+  optional "ai" boolean (defaults to false).
+  """
+  def join(draft_id, %{"user_id" => uid} = player) do
+    ai_flag = Map.get(player, "ai", false)
+    GenServer.call(via_tuple(draft_id), {:join, uid, ai_flag})
+  end
+
+  @doc """
+  Kick off the draft by generating booster packs and loading them into state.
+  Call this once all players have joined.
+  """
+  def start_with_boosters(draft_id) do
+    GenServer.call(via_tuple(draft_id), :start_draft_with_boosters)
+  end
+
+  @doc """
+  Submit a pick for a given user and card ID.
+  """
+  def pick(draft_id, user_id, card_id) do
+    GenServer.cast(via_tuple(draft_id), {:pick, user_id, card_id})
+  end
+
+  @doc """
+  Fetch the entire in‑memory session state.
+  """
+  def get_state(draft_id) do
+    GenServer.call(via_tuple(draft_id), :get_state)
+  end
+
+  defp via_tuple(draft_id) do
+    {:via, Registry, {MtgDraftServer.DraftRegistry, draft_id}}
+  end
+
+  ## Server Callbacks
+
+  @impl true
+  def init(draft_id) do
+    {:ok, db_draft} = Drafts.get_draft(draft_id)
+    state = %{
+      draft_id:         draft_id,
+      status:           db_draft.status,
+      players:          %{},    # user_id => %{ai: boolean}
+      booster_queues:   %{},    # user_id => [{round_number, pack_list}, ...]
+      player_positions: [],    # seating order by user_id
+      pick_counters:    %{}    # %{user_id => %{1 => 0, 2 => 0, 3 => 0}}
+    }
+
+    {:ok, state}
+  end
+
+  @impl true
+  def handle_call({:join, uid, ai_flag}, _from, state) do
+    players  = Map.put(state.players, uid, %{ai: ai_flag})
+    queues   = Map.put_new(state.booster_queues, uid, [])
+    counters = Map.put_new(state.pick_counters, uid, %{1 => 0, 2 => 0, 3 => 0})
+
+    {:reply, :ok, %{state | players: players, booster_queues: queues, pick_counters: counters}}
+  end
+
+  @impl true
+  def handle_call(:start_draft_with_boosters, _from, _state) do
+
+  end
+
+  @impl true
+  def handle_call({:start_with_options, opts}, _from, state) do
+    # 1) Determine seating and generate packs
+    player_ids = MtgDraftServer.Drafts.get_draft_players(state.draft_id)
+    booster_map = PackGenerator.generate_and_distribute_booster_packs(opts, player_ids)
+
+    # 2) Wrap packs with round numbers: Enum.with_index returns {pack, round}
+    wrapped_queues =
+      booster_map
+      |> Enum.map(fn {uid, packs} ->
+        indexed =
+          packs
+          |> Enum.with_index(1)
+          |> Enum.map(fn {pack, round} -> {round, pack} end)
+        {uid, indexed}
+      end)
+      |> Enum.into(%{})
+
+    # 3) Persist draft status and update in-memory state
+    {:ok, _updated} = Drafts.start_draft(state.draft_id)
+    new_state = %{
+      state
+      | booster_queues:   wrapped_queues,
+        status:           "active",
+        player_positions: player_ids,
+        pick_counters:    Enum.into(player_ids, %{}, fn uid -> {uid, %{1 => 0, 2 => 0, 3 => 0}} end)
+    }
+
+    # 4) Broadcast and schedule AI
+    Drafts.notify(state.draft_id, {:draft_started, state.draft_id, []})
+    Enum.each(player_ids, fn uid ->
+      if state.players[uid].ai do
+        Process.send_after(self(), {:ai_pick, uid}, 500)
+      end
+    end)
+
+    {:reply, {:ok, new_state}, new_state}
+  end
+
+  @impl true
+  def handle_call(:get_state, _from, state) do
+    {:reply, state, state}
+  end
+
+  @impl true
+  def handle_cast({:pick, user_id, card_id}, state) do
+    case Map.get(state.booster_queues, user_id, []) do
+      [{round, current_pack} | rest] ->
+        if PackDistributor.card_in_pack?(current_pack, card_id) do
+          updated_pack = PackDistributor.remove_card(current_pack, card_id)
+          direction   = if round == 2, do: :right, else: :left
+          neighbor    = PackDistributor.next_neighbor(user_id, state.player_positions, direction)
+
+          # get and bump pick number
+          user_counters = Map.get(state.pick_counters, user_id, %{1 => 0, 2 => 0, 3 => 0})
+          pick_no       = user_counters[round] + 1
+
+          # persist pick with tuple match for {:ok, pick}
+          {:ok, _pick} = Drafts.pick_card(
+            state.draft_id,
+            user_id,
+            card_id,
+            %{"pack_number" => round, "pick_number" => pick_no}
+          )
+
+          Drafts.notify(state.draft_id, {:pack_updated, user_id, neighbor})
+          if state.players[neighbor].ai do
+            Process.send_after(self(), {:ai_pick, neighbor}, 500)
+          end
+
+          q1 = if updated_pack == [], do: rest, else: rest ++ [{round, updated_pack}]
+          q2 = Map.get(state.booster_queues, neighbor, []) ++ [{round, updated_pack}]
+
+          # 1) Update the booster queues as before
+          new_queues =
+            state.booster_queues
+            |> Map.put(user_id, q1)
+            |> Map.put(neighbor, q2)
+
+          # 2) Check if draft has ended
+          all_empty? = new_queues |> Map.values() |> Enum.all?(&(&1 == []))
+
+          if all_empty? do
+            # mark complete in DB
+            {:ok, _} = MtgDraftServer.Drafts.complete_draft(state.draft_id)
+            # broadcast completion
+            MtgDraftServer.Drafts.notify(state.draft_id, {:draft_completed, state.draft_id})
+          end
+                    
+          # 3) Safely update pick_counters: if there's no entry for this user
+          #    we default to a {1=>0,2=>0,3=>0} map, then put the new pick_no.
+          new_counters =
+            state.pick_counters
+            |> Map.put_new(user_id, %{1 => 0, 2 => 0, 3 => 0})
+            |> Map.update!(user_id, fn counters ->
+              Map.put(counters, round, pick_no)
+            end)
+
+          {:noreply, %{state | booster_queues: new_queues, pick_counters: new_counters}}
+        else
+          Logger.error("Invalid pick #{card_id} by #{user_id}")
+          {:noreply, state}
+        end
+
+      [] ->
+        # no packs left
+        {:noreply, state}
+    end
+  end
+
+  @impl true
+  def handle_info({:ai_pick, user_id}, state) do
+    case Map.get(state.booster_queues, user_id, []) do
+      [{_, [_ | _] = pack} | _] ->
+        card_id = Enum.random(pack) |> Map.get(:id)
+        GenServer.cast(self(), {:pick, user_id, card_id})
+      _ ->
+        :ok
+    end
+
+    {:noreply, state}
+  end
+end
+
+=== File: lib/mtg_draft_server/draft_session/pack_distributor.ex ===
+
+# lib/mtg_draft_server/draft_session/pack_distributor.ex
+defmodule MtgDraftServer.DraftSession.PackDistributor do
+  @moduledoc """
+  Handles the distribution and manipulation of card packs during a draft session.
+  
+  This module provides utility functions for:
+  - Removing cards from packs
+  - Checking if a card exists in a pack
+  - Determining the next player to receive a pack based on draft direction
+  """
+
+  @doc "Remove a card_id from a pack (list of card structs or IDs)."
+  def remove_card(pack, card_id) do
+    Enum.reject(pack, fn
+      %{id: ^card_id} -> true
+      ^card_id -> true
+      _ -> false
+    end)
+  end
+
+  @doc "True if card_id exists in pack."
+  def card_in_pack?(pack, card_id) do
+    Enum.any?(pack, fn
+      %{id: ^card_id} -> true
+      ^card_id -> true
+      _ -> false
+    end)
+  end
+
+  @doc """
+  Given the full list of players (in seating order) and a direction,
+  return the neighbor to the :left or :right (wrap around).
+  """
+  def next_neighbor(user_id, players, direction) do
+    n = length(players)
+    idx = Enum.find_index(players, &(&1 == user_id))
+
+    next_idx =
+      case direction do
+        :right -> rem(idx + 1, n)
+        :left -> rem(idx - 1 + n, n)
+      end
+
+    Enum.at(players, next_idx)
+  end
+end
+
+=== File: lib/mtg_draft_server/draft_session/turn_logic.ex ===
+
+defmodule MtgDraftServer.DraftSession.TurnLogic do
+  @moduledoc """
+  Provides utility functions for managing turn order and player rotation in a draft.
+  
+  This module handles the logic for determining the next player in a draft rotation,
+  taking into account the direction of the draft (left or right) and ensuring proper
+  wrapping around the table.
+  """
+  
+  @doc """
+  Calculates the index of the next player in the draft rotation.
+  
+  ## Parameters
+    - current_index: The index of the current player
+    - player_count: The total number of players in the draft
+    - direction: The direction of the draft rotation (:left or :right)
+    
+  ## Returns
+    The index of the next player, wrapping around if necessary
+  """
+  @spec next_index(integer(), integer(), :left | :right) :: integer()
+  def next_index(current_index, player_count, :left), do: rem(current_index + 1, player_count)
+
+  @doc """
+  Calculates the index of the next player when passing to the right.
+  
+  This is equivalent to moving to the previous player in the array, with wrapping.
+  
+  ## Parameters
+    - current_index: The index of the current player
+    - player_count: The total number of players in the draft
+    - :right: Indicates passing to the right
+    
+  ## Returns
+    The index of the next player, wrapping around if necessary
+  """
+  def next_index(current_index, player_count, :right),
+    do: rem(player_count + current_index - 1, player_count)
+end
+
+=== File: lib/mtg_draft_server/draft_session_supervisor.ex ===
+
+defmodule MtgDraftServer.DraftSessionSupervisor do
+  @moduledoc """
+  A dynamic supervisor for managing draft session processes.
+  
+  This supervisor is responsible for starting and supervising individual draft session
+  processes. Each draft session is a GenServer that manages the state and logic for
+  a single Magic: The Gathering draft.
+  
+  The supervisor uses a one-for-one strategy, meaning that if a draft session crashes,
+  only that specific session will be restarted, without affecting other drafts.
+  """
+  use DynamicSupervisor
+
+  @doc """
+  Starts the DraftSessionSupervisor.
+  
+  This function is called by the application supervisor during application startup.
+  """
+  def start_link(_args) do
+    DynamicSupervisor.start_link(__MODULE__, :ok, name: __MODULE__)
+  end
+
+  @impl true
+  @doc """
+  Initializes the supervisor with a one-for-one strategy.
+  """
+  def init(:ok) do
+    DynamicSupervisor.init(strategy: :one_for_one)
+  end
+
+  @doc """
+  Starts a new draft session.
+  """
+  def start_new_session(draft_id) do
+    spec = {MtgDraftServer.DraftSession, draft_id}
+    DynamicSupervisor.start_child(__MODULE__, spec)
+  end
+end
+
+=== File: lib/mtg_draft_server/drafts.ex ===
+
+defmodule MtgDraftServer.Drafts do
+  @moduledoc """
+  Context for managing drafts, players, and picks.
+
+  In this Magic: The Gathering draft server:
+    - A draft is created independently of any player.
+    - When a player creates a draft, a corresponding draft_player record is created.
+    - A player may only be in one active (pending/active) draft at a time.
+    - Each draft supports a maximum of 8 players.
+  """
+
+  import Ecto.Query, warn: false
+  alias MtgDraftServer.Repo
+  alias MtgDraftServer.Drafts.{Draft, DraftPlayer, DraftPick}
+
+  @one_day_in_seconds 86400
+
+  @type error :: {:error, Ecto.Changeset.t() | String.t()}
+  @type draft_result :: {:ok, Draft.t()} | error
+  @type pick_result :: {:ok, DraftPick.t()} | error
+  @type player_result :: {:ok, DraftPlayer.t()} | error
+
+  @doc """
+  Creates a new draft.
+
+  Note that the draft itself is agnostic of a player.
+  If a creator is provided in the attrs (using key `:creator`), a corresponding
+  draft_player record is created.
+  """
+  @spec create_draft(map()) :: draft_result
+  def create_draft(attrs \\ %{}) do
+    Repo.transaction(fn ->
+      with {:ok, draft} <- do_create_draft(attrs),
+           {:ok, _player} <- maybe_create_player(draft, attrs[:creator]) do
+        draft
+      else
+        error -> Repo.rollback(error)
+      end
+    end)
+  end
+
+  @doc """
+  Creates a new draft, starts its draft-session GenServer,
+  and (if a creator is provided) joins the creator into the draft.
+
+  Before creating a new draft, it ensures that the player isn’t already
+  in an active (pending or active) draft.
+  """
+  @spec create_and_join_draft(map()) :: {:ok, Draft.t()} | {:error, any()}
+  def create_and_join_draft(attrs \\ %{}) do
+    if creator = attrs[:creator] do
+      case get_active_draft_for_player(creator) do
+        nil -> :ok
+        _ -> {:error, "Player already in an active draft"}
+      end
+    else
+      :ok
+    end
+    |> case do
+      :ok ->
+        Ecto.Multi.new()
+        |> Ecto.Multi.insert(:draft, Draft.changeset(%Draft{}, attrs))
+        |> maybe_multi_insert_player(attrs[:creator])
+        |> Repo.transaction()
+
+      error ->
+        error
+    end
+  end
+
+  @doc """
+  Retrieves the most recent active draft for a given player.
+  (An active draft is one whose status is either "pending" or "active".)
+  """
+  @spec get_active_draft_for_player(String.t()) :: DraftPlayer.t() | nil
+  def get_active_draft_for_player(user_id) do
+    query =
+      from dp in DraftPlayer,
+        join: d in Draft,
+        on: dp.draft_id == d.id,
+        where: dp.user_id == ^user_id and d.status in ["pending", "active"],
+        order_by: [desc: dp.inserted_at],
+        limit: 1,
+        preload: [:draft]
+
+    Repo.one(query)
+  end
+
+  @doc """
+  Starts a draft by updating its status to "active".
+  Validates that the draft exists and has at least 2 players.
+  """
+  @spec start_draft(binary()) :: draft_result
+  def start_draft(draft_id) do
+    with {:ok, draft} <- get_draft(draft_id),
+         :ok <- validate_draft_can_start(draft),
+         {:ok, updated_draft} <- do_start_draft(draft) do
+      broadcast_draft_update(draft_id, :draft_started)
+      {:ok, updated_draft}
+    end
+  end
+
+  @doc """
+  Records a card pick in the draft.
+
+  Validates that the pick is legal by using the in-memory session state
+  (when provided) so we never call back into the server from inside itself.
+  """
+  @spec pick_card(binary(), String.t(), String.t(), map()) :: pick_result
+  def pick_card(draft_id, user_id, card_id, extra_attrs \\ %{}) do
+    Repo.transaction(fn ->
+        with {:ok, draft} <- get_draft(draft_id),
+             :ok <- validate_draft_active(draft),
+             {:ok, draft_player} <- get_draft_player(draft_id, user_id) do
+        now = DateTime.utc_now() |> DateTime.truncate(:second)
+        expires_at = DateTime.add(now, @one_day_in_seconds, :second)
+
+        attrs =
+          Map.merge(extra_attrs, %{
+            "draft_id" => draft_id,
+            "draft_player_id" => draft_player.id,
+            "card_id" => card_id,
+            "expires_at" => expires_at,
+            "pack_number"        => extra_attrs["pack_number"]  || 1,
+            "pick_number"        => extra_attrs["pick_number"]  || 1
+          })
+
+        %DraftPick{}
+        |> DraftPick.changeset(attrs)
+        |> Repo.insert!()
+      else
+        error -> Repo.rollback(error)
+      end
+    end)
+  end
+
+  @doc """
+  Retrieves all picks for a given draft and player.
+  """
+  @spec get_picked_cards(binary(), binary()) :: [DraftPick.t()]
+  def get_picked_cards(draft_id, user_id) do
+    with {:ok, draft_player} <- get_draft_player(draft_id, user_id) do
+      query =
+        from pick in DraftPick,
+          where: pick.draft_player_id == ^draft_player.id,
+          order_by: [asc: pick.inserted_at],
+          preload: [:card]
+
+      Repo.all(query)
+    else
+      _error -> []
+    end
+  end
+
+  @doc """
+  Gets a draft by its ID.
+  Returns `{:ok, draft}` if found, or `{:error, "Draft not found"}` if not.
+  """
+  @spec get_draft(binary()) :: draft_result
+  def get_draft(draft_id) do
+    case Cachex.get(:draft_cache, "draft:#{draft_id}") do
+      {:ok, draft} when not is_nil(draft) ->
+        {:ok, draft}
+
+      _ ->
+        case Repo.get(Draft, draft_id) do
+          nil ->
+            {:error, "Draft not found"}
+
+          draft ->
+            Cachex.put(:draft_cache, "draft:#{draft_id}", draft, ttl: :timer.minutes(5))
+            {:ok, draft}
+        end
+    end
+  end
+
+  @doc """
+  Retrieves a draft player by draft ID and user ID.
+  Returns `{:ok, draft_player}` if found, or `{:error, "Player not found in draft"}` if not.
+  """
+  def get_draft_player(draft_id, user_id) do
+    case Repo.one(
+           from dp in DraftPlayer,
+             where: dp.draft_id == ^draft_id and dp.user_id == ^user_id,
+             preload: [:draft]
+         ) do
+      nil -> {:error, "Player not found in draft"}
+      player -> {:ok, player}
+    end
+  end
+
+  @doc """
+  Marks the draft as complete by updating its status.
+  """
+  @spec complete_draft(binary()) :: {:ok, Draft.t()} | {:error, any()}
+  def complete_draft(draft_id) do
+    with {:ok, draft} <- get_draft(draft_id) do
+      draft
+      |> Draft.changeset(%{status: "complete"})
+      |> Repo.update()
+    end
+  end
+
+  @doc """
+  Returns a list of pending drafts that have fewer than 8 players.
+  Each draft is returned as a map with keys: :id, :player_count, and :status.
+  """
+  def list_pending_drafts do
+    query =
+      from d in Draft,
+        where: d.status == "pending",
+        left_join: dp in DraftPlayer,
+        on: dp.draft_id == d.id,
+        group_by: d.id,
+        having: count(dp.id) < 8,
+        select: %{id: d.id, player_count: count(dp.id), status: d.status}
+
+    Repo.all(query)
+  end
+
+  @doc """
+  Joins the given user to the specified draft if it is not full.
+  If the user is already in the draft, returns the existing record.
+  """
+  def join_draft(%Draft{} = draft, user_id) do
+    case Repo.one(
+           from dp in DraftPlayer,
+             where: dp.draft_id == ^draft.id and dp.user_id == ^user_id
+         ) do
+      %DraftPlayer{} = existing_player ->
+        {:ok, existing_player}
+
+      nil ->
+        player_count =
+          Repo.one(from dp in DraftPlayer, where: dp.draft_id == ^draft.id, select: count(dp.id))
+
+        if player_count < 8 do
+          DraftPlayer.create_draft_player(%{
+            draft_id: draft.id,
+            user_id: user_id,
+            seat: player_count + 1
+          })
+        else
+          {:error, "Draft is full (max 8 players)"}
+        end
+    end
+  end
+
+  @doc """
+  Returns a list of user IDs for all players in the specified draft.
+  """
+  def get_draft_players(draft_id) do
+    from(dp in DraftPlayer,
+         where: dp.draft_id == ^draft_id,
+         order_by: dp.seat,
+         select: dp.user_id)
+    |> Repo.all()
+  end
+
+  @doc """
+  Broadcasts a draft event over PubSub.
+  """
+  @spec notify(binary(), any()) :: :ok
+  def notify(draft_id, event) when is_atom(event) do
+    Phoenix.PubSub.broadcast(
+      MtgDraftServer.PubSub,
+      "draft:#{draft_id}",
+      {event, draft_id}
+    )
+
+    :ok
+  end
+
+  def notify(draft_id, event) do
+    Phoenix.PubSub.broadcast(
+      MtgDraftServer.PubSub,
+      "draft:#{draft_id}",
+      event
+    )
+
+    :ok
+  end
+
+  @doc """
+  Returns a list of active drafts, each as a map:
+    %{id: draft_id, players: [%{user_id: uid, seat: seat}, …]}
+  """
+  def list_active_drafts_with_players do
+    # 1) get all active drafts
+    active =
+      from(d in Draft,
+        where: d.status == "active",
+        select: d.id
+      )
+      |> Repo.all()
+
+    # 2) for each draft, load its players (ordered by seat)
+    Enum.map(active, fn draft_id ->
+      players =
+        from(dp in DraftPlayer,
+          where: dp.draft_id == ^draft_id,
+          order_by: dp.seat,
+          select: %{user_id: dp.user_id, seat: dp.seat}
+        )
+        |> Repo.all()
+
+      %{id: draft_id, players: players}
+    end)
+  end
+
+  @doc """
+    Returns a list of all supported set codes
+  """
+  def list_available_sets do
+    import Ecto.Query
+  
+    from(c in MtgDraftServer.Cards.Card,
+      distinct: true,
+      select: c.set_code,
+      order_by: c.set_code
+    )
+    |> Repo.all()
+  end
+
+  # ============================================================================
+  # Private functions
+  # ============================================================================
+
+  defp do_create_draft(attrs) do
+    %Draft{}
+    |> Draft.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  defp do_start_draft(draft) do
+    draft
+    |> Draft.changeset(%{status: "active"})
+    |> Repo.update()
+  end
+
+  defp maybe_create_player(_draft, nil), do: {:ok, nil}
+
+  defp maybe_create_player(draft, creator) do
+    player_count =
+      Repo.one(from dp in DraftPlayer, where: dp.draft_id == ^draft.id, select: count(dp.id))
+
+    if player_count < 8 do
+      DraftPlayer.create_draft_player(%{
+        draft_id: draft.id,
+        user_id: creator,
+        seat: 1
+      })
+    else
+      {:error, "Draft is full (max 8 players)"}
+    end
+  end
+
+  defp maybe_multi_insert_player(multi, nil), do: multi
+
+  defp maybe_multi_insert_player(multi, creator) do
+    Ecto.Multi.run(multi, :player, fn repo, %{draft: draft} ->
+      %DraftPlayer{}
+      |> DraftPlayer.changeset(%{
+        draft_id: draft.id,
+        user_id: creator,
+        seat: 1
+      })
+      |> repo.insert()
+    end)
+  end
+
+  # ============================================================================
+  # Validation Functions
+  # ============================================================================
+
+  @doc """
+  Validates whether it is the given user's turn to pick.
+
+  Optionally, an existing state can be provided to avoid an extra GenServer call.
+  """
+  def validate_player_turn(draft_id, user_id, state \\ nil) do
+    state =
+      if state != nil do
+        state
+      else
+        case Registry.lookup(MtgDraftServer.DraftRegistry, draft_id) do
+          [{pid, _}] -> GenServer.call(pid, :get_state)
+          [] -> nil
+        end
+      end
+
+    if state == nil do
+      {:error, "Draft session not found"}
+    else
+      do_validate_player_turn(user_id, state)
+    end
+  end
+
+  defp do_validate_player_turn(user_id, state) do
+    current_user = Enum.at(state.turn_order, state.current_turn_index)
+    if current_user == user_id, do: :ok, else: {:error, "Not your turn to pick"}
+  end
+
+  @doc false
+  def validate_card_availability(draft_id, card_id, state \\ nil) do
+    state =
+      if state != nil do
+        state
+      else
+        case Registry.lookup(MtgDraftServer.DraftRegistry, draft_id) do
+          [{pid, _}] -> GenServer.call(pid, :get_state)
+          [] -> nil
+        end
+      end
+
+    if state == nil do
+      {:error, "Draft session not found"}
+    else
+      do_validate_card_availability(card_id, state)
+    end
+  end
+
+  defp do_validate_card_availability(card_id, state) do
+    current_user = Enum.at(state.turn_order, state.current_turn_index)
+
+    cond do
+      state.booster_packs ->
+        current_pack = get_current_pack_for_player(state, current_user)
+
+        if card_in_pack?(current_pack, card_id),
+          do: :ok,
+          else: {:error, "Card not available in current pack"}
+
+      card_id in state.pack ->
+        :ok
+
+      true ->
+        {:error, "Card not available in current pack"}
+    end
+  end
+
+  defp get_current_pack_for_player(state, user_id) do
+    player_packs = Map.get(state.booster_packs, user_id, [])
+    Enum.at(player_packs, state.pack_number - 1, [])
+  end
+
+  defp card_in_pack?(pack, card_id) do
+    Enum.any?(pack, fn card ->
+      cond do
+        is_map(card) && Map.has_key?(card, :id) -> card.id == card_id
+        is_map(card) && Map.has_key?(card, "id") -> card["id"] == card_id
+        true -> card == card_id
+      end
+    end)
+  end
+
+  defp validate_draft_can_start(draft) do
+    with :ok <- validate_draft_status(draft),
+         :ok <- validate_player_count(draft) do
+      :ok
+    end
+  end
+
+  defp validate_draft_status(draft) do
+    if draft.status == "pending" do
+      :ok
+    else
+      {:error, "Draft cannot be started from #{draft.status} status"}
+    end
+  end
+
+  @doc false
+  defp validate_draft_active(draft) do
+    if draft.status == "active" do
+      :ok
+    else
+      {:error, "Draft is not active (current status: #{draft.status})"}
+    end
+  end
+
+  defp validate_player_count(draft) do
+    player_count =
+      Repo.one(from dp in DraftPlayer, where: dp.draft_id == ^draft.id, select: count(dp.id))
+
+    if player_count >= 2 do
+      :ok
+    else
+      {:error, "Draft needs at least 2 players to start"}
+    end
+  end
+
+  defp broadcast_draft_update(draft_id, event) do
+    notify(draft_id, event)
+  end
+end
+
+=== File: lib/mtg_draft_server/drafts/draft.ex ===
+
+defmodule MtgDraftServer.Drafts.Draft do
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  @primary_key {:id, :binary_id, autogenerate: true}
+  schema "drafts" do
+    field :status, :string, default: "pending"
+    field :pack_sets, {:array, :string}, default: []
+    field :allowed_rarities, {:array, :string}, default: ["basic","common","uncommon","rare","mythic"]
+    timestamps()
+  end
+
+  def changeset(draft, attrs) do
+    draft
+    |> cast(attrs, [:status, :pack_sets, :allowed_rarities])
+    |> validate_required([:status])
+  end
+end
+
+=== File: lib/mtg_draft_server/drafts/draft_pick.ex ===
+
+defmodule MtgDraftServer.Drafts.DraftPick do
+  @derive {Jason.Encoder,
+           only: [
+             :id,
+             :pack_number,
+             :pick_number,
+             :draft_id,
+             :draft_player_id,
+             :card_id,
+             :card,
+             :inserted_at,
+             :updated_at
+           ]}
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  schema "draft_picks" do
+    field :pack_number, :integer
+    field :pick_number, :integer
+    field :expires_at, :utc_datetime
+
+    belongs_to :draft, MtgDraftServer.Drafts.Draft, type: :binary_id
+    belongs_to :draft_player, MtgDraftServer.Drafts.DraftPlayer
+    belongs_to :card, MtgDraftServer.Cards.Card, type: :binary_id
+
+    timestamps()
+  end
+
+  def changeset(draft_pick, attrs) do
+    draft_pick
+    |> cast(attrs, [
+      :draft_id,
+      :draft_player_id,
+      :card_id,
+      :pack_number,
+      :pick_number,
+      :expires_at
+    ])
+    |> validate_required([
+      :draft_id,
+      :draft_player_id,
+      :card_id,
+      :pack_number,
+      :pick_number,
+      :expires_at
+    ])
+  end
+end
+
+=== File: lib/mtg_draft_server/drafts/draft_player.ex ===
+
+defmodule MtgDraftServer.Drafts.DraftPlayer do
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  @derive {Jason.Encoder,
+           only: [:id, :user_id, :seat, :connected, :draft_id, :inserted_at, :updated_at]}
+  schema "draft_players" do
+    field :user_id, :string
+    field :seat, :integer
+    field :connected, :boolean, default: true
+    belongs_to :draft, MtgDraftServer.Drafts.Draft, type: :binary_id
+
+    timestamps()
+  end
+
+  def changeset(draft_player, attrs) do
+    draft_player
+    |> cast(attrs, [:draft_id, :user_id, :seat, :connected])
+    |> validate_required([:draft_id, :user_id, :seat])
+  end
+
+  def create_draft_player(attrs) do
+    %__MODULE__{}
+    |> changeset(attrs)
+    |> MtgDraftServer.Repo.insert()
+  end
+end
+
+=== File: lib/mtg_draft_server/firebase_token.ex ===
+
+defmodule MtgDraftServer.FirebaseToken do
+  use Joken.Config
+
+  @firebase_jwks_url "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"
+
+  def verify_firebase_token(nil), do: {:error, :no_token_provided}
+
+  def verify_firebase_token(token) do
+    with {:ok, %{body: body}} <-
+           Finch.build(:get, @firebase_jwks_url) |> Finch.request(MtgDraftServer.Finch),
+         {:ok, certs} <- Jason.decode(body),
+         {:ok, header} <- Joken.peek_header(token),
+         %{"kid" => kid} = header,
+         {:ok, jwk} <- get_jwk(certs, kid),
+         {true, jose_jwt, _} <- JOSE.JWT.verify(jwk, token),
+         {_, claims} <- JOSE.JWT.to_map(jose_jwt) do
+      {:ok, claims}
+    else
+      {:error, _} = err -> err
+      _ -> {:error, :invalid_token}
+    end
+  end
+
+  defp get_jwk(%{"keys" => keys}, kid) do
+    keys
+    |> Enum.find(fn key -> key["kid"] == kid end)
+    |> case do
+      nil -> {:error, :invalid_kid}
+      key -> {:ok, JOSE.JWK.from_map(key)}
+    end
+  end
+end
+
+=== File: lib/mtg_draft_server/jwks_strategy.ex ===
+
+defmodule MtgDraftServer.JWKSStrategy do
+  use JokenJwks.DefaultStrategyTemplate
+
+  def init_opts(_) do
+    [
+      jwks_url:
+        "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"
+    ]
+  end
+end
+
+=== File: lib/mtg_draft_server/mailer.ex ===
+
+defmodule MtgDraftServer.Mailer do
+  use Swoosh.Mailer, otp_app: :mtg_draft_server
+end
+
+=== File: lib/mtg_draft_server/pack_generator.ex ===
+
+defmodule MtgDraftServer.Drafts.PackGenerator do
+  @moduledoc """
+  Generates booster packs for a draft based on the modern draft booster distribution.
+
+  A modern draft booster (ignoring the marketing token) contains 15 Magic cards:
+    - 1 Basic Land
+    - 10 Common Cards
+    - 3 Uncommon Cards
+    - 1 Rare or Mythic Rare Card
+
+  Additionally, there is a chance for one of the common cards to be replaced by a premium foil card
+  (of any rarity). In that case the pack will have:
+    - 1 Basic Land
+    - 1 Foil Card
+    - 9 Common Cards
+    - 3 Uncommon Cards
+    - 1 Rare or Mythic Rare Card
+
+  Accepted options (opts):
+    - :set_codes - a list of set codes (e.g. ["ulg", "m21"])
+    - :allowed_rarities - a list of rarities to include (default: ["basic", "common", "uncommon", "rare", "mythic"])
+    - :allowed_layouts - a list of card layouts to include (default: normal, split, flip, etc.)
+    - :distribution - a map defining the default booster composition.
+      Defaults to `%{"basic" => 1, "common" => 10, "uncommon" => 3, "rare" => 1}`.
+
+  Additionally, packs can be distributed among players. For example, if a draft has 8 players,
+  24 booster packs (8 × 3) will be generated and then grouped into three packs per player.
+  """
+
+  alias MtgDraftServer.Repo
+  alias MtgDraftServer.Cards.Card
+  import Ecto.Query
+
+  @default_distribution %{"basic" => 1, "common" => 10, "uncommon" => 3, "rare" => 1}
+  @foil_chance 0.25
+
+  # Add default layouts for drafting
+  @default_draft_layouts [
+    "normal",
+    "split",
+    "flip",
+    "transform",
+    "modal_dfc",
+    "adventure",
+    "leveler",
+    "saga",
+    "class"
+  ]
+
+  @doc """
+  Parses options and provides default values for missing options.
+
+  Returns a map with parsed options including:
+    - :set_codes - list of set codes to filter cards
+    - :allowed_rarities - list of allowed card rarities
+    - :allowed_layouts - list of allowed card layouts
+    - :distribution - map defining the booster pack composition
+  """
+  def parse_opts(opts) do
+    %{
+      set_codes: Map.get(opts, :set_codes, []),
+      allowed_rarities:
+        Map.get(opts, :allowed_rarities, ["basic", "common", "uncommon", "rare", "mythic"]),
+      allowed_layouts: Map.get(opts, :allowed_layouts, @default_draft_layouts),
+      distribution: Map.get(opts, :distribution, @default_distribution)
+    }
+  end
+
+  @doc """
+  Fetches cards from the database based on the provided options.
+
+  This function queries cards matching the provided set codes, allowed rarities,
+  and allowed layouts.
+
+  Returns a list of Card structs.
+  """
+  def fetch_card_pool(%{
+        set_codes: set_codes,
+        allowed_rarities: allowed_rarities,
+        allowed_layouts: allowed_layouts
+      }) do
+    base_query =
+      from card in Card,
+        where: card.rarity in ^allowed_rarities
+
+    # Join with a subquery that fetches layout information
+    layout_query =
+      from card in base_query,
+        inner_join: metadata in "card_metadata",
+        on: card.id == metadata.card_id,
+        where: metadata.layout in ^allowed_layouts
+
+    query =
+      if set_codes == [] do
+        layout_query
+      else
+        from card in layout_query, where: card.set_code in ^set_codes
+      end
+
+    Repo.all(query)
+  end
+
+  @doc """
+  Generates a single booster pack using the given rarity groups and distribution.
+
+  The process is as follows:
+    1. Pick the required number of basic lands, commons, and uncommons.
+    2. For the rare slot, combine the "rare" and "mythic" groups and pick one card.
+    3. With a chance of #{@foil_chance * 100}%, select a foil card from all foil-eligible cards,
+       remove one common card, and insert the foil.
+    4. Shuffle the pack before returning it.
+
+  Returns a list of cards representing the booster pack.
+  """
+  def generate_single_pack(rarity_groups, distribution) do
+    basics = Enum.take_random(Map.get(rarity_groups, "basic", []), distribution["basic"])
+    commons = Enum.take_random(Map.get(rarity_groups, "common", []), distribution["common"])
+    uncommons = Enum.take_random(Map.get(rarity_groups, "uncommon", []), distribution["uncommon"])
+    rare_pool = Map.get(rarity_groups, "rare", []) ++ Map.get(rarity_groups, "mythic", [])
+    rare = Enum.take_random(rare_pool, distribution["rare"])
+
+    initial_pack = basics ++ commons ++ uncommons ++ rare
+
+    pack =
+      if :rand.uniform() <= @foil_chance do
+        case pick_foil_card(rarity_groups) do
+          nil ->
+            initial_pack
+
+          foil_card ->
+            if length(commons) > 0 do
+              index = :rand.uniform(length(commons)) - 1
+              new_commons = List.delete_at(commons, index)
+              basics ++ new_commons ++ uncommons ++ rare ++ [foil_card]
+            else
+              initial_pack ++ [foil_card]
+            end
+        end
+      else
+        initial_pack
+      end
+
+    Enum.shuffle(pack)
+  end
+
+  @doc """
+  Generates the specified number of booster packs using the provided rarity groups and distribution.
+
+  By default, generates 24 packs (suitable for 8 players receiving 3 packs each).
+
+  Returns a list of lists, where each inner list represents a booster pack of cards.
+  """
+  def generate_all_packs(rarity_groups, distribution, num_packs \\ 24) do
+    Enum.map(1..num_packs, fn _ -> generate_single_pack(rarity_groups, distribution) end)
+  end
+
+  @doc """
+  Generates booster packs based on the provided options.
+
+  This function:
+    1. Parses the provided options
+    2. Fetches cards from the database
+    3. Groups the cards by rarity
+
+  Returns a map with:
+    - :opts - parsed options
+    - :rarity_groups - a map grouping cards by rarity
+  """
+  def generate_booster_packs(opts \\ %{}) do
+    parsed_opts = parse_opts(opts)
+    cards = fetch_card_pool(parsed_opts)
+    rarity_groups = group_cards_by_rarity(cards)
+
+    %{opts: parsed_opts, rarity_groups: rarity_groups}
+  end
+
+  @doc """
+  Generates booster packs for each of the given players across multiple set rounds.
+
+    * `players`      – a list of player IDs (strings), in draft‑seat order.
+    * `pack_sets`    – a list of set codes, one per round.
+
+  Returns a map `%{ user_id => [pack_round1, pack_round2, …] }`.
+  """
+  def generate_multi_set_packs(players, pack_sets) when is_list(players) do
+    player_count = length(players)
+    packs_per_player = length(pack_sets)
+
+    if rem(packs_per_player, player_count) != 0 do
+      raise ArgumentError,
+            "Number of sets (#{packs_per_player}) must be a multiple of player_count (#{player_count})"
+    end
+
+    # 1) Generate player_count packs for each set_code
+    all_packs =
+      Enum.flat_map(pack_sets, fn set_code ->
+        # this helper already makes exactly player_count packs from one set
+        generate_packs_for_set(player_count, set_code)
+      end)
+
+    # 2) Group the flat list of packs into chunks of size player_count
+    #    so each chunk corresponds to one set round
+    grouped_packs = Enum.chunk_every(all_packs, player_count)
+
+    # 3) For each player, pick their index from each round
+    players
+    |> Enum.with_index()
+    |> Enum.into(%{}, fn {user_id, idx} ->
+      # build a list of "that player's pack" from each round
+      packs_for_player = Enum.map(grouped_packs, &Enum.at(&1, idx))
+      {user_id, packs_for_player}
+    end)
+  end
+
+  @doc """
+  Distributes booster packs to players.
+
+  Given a list of players and a list of booster packs, groups the packs so that each player
+  receives three packs. It assumes that length(packs) == length(players) * 3.
+
+  Returns a map where keys are player identifiers (or player structs) and values are lists of packs.
+  """
+  def distribute_packs(packs, players) do
+    packs_per_player = 3
+    packs_chunks = Enum.chunk_every(packs, packs_per_player)
+
+    Enum.zip(players, packs_chunks)
+    |> Enum.into(%{})
+  end
+
+  @doc """
+  Generates and distributes booster packs to the given players.
+
+  Parameters:
+    - opts – options for pack generation (see generate_booster_packs/1)
+    - players – a list of player identifiers (or player structs)
+
+  Returns a map of player => list of booster packs, where each player gets three packs.
+  """
+  def generate_and_distribute_booster_packs(opts \\ %{}, players) do
+    %{opts: parsed_opts, rarity_groups: rarity_groups} = generate_booster_packs(opts)
+    total_packs = length(players) * 3
+    packs = generate_all_packs(rarity_groups, parsed_opts.distribution, total_packs)
+    distribute_packs(packs, players)
+  end
+
+  # --- Private Helpers ---
+
+  defp generate_packs_for_set(count, set_code) do
+    %{opts: parsed_opts, rarity_groups: rarity_groups} =
+      generate_booster_packs(%{set_codes: [set_code]})
+
+    generate_all_packs(rarity_groups, parsed_opts.distribution, count)
+  end
+
+  defp group_cards_by_rarity(cards) do
+    Enum.group_by(cards, & &1.rarity)
+  end
+
+  defp pick_foil_card(rarity_groups) do
+    all_cards = Enum.flat_map(rarity_groups, fn {_rarity, cards} -> cards end)
+    foil_pool = Enum.filter(all_cards, fn card -> card.foil end)
+
+    case foil_pool do
+      [] -> nil
+      _ -> Enum.random(foil_pool)
+    end
+  end
+end
+
+=== File: lib/mtg_draft_server/repo.ex ===
+
+defmodule MtgDraftServer.Repo do
+  use Ecto.Repo,
+    otp_app: :mtg_draft_server,
+    adapter: Ecto.Adapters.Postgres
+end
+
+=== File: lib/mtg_draft_server_web.ex ===
+
+defmodule MtgDraftServerWeb do
+  @moduledoc """
+  The entrypoint for defining your web interface:
+    use MtgDraftServerWeb, :controller
+    use MtgDraftServerWeb, :live_view
+    use MtgDraftServerWeb, :html
+  """
+
+  def static_paths, do: ~w(assets fonts images favicon.ico robots.txt)
+
+  def router do
+    quote do
+      use Phoenix.Router
+      import Plug.Conn
+      import Phoenix.Controller
+      import Phoenix.LiveView.Router
+    end
+  end
+
+  def channel do
+    quote do
+      use Phoenix.Channel
+    end
+  end
+
+  def controller do
+    quote do
+      use Phoenix.Controller,
+        formats: [:html, :json],
+        layouts: [html: MtgDraftServerWeb.Layouts]
+
+      import Plug.Conn
+      import MtgDraftServerWeb.Gettext
+      unquote(verified_routes())
+    end
+  end
+
+  def live_view do
+    quote do
+      use Phoenix.LiveView,
+        layout: {MtgDraftServerWeb.Layouts, :app}
+
+      # No more Phoenix.View import
+      import Phoenix.Component
+      import Phoenix.HTML
+      import Phoenix.LiveView.Helpers
+
+      import MtgDraftServerWeb.ErrorHelpers
+      import MtgDraftServerWeb.Gettext
+
+      unquote(verified_routes())
+    end
+  end
+
+  def html do
+    quote do
+      use Phoenix.Component
+
+      import Phoenix.HTML
+      import MtgDraftServerWeb.Gettext
+
+      unquote(verified_routes())
+    end
+  end
+
+  def verified_routes do
+    quote do
+      use Phoenix.VerifiedRoutes,
+        endpoint: MtgDraftServerWeb.Endpoint,
+        router: MtgDraftServerWeb.Router,
+        statics: MtgDraftServerWeb.static_paths()
+    end
+  end
+
+  defmacro __using__(which) when is_atom(which) do
+    apply(__MODULE__, which, [])
+  end
+end
+
+=== File: lib/mtg_draft_server_web/components/error_helpers.ex ===
+
+defmodule MtgDraftServerWeb.ErrorHelpers do
+  @moduledoc """
+  Function component for rendering form field errors.
+
+  Usage in HEEx:
+      <.error_tag form={@form} field={:email} />
+  """
+
+  use MtgDraftServerWeb, :html
+
+  # Define component assigns
+  attr :form, Phoenix.HTML.Form, required: true
+  attr :field, :atom, required: true
+
+  @doc """
+  Renders each error for the given field inside a <span> with class "form-error".
+  """
+  def error_tag(assigns) do
+    errors = Keyword.get_values(assigns.form.errors, assigns.field)
+    assigns = assign(assigns, :errors, errors)
+
+    ~H"""
+    <%= for {msg, opts} <- @errors do %>
+      <span class="form-error"><%= translate_error({msg, opts}) %></span>
+    <% end %>
+    """
+  end
+
+  @doc """
+  Translates an error tuple or string via Gettext.
+  """
+  def translate_error({msg, opts}) when is_binary(msg) and is_list(opts) do
+    if count = opts[:count] do
+      Gettext.dngettext(MtgDraftServerWeb.Gettext, "errors", msg, msg, count, opts)
+    else
+      Gettext.dgettext(MtgDraftServerWeb.Gettext, "errors", msg, opts)
+    end
+  end
+
+  def translate_error(msg) when is_binary(msg) do
+    Gettext.dgettext(MtgDraftServerWeb.Gettext, "errors", msg)
+  end
+end
+
+=== File: lib/mtg_draft_server_web/components/layouts/app.html.heex ===
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title><%= assigns[:page_title] || "MTG Draft Server" %></title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+  <!-- CSRF token -->
+  <meta name="csrf-token" content={get_csrf_token()}/>
+
+  <!-- safe live_title fallback -->
+  <.live_title><%= assigns[:page_title] || "MTG Draft Server" %></.live_title>
+
+  <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
+  <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}></script>
+</head>
+<body>
+  <%= @inner_content %>
+</body>
+</html>
+
+=== File: lib/mtg_draft_server_web/controllers/default_controller.ex ===
+
+# lib/mtg_draft_server_web/controllers/default_controller.ex
+defmodule MtgDraftServerWeb.DefaultController do
+  use MtgDraftServerWeb, :controller
+
+  def index(conn, _params) do
+    json(conn, %{
+      message: "Welcome to MTG Draft Server API",
+      version: "1.0",
+      endpoints: %{
+        drafts: %{
+          create: "POST /api/drafts",
+          start: "POST /api/drafts/:id/start",
+          pick: "POST /api/drafts/:id/pick",
+          picked_cards: "GET /api/drafts/:id/picks"
+        }
+      }
+    })
+  end
+end
+
+=== File: lib/mtg_draft_server_web/controllers/draft_controller.ex ===
+
+defmodule MtgDraftServerWeb.DraftController do
+  use MtgDraftServerWeb, :controller
+
+  alias MtgDraftServer.Drafts
+  alias MtgDraftServer.DraftSession
+  alias MtgDraftServer.DraftSessionSupervisor
+
+  action_fallback MtgDraftServerWeb.FallbackController
+
+  @doc """
+  Create a new draft, auto‑add 7 AIs, and return the draft info.
+  """
+  def create(conn, params) do
+    %{"uid" => uid} = conn.assigns.current_user
+  
+    # Build a map with only atom keys
+    args = %{
+      creator: uid,
+      pack_sets:        Map.get(params, "pack_sets", []),
+      allowed_rarities: Map.get(params, "allowed_rarities", [])
+    }
+  
+    with {:ok, %{draft: draft, player: _human_player}} <- Drafts.create_and_join_draft(args) do
+      # start GenServer and join players as before…
+      {:ok, _pid} = DraftSessionSupervisor.start_new_session(draft.id)
+      :ok = DraftSession.join(draft.id, %{"user_id" => uid, "ai" => false})
+    
+      # render the new draft
+      response =
+        %{draft_id: draft.id, status: draft.status}
+        |> Map.merge(if draft.pack_sets != [], do: %{pack_sets: draft.pack_sets}, else: %{})
+  
+      conn
+      |> put_status(:created)
+      |> put_resp_header("location", "/api/drafts/#{draft.id}")
+      |> json(response)
+    end
+  end  
+
+  @doc """
+  Start the draft by updating its status to "active" and loading all players into session.
+  """
+  def start(conn, %{"id" => draft_id}) do
+    %{"uid" => uid} = conn.assigns.current_user
+  
+    with {:ok, draft} <- Drafts.get_draft(draft_id),
+         {:ok, _} <- authorize_draft_action(draft, uid) do
+      # 1) Ensure the session process exists
+      pid =
+        case Registry.lookup(MtgDraftServer.DraftRegistry, draft_id) do
+          [{pid, _}] ->
+            pid
+  
+          [] ->
+            {:ok, pid} = DraftSessionSupervisor.start_new_session(draft_id)
+            pid
+        end
+  
+      # 2) Join all players into the session
+      Drafts.get_draft_players(draft_id)
+      |> Enum.each(fn user_id ->
+        is_ai = String.starts_with?(user_id, "AI_")
+        :ok = DraftSession.join(draft_id, %{"user_id" => user_id, "ai" => is_ai})
+      end)
+  
+      # 3) Kick off booster generation with options
+      opts = %{
+        set_codes:        draft.pack_sets,
+        allowed_rarities: draft.allowed_rarities
+      }
+  
+      case GenServer.call(pid, {:start_with_options, opts}) do
+        {:ok, _state} ->
+          conn
+          |> json(%{
+            draft_id: draft_id,
+            status:   "active",
+            message:  "Draft started with booster packs"
+          })
+  
+        {:error, reason} ->
+          conn
+          |> put_status(:bad_request)
+          |> json(%{error: reason})
+      end
+    end
+  end
+  
+
+  @doc """
+  Persist a card pick.
+  """
+  def pick(conn, %{"id" => draft_id, "card_id" => card_id}) do
+    case conn.assigns[:current_user] do
+      %{"uid" => uid} ->
+        with {:ok, _} <- ensure_in_draft_session(draft_id, uid),
+             {:ok, draft} <- Drafts.get_draft(draft_id),
+             {:ok, _} <- authorize_draft_action(draft, uid) do
+          DraftSession.pick(draft_id, uid, card_id)
+          json(conn, %{message: "Pick registered"})
+        end
+
+      _ ->
+        conn
+        |> put_status(:unauthorized)
+        |> json(%{"error" => "Authentication required"})
+    end
+  end
+
+  @doc """
+  Get all picks for the current user in a given draft.
+  """
+  def picked_cards(conn, %{"id" => draft_id}) do
+    case conn.assigns[:current_user] do
+      %{"uid" => uid} ->
+        with {:ok, draft} <- Drafts.get_draft(draft_id),
+             {:ok, _} <- authorize_draft_action(draft, uid) do
+          picks = Drafts.get_picked_cards(draft_id, uid)
+          json(conn, %{picks: picks})
+        end
+
+      _ ->
+        conn
+        |> put_status(:unauthorized)
+        |> json(%{"error" => "Authentication required"})
+    end
+  end
+
+  @doc "Get your completed deck (all picks) once draft is done"
+  def deck(conn, %{"id" => draft_id}) do
+    %{"uid" => uid} = conn.assigns.current_user
+
+    case Drafts.get_draft(draft_id) do
+      {:ok, %{status: "complete"}} ->
+        picks = Drafts.get_picked_cards(draft_id, uid)
+        cards = Enum.map(picks, & &1.card)
+        json(conn, %{deck: cards})
+
+      {:ok, draft} ->
+        conn
+        |> put_status(:bad_request)
+        |> json(%{error: "Draft not complete (status: #{draft.status})"})
+
+      {:error, reason} ->
+        conn |> put_status(:not_found) |> json(%{error: reason})
+    end
+  end
+
+
+  @doc """
+  Generate booster packs and distribute them among players.
+  """
+  def generate_booster_packs(conn, params) do
+    players = Map.get(params, "players", [])
+
+    opts = %{
+      set_codes: Map.get(params, "set_codes", []),
+      allowed_rarities:
+        Map.get(params, "allowed_rarities", ["basic", "common", "uncommon", "rare", "mythic"]),
+      distribution:
+        Map.get(params, "distribution", %{
+          "basic" => 1,
+          "common" => 10,
+          "uncommon" => 3,
+          "rare" => 1
+        })
+    }
+
+    packs_distribution =
+      Drafts.PackGenerator.generate_and_distribute_booster_packs(opts, players)
+
+    json(conn, packs_distribution)
+  end
+
+  @doc """
+  Add an AI player to an active draft.
+  """
+  def add_ai(conn, %{"id" => draft_id, "ai_id" => ai_id}) do
+    case conn.assigns[:current_user] do
+      %{"uid" => _uid} ->
+        with {:ok, draft} <- Drafts.get_draft(draft_id),
+             {:ok, _player} <- Drafts.join_draft(draft, ai_id) do
+          :ok = DraftSession.join(draft_id, %{"user_id" => ai_id, "ai" => true})
+          json(conn, %{message: "AI player #{ai_id} added to draft", draft_id: draft_id})
+        else
+          {:error, reason} ->
+            conn
+            |> put_status(:bad_request)
+            |> json(%{error: reason})
+        end
+
+      _ ->
+        conn
+        |> put_status(:unauthorized)
+        |> json(%{"error" => "Authentication required"})
+    end
+  end
+
+  @doc """
+  Lists pending drafts (those in "pending" status with fewer than 8 players).
+  """
+  def pending_drafts(conn, _params) do
+    drafts = Drafts.list_pending_drafts()
+    json(conn, %{drafts: drafts})
+  end
+
+  @doc """
+  Allows a user to join an existing pending draft.
+  """
+  def join(conn, %{"id" => draft_id}) do
+    case conn.assigns[:current_user] do
+      %{"uid" => uid} ->
+        with {:ok, draft} <- Drafts.get_draft(draft_id),
+             {:ok, player} <- Drafts.join_draft(draft, uid) do
+          case Registry.lookup(MtgDraftServer.DraftRegistry, draft_id) do
+            [] ->
+              {:ok, _pid} = DraftSessionSupervisor.start_new_session(draft_id)
+              :ok = DraftSession.join(draft_id, %{"user_id" => uid})
+
+            [{_pid, _}] ->
+              :ok = DraftSession.join(draft_id, %{"user_id" => uid})
+          end
+
+          json(conn, %{draft_id: draft.id, message: "Joined draft", player: player})
+        else
+          error ->
+            conn |> put_status(:bad_request) |> json(%{error: error})
+        end
+
+      _ ->
+        conn
+        |> put_status(:unauthorized)
+        |> json(%{error: "Authentication required"})
+    end
+  end
+
+  @doc """
+  Get the current state of the draft, including your queue and current pack.
+  """
+  def state(conn, %{"id" => draft_id}) do
+    case conn.assigns[:current_user] do
+      %{"uid" => uid} ->
+        with {:ok, draft} <- Drafts.get_draft(draft_id),
+             {:ok, _} <- authorize_draft_action(draft, uid),
+             [{pid, _}] <- Registry.lookup(MtgDraftServer.DraftRegistry, draft_id) do
+          # fetch our new queue‑based state
+          state = GenServer.call(pid, :get_state)
+          user_queue = Map.get(state.booster_queues, uid, [])
+
+          # head of our queue is {round, pack}
+          {current_round, current_pack} = List.first(user_queue) || {nil, []}
+
+          json(conn, %{
+            status: state.status,
+            has_pack: current_pack != [],
+            round: current_round,
+            queue_length: length(user_queue),
+            current_pack: current_pack
+          })
+        else
+          [] ->
+            conn
+            |> put_status(:not_found)
+            |> json(%{error: "Draft session not found"})
+
+          _ ->
+            conn
+            |> put_status(:unauthorized)
+            |> json(%{error: "Authentication required"})
+        end
+
+      _ ->
+        conn
+        |> put_status(:unauthorized)
+        |> json(%{error: "Authentication required"})
+    end
+  end
+
+  @doc """
+  Reconnects the user to their active draft and returns lobby state.
+  """
+  def reconnect(conn, _params) do
+    case conn.assigns[:current_user] do
+      %{"uid" => uid} ->
+        case Drafts.get_active_draft_for_player(uid) do
+          nil ->
+            conn
+            |> put_status(:not_found)
+            |> json(%{error: "No active draft found for user"})
+
+          draft_player ->
+            draft_id = draft_player.draft.id
+
+            case Registry.lookup(MtgDraftServer.DraftRegistry, draft_id) do
+              [{_pid, _}] ->
+                :ok = DraftSession.join(draft_id, %{"user_id" => uid})
+                players = Drafts.get_draft_players(draft_id)
+
+                json(conn, %{message: "Rejoined draft", draft_id: draft_id, players: players})
+
+              [] ->
+                {:ok, _pid} = DraftSessionSupervisor.start_new_session(draft_id)
+                :ok = DraftSession.join(draft_id, %{"user_id" => uid})
+                players = Drafts.get_draft_players(draft_id)
+
+                json(conn, %{
+                  message: "Draft session restarted and rejoined",
+                  draft_id: draft_id,
+                  players: players
+                })
+            end
+        end
+
+      _ ->
+        conn
+        |> put_status(:unauthorized)
+        |> json(%{"error" => "Authentication required"})
+    end
+  end
+
+  @doc "List all set codes for drafts"
+  def sets(conn, _params) do
+    sets = Drafts.list_available_sets()
+    json(conn, %{sets: sets})
+  end
+
+  # --------------------
+  # Private Functions
+  # --------------------
+
+  defp ensure_in_draft_session(draft_id, user_id) do
+    :ok = DraftSession.join(draft_id, %{"user_id" => user_id})
+    {:ok, :joined}
+  end
+
+  defp authorize_draft_action(draft, user_id) do
+    case Drafts.get_draft_player(draft.id, user_id) do
+      {:ok, _player} -> {:ok, true}
+      _ -> {:error, "Unauthorized"}
+    end
+  end
+end
+
+=== File: lib/mtg_draft_server_web/controllers/error_json.ex ===
+
+defmodule MtgDraftServerWeb.ErrorJSON do
+  @moduledoc """
+  This module is invoked by your endpoint in case of errors on JSON requests.
+
+  See config/config.exs.
+  """
+
+  # If you want to customize a particular status code,
+  # you may add your own clauses, such as:
+  #
+  # def render("500.json", _assigns) do
+  #   %{errors: %{detail: "Internal Server Error"}}
+  # end
+
+  # By default, Phoenix returns the status message from
+  # the template name. For example, "404.json" becomes
+  # "Not Found".
+  def render(template, _assigns) do
+    %{errors: %{detail: Phoenix.Controller.status_message_from_template(template)}}
+  end
+end
+
+=== File: lib/mtg_draft_server_web/controllers/fallback_controller.ex ===
+
+defmodule MtgDraftServerWeb.FallbackController do
+  use MtgDraftServerWeb, :controller
+
+  # For Ecto errors, you might pattern match like this:
+  def call(conn, {:error, %Ecto.Changeset{} = changeset}) do
+    conn
+    |> put_status(:unprocessable_entity)
+    |> json(%{errors: changeset})
+  end
+
+  def call(conn, {:error, message}) when is_binary(message) do
+    conn
+    |> put_status(:bad_request)
+    |> json(%{error: message})
+  end
+end
+
+=== File: lib/mtg_draft_server_web/dashboard_live.ex ===
+
+defmodule MtgDraftServerWeb.DashboardLive do
+  use MtgDraftServerWeb, :live_view
+
+  alias MtgDraftServer.Drafts
+
+  @impl true
+  def mount(_params, _session, socket) do
+    drafts = Drafts.list_active_drafts_with_players()
+
+    socket =
+      socket
+      |> assign(:page_title, "Admin Dashboard")
+      |> assign(:drafts, drafts)
+      |> assign(:expanded_drafts, %{})
+      |> assign(:expanded_players, %{})
+      |> assign(:player_picks, %{})
+
+    {:ok, socket}
+  end
+
+  @impl true
+  def handle_event("toggle_draft", %{"draft_id" => draft_id}, socket) do
+    expanded =
+      socket.assigns.expanded_drafts
+      |> Map.update(draft_id, true, &(!&1))
+
+    {:noreply, assign(socket, :expanded_drafts, expanded)}
+  end
+
+  @impl true
+  def handle_event("toggle_player", %{"draft_id" => draft_id, "user_id" => user_id}, socket) do
+    key = {draft_id, user_id}
+
+    expanded_players =
+      socket.assigns.expanded_players
+      |> Map.update(key, true, &(!&1))
+
+    player_picks =
+      if expanded_players[key] do
+        picks = Drafts.get_picked_cards(draft_id, user_id)
+        Map.put(socket.assigns.player_picks, key, picks)
+      else
+        Map.delete(socket.assigns.player_picks, key)
+      end
+
+    {:noreply,
+     socket
+     |> assign(:expanded_players, expanded_players)
+     |> assign(:player_picks, player_picks)}
+  end
+
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <div class="p-4">
+      <h1 class="text-2xl font-bold mb-4">Active Drafts</h1>
+      <ul class="space-y-2">
+        <%= for draft <- @drafts do %>
+          <li class="border rounded p-2">
+            <button
+              class="font-mono"
+              phx-click="toggle_draft"
+              phx-value-draft_id={draft.id}
+            >
+              <%= if @expanded_drafts[draft.id], do: "▾", else: "▸" %>
+              Draft <%= draft.id %>
+            </button>
+
+            <%= if @expanded_drafts[draft.id] do %>
+              <ul class="ml-6 mt-2 space-y-1">
+                <%= for player <- draft.players do %>
+                  <li>
+                    <button
+                      class="font-mono"
+                      phx-click="toggle_player"
+                      phx-value-draft_id={draft.id}
+                      phx-value-user_id={player.user_id}
+                    >
+                      <%= if @expanded_players[{draft.id, player.user_id}], do: "▾", else: "▸" %>
+                      Player <%= player.user_id %>
+                    </button>
+
+                    <%= if @expanded_players[{draft.id, player.user_id}] do %>
+                      <ul class="ml-6 mt-1 list-disc list-inside">
+                        <%= for pick <- @player_picks[{draft.id, player.user_id}] || [] do %>
+                          <li>
+                            Pick <%= pick.pick_number %>: <%= pick.card.name %>
+                          </li>
+                        <% end %>
+                      </ul>
+                    <% end %>
+                  </li>
+                <% end %>
+              </ul>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    </div>
+    """
+  end
+end
+
+=== File: lib/mtg_draft_server_web/endpoint.ex ===
+
+defmodule MtgDraftServerWeb.Endpoint do
+  use Phoenix.Endpoint, otp_app: :mtg_draft_server
+
+  plug CORSPlug,
+    origin: ["http://localhost:5173"],
+    methods: ["GET", "POST"],
+    headers: ["Authorization", "Content-Type", "Accept"],
+    expose: ["Authorization"],
+    credentials: true,
+    max_age: 86400
+
+  # Force SSL in production if configured
+  if Application.compile_env(:mtg_draft_server, :force_ssl, false) do
+    plug Plug.SSL, rewrite_on: [:x_forwarded_proto]
+  end
+
+  # The session will be stored in the cookie and signed,
+  # this means its contents can be read but not tampered with.
+  # Set :encryption_salt if you would also like to encrypt it.
+  @session_options [
+    store: :cookie,
+    key: "_mtg_draft_server_key",
+    signing_salt: "WOTNq3DB",
+    same_site: "Lax"
+  ]
+
+  # socket "/live", Phoenix.LiveView.Socket,
+  #   websocket: [connect_info: [session: @session_options]],
+  #   longpoll: [connect_info: [session: @session_options]]
+
+  # Serve at "/" the static files from "priv/static" directory.
+  #
+  # You should set gzip to true if you are running phx.digest
+  # when deploying your static files in production.
+  plug Plug.Static,
+    at: "/",
+    from: :mtg_draft_server,
+    gzip: false,
+    only: MtgDraftServerWeb.static_paths()
+
+  # Code reloading can be explicitly enabled under the
+  # :code_reloader configuration of your endpoint.
+  if code_reloading? do
+    plug Phoenix.CodeReloader
+    plug Phoenix.Ecto.CheckRepoStatus, otp_app: :mtg_draft_server
+  end
+
+  plug Plug.RequestId
+  plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
+
+  plug Plug.Parsers,
+    parsers: [:urlencoded, :multipart, :json],
+    pass: ["*/*"],
+    json_decoder: Phoenix.json_library()
+
+  plug Plug.MethodOverride
+  plug Plug.Head
+  plug Plug.Session, @session_options
+
+  plug MtgDraftServerWeb.Router
+end
+
+=== File: lib/mtg_draft_server_web/layouts.ex ===
+
+defmodule MtgDraftServerWeb.Layouts do
+  use MtgDraftServerWeb, :html
+
+  # bring in get_csrf_token/0 for your meta tag
+  import Phoenix.Controller, only: [get_csrf_token: 0]
+
+  # embed all of your HEEx layouts under components/layouts/
+  embed_templates "components/layouts/*"
+end
+
+=== File: lib/mtg_draft_server_web/plugs/auth_plug.ex ===
+
+defmodule MtgDraftServerWeb.AuthPlug do
+  import Plug.Conn
+  alias MtgDraftServer.FirebaseToken
+
+  def init(default), do: default
+
+  def call(conn, _opts) do
+    if Application.get_env(:mtg_draft_server, :skip_auth, false) do
+      # In test (or any env where :skip_auth is true), bypass real auth
+      assign(conn, :current_user, %{"uid" => "test_user"})
+    else
+      case get_req_header(conn, "authorization") do
+        ["Bearer " <> token] ->
+          verify_token(conn, token)
+
+        _ ->
+          conn
+          |> send_resp(401, Jason.encode!(%{error: "Missing or invalid Authorization header"}))
+          |> halt()
+      end
+    end
+  end
+
+  defp verify_token(conn, token) do
+    case FirebaseToken.verify_firebase_token(token) do
+      {:ok, claims} ->
+        IO.inspect(claims, label: "✅ Firebase Token Claims")
+        # Map "user_id" to "uid" so controllers can consistently use "uid"
+        claims = Map.put(claims, "uid", claims["user_id"])
+        assign(conn, :current_user, claims)
+
+      {:error, reason} ->
+        IO.inspect(reason, label: "❌ Token Verification Failed")
+
+        conn
+        |> send_resp(401, Jason.encode!(%{error: "Invalid token"}))
+        |> halt()
+    end
+  end
+end
+
+=== File: lib/mtg_draft_server_web/router.ex ===
+
+defmodule MtgDraftServerWeb.Router do
+  use MtgDraftServerWeb, :router
+  import Phoenix.LiveView.Router
+
+  pipeline :browser do
+    plug :accepts, ["html"]
+    plug :fetch_session
+    plug :fetch_flash
+    plug :protect_from_forgery
+    plug :put_secure_browser_headers
+  end
+
+  pipeline :api do
+    plug :accepts, ["json"]
+  end
+
+  pipeline :auth_api do
+    plug :accepts, ["json"]
+    plug MtgDraftServerWeb.AuthPlug
+  end
+
+  scope "/", MtgDraftServerWeb do
+    pipe_through :browser
+
+    get "/", DefaultController, :index
+  end
+
+  scope "/admin", MtgDraftServerWeb do
+    pipe_through :browser
+
+    live "/", DashboardLive, :index
+  end
+
+  scope "/api", MtgDraftServerWeb, as: :api do
+    pipe_through :auth_api
+
+    get "/drafts/:id/state", DraftController, :state
+    get "/drafts/pending", DraftController, :pending_drafts
+    get "/drafts/:id/picks", DraftController, :picked_cards
+    post "/drafts", DraftController, :create
+    post "/drafts/:id/start", DraftController, :start
+    post "/drafts/:id/pick", DraftController, :pick
+    post "/drafts/reconnect", DraftController, :reconnect
+    post "/drafts/booster_packs", DraftController, :generate_booster_packs
+    post "/drafts/:id/add_ai", DraftController, :add_ai
+    post "/drafts/:id/join", DraftController, :join
+    get "/drafts/sets", DraftController, :sets
+    get "/drafts/:id/deck", DraftController, :deck
+  end
+end
+
+=== File: mix.exs ===
+
+defmodule MtgDraftServer.MixProject do
+  use Mix.Project
+
+  def project do
+    [
+      app: :mtg_draft_server,
+      version: "0.1.0",
+      elixir: "~> 1.14",
+      elixirc_paths: elixirc_paths(Mix.env()),
+      start_permanent: Mix.env() == :prod,
+      aliases: aliases(),
+      deps: deps(),
+      # ExDoc configuration
+      name: "MTG Draft Server",
+      source_url: "https://github.com/yourusername/mtg_draft_server",
+      homepage_url: "https://yourdomain.com",
+      docs: [
+        main: "readme",
+        extras: ["README.md"]
+      ]
+    ]
+  end
+
+  # Configuration for the OTP application.
+  #
+  # Type `mix help compile.app` for more information.
+  def application do
+    [
+      mod: {MtgDraftServer.Application, []},
+      extra_applications: [:logger, :runtime_tools]
+    ]
+  end
+
+  # Specifies which paths to compile per environment.
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
+
+  # Specifies your project dependencies.
+  #
+  # Type `mix help deps` for examples and options.
+  defp deps do
+    [
+      {:phoenix, "~> 1.7.14"},
+      {:phoenix_ecto, "~> 4.5"},
+      {:phoenix_live_view, "~> 1.0"},
+      {:phoenix_html, "~> 4.2"},
+      {:ecto_sql, "~> 3.10"},
+      {:postgrex, ">= 0.0.0"},
+      {:swoosh, "~> 1.5"},
+      {:finch, "~> 0.13"},
+      {:telemetry_metrics, "~> 1.0"},
+      {:telemetry_poller, "~> 1.0"},
+      {:gettext, "~> 0.20"},
+      {:jason, "~> 1.2"},
+      {:dns_cluster, "~> 0.1.1"},
+      {:bandit, "~> 1.5"},
+      {:cachex, "~> 3.6"},
+      {:cors_plug, "~> 3.0"},
+      {:joken, "~> 2.5"},
+      {:joken_jwks, "~> 1.6"},
+      {:ex_doc, "~> 0.31", only: :dev, runtime: false}
+    ]
+  end
+
+  # Aliases are shortcuts or tasks specific to the current project.
+  # For example, to install project dependencies and perform other setup tasks, run:
+  #
+  #     $ mix setup
+  #
+  # See the documentation for `Mix` for more info on aliases.
+  defp aliases do
+    [
+      setup: ["deps.get", "ecto.setup"],
+      "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
+      "ecto.reset": ["ecto.drop", "ecto.setup"],
+      test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"]
+    ]
+  end
+end
+
+=== File: priv/repo/migrations/.formatter.exs ===
+
+[
+  import_deps: [:ecto_sql],
+  inputs: ["*.exs"]
+]
+
+=== File: priv/repo/migrations/20250208230004_create_cards.exs ===
+
+defmodule MtgDraftServer.Repo.Migrations.CreateCards do
+  use Ecto.Migration
+
+  def change do
+    create table(:cards, primary_key: false) do
+      add :id, :uuid, primary_key: true
+      add :oracle_id, :uuid, null: false
+      add :name, :string, null: false
+      add :mana_cost, :string
+      add :cmc, :float
+      add :type_line, :string
+      add :oracle_text, :text
+      add :power, :string
+      add :toughness, :string
+      add :colors, {:array, :string}
+      add :color_identity, {:array, :string}
+
+      # NEW FIELDS FOR BOOSTER GENERATION
+      add :set_code, :string, null: false
+      add :rarity, :string
+      add :foil, :boolean, default: false
+
+      add :image_uris, :map
+      add :legalities, :map
+
+      timestamps()
+    end
+
+    create unique_index(:cards, [:oracle_id])
+    create unique_index(:cards, [:name])
+  end
+end
+
+=== File: priv/repo/migrations/20250209005129_create_drafts.exs ===
+
+defmodule MtgDraftServer.Repo.Migrations.CreateDrafts do
+  use Ecto.Migration
+
+  def change do
+    create table(:drafts, primary_key: false) do
+      add :id, :uuid, primary_key: true
+      # Use a string status (e.g., "pending", "active", "complete")
+      add :status, :string, default: "pending"
+      timestamps()
+    end
+  end
+end
+
+=== File: priv/repo/migrations/20250209005146_create_draft_players.exs ===
+
+defmodule MtgDraftServer.Repo.Migrations.CreateDraftPlayers do
+  use Ecto.Migration
+
+  def change do
+    create table(:draft_players) do
+      add :draft_id, references(:drafts, type: :uuid, on_delete: :delete_all), null: false
+      # Storing the Firebase UID (or any user identifier) as a string:
+      add :user_id, :string, null: false
+      add :seat, :integer, null: false
+      # Optionally track connection status for handling disconnects:
+      add :connected, :boolean, default: true
+
+      timestamps()
+    end
+
+    create index(:draft_players, [:draft_id])
+    create unique_index(:draft_players, [:draft_id, :user_id])
+  end
+end
+
+=== File: priv/repo/migrations/20250209005217_create_draft_picks.exs ===
+
+defmodule MtgDraftServer.Repo.Migrations.CreateDraftPicks do
+  use Ecto.Migration
+
+  def change do
+    create table(:draft_picks) do
+      add :draft_id, references(:drafts, type: :uuid, on_delete: :delete_all), null: false
+      add :draft_player_id, references(:draft_players, on_delete: :delete_all), null: false
+      add :card_id, references(:cards, type: :uuid, on_delete: :nothing), null: false
+      add :expires_at, :utc_datetime, null: false
+
+      # 1, 2, or 3
+      add :pack_number, :integer, null: false
+      # Order of the pick within the pack
+      add :pick_number, :integer, null: false
+
+      timestamps()
+    end
+
+    create index(:draft_picks, [:draft_id])
+    create index(:draft_picks, [:draft_player_id])
+    create index(:draft_picks, [:card_id])
+  end
+end
+
+=== File: priv/repo/migrations/20250413232549_add_card_metadata.exs ===
+
+# Create a new migration: mix ecto.gen.migration add_card_metadata
+defmodule MtgDraftServer.Repo.Migrations.AddCardMetadata do
+  use Ecto.Migration
+
+  def change do
+    create table(:card_metadata) do
+      add :card_id, references(:cards, type: :uuid, on_delete: :delete_all), null: false
+      add :layout, :string
+      add :is_token, :boolean, default: false
+      add :is_digital, :boolean, default: false
+      add :is_promo, :boolean, default: false
+
+      timestamps()
+    end
+
+    create index(:card_metadata, [:card_id])
+    create index(:card_metadata, [:layout])
+  end
+end
+
+=== File: priv/repo/migrations/20250413234823_add_pack_sets_to_drafts.exs ===
+
+defmodule MtgDraftServer.Repo.Migrations.AddPackSetsToDrafts do
+  use Ecto.Migration
+
+  def change do
+    alter table(:drafts) do
+      add :pack_sets, {:array, :string}, default: []
+    end
+  end
+end
+
+=== File: priv/repo/migrations/20250426164808_add_allowed_rarities_to_drafts.exs ===
+
+defmodule MtgDraftServer.Repo.Migrations.AddAllowedRaritiesToDrafts do
+  use Ecto.Migration
+
+  def change do
+    alter table(:drafts) do
+      add :allowed_rarities, {:array, :string},
+        default: ["basic","common","uncommon","rare","mythic"],
+        null: false
+    end
+  end
+end
+
+=== File: priv/repo/seeds.exs ===
+
+alias MtgDraftServer.Repo
+alias MtgDraftServer.Cards.Card
+alias MtgDraftServer.Cards.CardMetadata
+
+# Define a function to process card faces as an anonymous function
+process_card_faces = fn card_attrs ->
+  if Map.has_key?(card_attrs, "card_faces") and is_list(card_attrs["card_faces"]) and
+       length(card_attrs["card_faces"]) > 0 do
+    # Get the first face for default values
+    first_face = List.first(card_attrs["card_faces"])
+
+    # Merge properties from the first face if they're missing in the main card
+    card_attrs
+    |> Map.put_new("mana_cost", first_face["mana_cost"])
+    |> Map.put_new("type_line", first_face["type_line"])
+    |> Map.put_new("oracle_text", first_face["oracle_text"])
+    |> Map.put_new("colors", first_face["colors"])
+    |> Map.put_new("power", first_face["power"])
+    |> Map.put_new("toughness", first_face["toughness"])
+    |> Map.put_new("image_uris", first_face["image_uris"])
+  else
+    card_attrs
+  end
+end
+
+"priv/repo/data/oracle_cards.json"
+|> File.read!()
+|> Jason.decode!()
+|> Enum.each(fn card_attrs ->
+  # Map the "set" key to "set_code" if it exists.
+  card_attrs =
+    if Map.has_key?(card_attrs, "set") do
+      Map.put(card_attrs, "set_code", card_attrs["set"])
+    else
+      card_attrs
+    end
+
+  # Process card faces before inserting
+  card_attrs = process_card_faces.(card_attrs)
+
+  # Insert the card
+  case %Card{}
+       |> Card.changeset(card_attrs)
+       |> Repo.insert(on_conflict: :nothing) do
+    {:ok, card} ->
+      # Check if the card actually exists in the database
+      case Repo.get(Card, card.id) do
+        nil ->
+          # Card doesn't exist, skip metadata
+          :ok
+
+        _ ->
+          # Card exists, add metadata
+          %CardMetadata{}
+          |> CardMetadata.changeset(%{
+            card_id: card.id,
+            layout: Map.get(card_attrs, "layout", "normal"),
+            is_token: Map.get(card_attrs, "is_token", false),
+            is_digital: Map.get(card_attrs, "digital", false),
+            is_promo: Map.get(card_attrs, "promo", false)
+          })
+          |> Repo.insert(on_conflict: :nothing)
+      end
+
+    _ ->
+      # Card was not inserted, skip
+      :ok
+  end
+end)

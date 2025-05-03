@@ -13,6 +13,17 @@ defmodule MtgDraftServer.Drafts.DraftPlayer do
     timestamps()
   end
 
+  @type t :: %__MODULE__{
+    id: integer() | nil,
+    user_id: String.t() | nil,
+    seat: integer() | nil,
+    connected: boolean() | nil,
+    draft_id: Ecto.UUID.t() | nil,
+    draft: MtgDraftServer.Drafts.Draft.t() | Ecto.Association.NotLoaded.t() | nil,
+    inserted_at: DateTime.t() | nil,
+    updated_at: DateTime.t() | nil
+  }
+
   def changeset(draft_player, attrs) do
     draft_player
     |> cast(attrs, [:draft_id, :user_id, :seat, :connected])

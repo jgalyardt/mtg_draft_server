@@ -1,2 +1,144 @@
 I am building an elixir phoenix server to host Magic the Gathering drafts.
 Players can join, and once the draft hits 8 players, it will start.
+
+Help me fix these docs errors:
+
+$ mix docs
+==> earmark_parser
+Compiling 2 files (.xrl)
+Compiling 1 file (.yrl)
+Compiling 3 files (.erl)
+Compiling 47 files (.ex)
+Generated earmark_parser app
+==> nimble_parsec
+Compiling 4 files (.ex)
+Generated nimble_parsec app
+==> makeup
+Compiling 15 files (.ex)
+Generated makeup app
+==> makeup_elixir
+Compiling 6 files (.ex)
+Compiling lib/makeup/lexers/elixir_lexer.ex (it's taking more than 10s)
+Generated makeup_elixir app
+==> makeup_erlang
+Compiling 4 files (.ex)
+Compiling lib/makeup/lexers/erlang_lexer.ex (it's taking more than 10s)
+Generated makeup_erlang app
+==> ex_doc
+Compiling 26 files (.ex)
+Generated ex_doc app
+==> mtg_draft_server
+Compiling 5 files (.ex)
+    warning: redefining @doc attribute previously set at line 10.     
+
+    Please remove the duplicate docs. If instead you want to override a previously defined @doc, attach the @doc attribute to a function head (the function signature not followed by any do-block). For example: 
+
+        @doc """
+        new docs
+        """
+        def next_index(...)        
+
+    │
+ 24 │   @doc """
+    │   ~~~~~~~~
+    │
+    └─ lib/mtg_draft_server/draft_session/turn_logic.ex:24: MtgDraftServer.DraftSession.TurnLogic.next_index/3
+
+Generated mtg_draft_server app
+Generating docs...
+     warning: documentation references type "MtgDraftServer.Drafts.Draft.t()" but it is undefined or private
+     │
+ 192 │   @doc """
+     │   ~~~~~~~~
+     │
+     └─ (mtg_draft_server 0.1.0) lib/mtg_draft_server/drafts.ex:192: MtgDraftServer.Drafts.complete_draft/1
+
+    warning: documentation references type "MtgDraftServer.Drafts.Draft.t()" but it is undefined or private
+    │
+ 42 │   @doc """
+    │   ~~~~~~~~
+    │
+    └─ (mtg_draft_server 0.1.0) lib/mtg_draft_server/drafts.ex:42: MtgDraftServer.Drafts.create_and_join_draft/1
+
+    warning: documentation references type "MtgDraftServer.Drafts.Draft.t()" but it is undefined or private
+    │
+ 19 │   @type draft_result :: {:ok, Draft.t()} | error
+    │   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/mtg_draft_server/drafts.ex:19: MtgDraftServer.Drafts (module)
+
+    warning: documentation references type "MtgDraftServer.Drafts.DraftPlayer.t()" but it is undefined or private
+    │
+ 71 │   @doc """
+    │   ~~~~~~~~
+    │
+    └─ (mtg_draft_server 0.1.0) lib/mtg_draft_server/drafts.ex:71: MtgDraftServer.Drafts.get_active_draft_for_player/1
+
+     warning: documentation references type "MtgDraftServer.Drafts.DraftPick.t()" but it is undefined or private
+     │
+ 137 │   @doc """
+     │   ~~~~~~~~
+     │
+     └─ (mtg_draft_server 0.1.0) lib/mtg_draft_server/drafts.ex:137: MtgDraftServer.Drafts.get_picked_cards/2
+
+    warning: documentation references type "MtgDraftServer.Drafts.DraftPick.t()" but it is undefined or private
+    │
+ 20 │   @type pick_result :: {:ok, DraftPick.t()} | error
+    │   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/mtg_draft_server/drafts.ex:20: MtgDraftServer.Drafts (module)
+
+    warning: documentation references type "MtgDraftServer.Drafts.DraftPlayer.t()" but it is undefined or private
+    │
+ 21 │   @type player_result :: {:ok, DraftPlayer.t()} | error
+    │   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/mtg_draft_server/drafts.ex:21: MtgDraftServer.Drafts (module)
+
+View "html" docs at "doc/index.html"
+     warning: documentation references type "MtgDraftServer.Drafts.Draft.t()" but it is undefined or private
+     │
+ 192 │   @doc """
+     │   ~~~~~~~~
+     │
+     └─ (mtg_draft_server 0.1.0) lib/mtg_draft_server/drafts.ex:192: MtgDraftServer.Drafts.complete_draft/1
+
+    warning: documentation references type "MtgDraftServer.Drafts.Draft.t()" but it is undefined or private
+    │
+ 42 │   @doc """
+    │   ~~~~~~~~
+    │
+    └─ (mtg_draft_server 0.1.0) lib/mtg_draft_server/drafts.ex:42: MtgDraftServer.Drafts.create_and_join_draft/1
+
+    warning: documentation references type "MtgDraftServer.Drafts.Draft.t()" but it is undefined or private
+    │
+ 19 │   @type draft_result :: {:ok, Draft.t()} | error
+    │   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/mtg_draft_server/drafts.ex:19: MtgDraftServer.Drafts (module)
+
+    warning: documentation references type "MtgDraftServer.Drafts.DraftPlayer.t()" but     │
+    └─ (mtg_draft_server 0.1.0) lib/mtg_draft_server/drafts.ex:71: MtgDraftServer.Drafts.get_active_draft_for_player/1
+
+     warning: documentation references type "MtgDraftServer.Drafts.DraftPick.t()" but it is undefined or private
+     │
+ 137 │   @doc """
+     │   ~~~~~~~~
+     │
+     └─ (mtg_draft_server 0.1.0) lib/mtg_draft_server/drafts.ex:137: MtgDraftServer.Drafts.get_picked_cards/2
+
+    warning: documentation references type "MtgDraftServer.Drafts.DraftPick.t()" but it is undefined or private
+    │
+ 20 │   @type pick_result :: {:ok, DraftPick.t()} | error
+    │   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/mtg_draft_server/drafts.ex:20: MtgDraftServer.Drafts (module)
+
+    warning: documentation references type "MtgDraftServer.Drafts.DraftPlayer.t()" but it is undefined or private
+    │
+ 21 │   @type player_result :: {:ok, DraftPlayer.t()} | error
+    │   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/mtg_draft_server/drafts.ex:21: MtgDraftServer.Drafts (module)
+
+View "epub" docs at "doc/MTG Draft Server.epub"

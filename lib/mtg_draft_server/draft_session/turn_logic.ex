@@ -21,19 +21,6 @@ defmodule MtgDraftServer.DraftSession.TurnLogic do
   @spec next_index(integer(), integer(), :left | :right) :: integer()
   def next_index(current_index, player_count, :left), do: rem(current_index + 1, player_count)
 
-  @doc """
-  Calculates the index of the next player when passing to the right.
-  
-  This is equivalent to moving to the previous player in the array, with wrapping.
-  
-  ## Parameters
-    - current_index: The index of the current player
-    - player_count: The total number of players in the draft
-    - :right: Indicates passing to the right
-    
-  ## Returns
-    The index of the next player, wrapping around if necessary
-  """
   def next_index(current_index, player_count, :right),
     do: rem(player_count + current_index - 1, player_count)
 end
