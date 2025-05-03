@@ -1,3 +1,2 @@
 I am building an elixir phoenix server to host Magic the Gathering drafts.
 Players can join, and once the draft hits 8 players, it will start.
-Can you help me clean up the docs? I'd like to be able to run the mix docs and catch myself up on the project.

@@ -1,6 +1,13 @@
 # lib/mtg_draft_server/draft_session/pack_distributor.ex
 defmodule MtgDraftServer.DraftSession.PackDistributor do
-  @moduledoc false
+  @moduledoc """
+  Handles the distribution and manipulation of card packs during a draft session.
+  
+  This module provides utility functions for:
+  - Removing cards from packs
+  - Checking if a card exists in a pack
+  - Determining the next player to receive a pack based on draft direction
+  """
 
   @doc "Remove a card_id from a pack (list of card structs or IDs)."
   def remove_card(pack, card_id) do

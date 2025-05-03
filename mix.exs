@@ -9,7 +9,15 @@ defmodule MtgDraftServer.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
-      deps: deps()
+      deps: deps(),
+      # ExDoc configuration
+      name: "MTG Draft Server",
+      source_url: "https://github.com/yourusername/mtg_draft_server",
+      homepage_url: "https://yourdomain.com",
+      docs: [
+        main: "readme",
+        extras: ["README.md"]
+      ]
     ]
   end
 
@@ -49,7 +57,8 @@ defmodule MtgDraftServer.MixProject do
       {:cachex, "~> 3.6"},
       {:cors_plug, "~> 3.0"},
       {:joken, "~> 2.5"},
-      {:joken_jwks, "~> 1.6"}
+      {:joken_jwks, "~> 1.6"},
+      {:ex_doc, "~> 0.31", only: :dev, runtime: false}
     ]
   end
 

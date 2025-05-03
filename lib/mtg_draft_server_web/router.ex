@@ -37,7 +37,6 @@ defmodule MtgDraftServerWeb.Router do
     get "/drafts/:id/state", DraftController, :state
     get "/drafts/pending", DraftController, :pending_drafts
     get "/drafts/:id/picks", DraftController, :picked_cards
-
     post "/drafts", DraftController, :create
     post "/drafts/:id/start", DraftController, :start
     post "/drafts/:id/pick", DraftController, :pick
