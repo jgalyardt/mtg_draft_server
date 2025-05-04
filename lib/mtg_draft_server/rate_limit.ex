@@ -28,7 +28,7 @@ defmodule MtgDraftServer.RateLimit do
     )
 
     case hit(bucket, scale_ms, limit) do
-      {:allow, count} = result ->
+      {:allow, _count} = result ->
         result
 
       {:deny, retry_after} = result ->

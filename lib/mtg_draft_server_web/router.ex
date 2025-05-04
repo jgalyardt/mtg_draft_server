@@ -1,6 +1,5 @@
 defmodule MtgDraftServerWeb.Router do
   use MtgDraftServerWeb, :router
-  import Phoenix.LiveView.Router
 
   # Define pipelines for different rate limit types
   pipeline :limit_auth do
