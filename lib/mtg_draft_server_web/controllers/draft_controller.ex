@@ -243,13 +243,13 @@ defmodule MtgDraftServerWeb.DraftController do
              [{pid, _}] <- Registry.lookup(MtgDraftServer.DraftRegistry, draft_id) do
           # Get the current state
           state = GenServer.call(pid, :get_state)
-          
+
           # Access the user's queue using the new structure
           user_queues = Map.get(state.booster_queues, uid, %{})
           current_round = state.current_round
           current_round_queue = Map.get(user_queues, current_round, [])
           current_pack = List.first(current_round_queue)
-          
+
           json(conn, %{
             status: state.status,
             current_round: current_round,
@@ -262,13 +262,13 @@ defmodule MtgDraftServerWeb.DraftController do
             conn
             |> put_status(:not_found)
             |> json(%{error: "Draft session not found"})
-  
+
           _ ->
             conn
             |> put_status(:unauthorized)
             |> json(%{error: "Authentication required"})
         end
-  
+
       _ ->
         conn
         |> put_status(:unauthorized)
