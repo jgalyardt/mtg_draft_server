@@ -1,6 +1,15 @@
 I am building an elixir phoenix server to host Magic the Gathering drafts.
 Players can join, and once the draft hits 8 players, it will start.
-I'd like to do a security pass on my server, which I eventually want to expose on the internet.
+I'm working on the front-end now. 
+I would like you to generate a concise endpoint summary with instructions for use.
+This should include:
+- Viewing the list of drafts
+- Creating and joining a draft
+- Reconnecting to a draft
+- Adding computer players to a draft
+- Picking a card
+- Getting the contents of picked cards so far
+- Anything else that makes sense for the front-end to know about
 
 Project Structure:
 /c/Users/jgaly/OneDrive/Code/Elixir/mtg_draft_server/ai/..
@@ -92,6 +101,7 @@ lib/mtg_draft_server/firebase_token.ex
 lib/mtg_draft_server/jwks_strategy.ex
 lib/mtg_draft_server/mailer.ex
 lib/mtg_draft_server/pack_generator.ex
+lib/mtg_draft_server/rate_limit.ex
 lib/mtg_draft_server/repo.ex
 lib/mtg_draft_server.ex
 lib/mtg_draft_server_web
@@ -110,6 +120,7 @@ lib/mtg_draft_server_web/gettext.ex
 lib/mtg_draft_server_web/layouts.ex
 lib/mtg_draft_server_web/plugs
 lib/mtg_draft_server_web/plugs/auth_plug.ex
+lib/mtg_draft_server_web/plugs/rate_limit_plug.ex
 lib/mtg_draft_server_web/router.ex
 lib/mtg_draft_server_web/telemetry.ex
 lib/mtg_draft_server_web.ex
@@ -168,16 +179,16 @@ end
 defmodule MtgDraftServer.Application do
   @moduledoc """
   The MtgDraftServer Application module.
-  
+
   This module is responsible for starting and supervising all the processes
   required by the MTG Draft Server application, including:
-  
+
   - The Phoenix endpoint
   - The Ecto repository
   - The PubSub system
   - The Registry for draft sessions
   - The DraftSessionSupervisor for managing draft sessions
-  
+
   It also handles cleaning up draft data on application restart.
   """
   use Application
@@ -192,7 +203,8 @@ defmodule MtgDraftServer.Application do
       {Finch, name: MtgDraftServer.Finch},
       MtgDraftServerWeb.Endpoint,
       {Registry, keys: :unique, name: MtgDraftServer.DraftRegistry},
-      MtgDraftServer.DraftSessionSupervisor
+      MtgDraftServer.DraftSessionSupervisor,
+      MtgDraftServer.RateLimit
     ]
 
     opts = [strategy: :one_for_one, name: MtgDraftServer.Supervisor]
@@ -290,25 +302,25 @@ defmodule MtgDraftServer.Cards.Card do
   end
 
   @type t :: %__MODULE__{
-    id: Ecto.UUID.t() | nil,
-    oracle_id: Ecto.UUID.t() | nil,
-    name: String.t() | nil,
-    mana_cost: String.t() | nil,
-    cmc: float() | nil,
-    type_line: String.t() | nil,
-    oracle_text: String.t() | nil,
-    power: String.t() | nil,
-    toughness: String.t() | nil,
-    colors: [String.t()] | nil,
-    color_identity: [String.t()] | nil,
-    set_code: String.t() | nil,
-    rarity: String.t() | nil,
-    foil: boolean() | nil,
-    image_uris: map() | nil,
-    legalities: map() | nil,
-    inserted_at: DateTime.t() | nil,
-    updated_at: DateTime.t() | nil
-  }
+          id: Ecto.UUID.t() | nil,
+          oracle_id: Ecto.UUID.t() | nil,
+          name: String.t() | nil,
+          mana_cost: String.t() | nil,
+          cmc: float() | nil,
+          type_line: String.t() | nil,
+          oracle_text: String.t() | nil,
+          power: String.t() | nil,
+          toughness: String.t() | nil,
+          colors: [String.t()] | nil,
+          color_identity: [String.t()] | nil,
+          set_code: String.t() | nil,
+          rarity: String.t() | nil,
+          foil: boolean() | nil,
+          image_uris: map() | nil,
+          legalities: map() | nil,
+          inserted_at: DateTime.t() | nil,
+          updated_at: DateTime.t() | nil
+        }
 
   @doc false
   def changeset(card, attrs) do
@@ -425,13 +437,18 @@ defmodule MtgDraftServer.DraftSession do
   @impl true
   def init(draft_id) do
     {:ok, db_draft} = Drafts.get_draft(draft_id)
+
     state = %{
-      draft_id:         draft_id,
-      status:           db_draft.status,
-      players:          %{},    # user_id => %{ai: boolean}
-      booster_queues:   %{},    # user_id => [{round_number, pack_list}, ...]
-      player_positions: [],    # seating order by user_id
-      pick_counters:    %{}    # %{user_id => %{1 => 0, 2 => 0, 3 => 0}}
+      draft_id: draft_id,
+      status: db_draft.status,
+      # user_id => %{ai: boolean}
+      players: %{},
+      # user_id => [{round_number, pack_list}, ...]
+      booster_queues: %{},
+      # seating order by user_id
+      player_positions: [],
+      # %{user_id => %{1 => 0, 2 => 0, 3 => 0}}
+      pick_counters: %{}
     }
 
     {:ok, state}
@@ -439,8 +456,8 @@ defmodule MtgDraftServer.DraftSession do
 
   @impl true
   def handle_call({:join, uid, ai_flag}, _from, state) do
-    players  = Map.put(state.players, uid, %{ai: ai_flag})
-    queues   = Map.put_new(state.booster_queues, uid, [])
+    players = Map.put(state.players, uid, %{ai: ai_flag})
+    queues = Map.put_new(state.booster_queues, uid, [])
     counters = Map.put_new(state.pick_counters, uid, %{1 => 0, 2 => 0, 3 => 0})
 
     {:reply, :ok, %{state | players: players, booster_queues: queues, pick_counters: counters}}
@@ -448,7 +465,6 @@ defmodule MtgDraftServer.DraftSession do
 
   @impl true
   def handle_call(:start_draft_with_boosters, _from, _state) do
-
   end
 
   @impl true
@@ -465,22 +481,25 @@ defmodule MtgDraftServer.DraftSession do
           packs
           |> Enum.with_index(1)
           |> Enum.map(fn {pack, round} -> {round, pack} end)
+
         {uid, indexed}
       end)
       |> Enum.into(%{})
 
     # 3) Persist draft status and update in-memory state
     {:ok, _updated} = Drafts.start_draft(state.draft_id)
+
     new_state = %{
       state
-      | booster_queues:   wrapped_queues,
-        status:           "active",
+      | booster_queues: wrapped_queues,
+        status: "active",
         player_positions: player_ids,
-        pick_counters:    Enum.into(player_ids, %{}, fn uid -> {uid, %{1 => 0, 2 => 0, 3 => 0}} end)
+        pick_counters: Enum.into(player_ids, %{}, fn uid -> {uid, %{1 => 0, 2 => 0, 3 => 0}} end)
     }
 
     # 4) Broadcast and schedule AI
     Drafts.notify(state.draft_id, {:draft_started, state.draft_id, []})
+
     Enum.each(player_ids, fn uid ->
       if state.players[uid].ai do
         Process.send_after(self(), {:ai_pick, uid}, 500)
@@ -501,22 +520,24 @@ defmodule MtgDraftServer.DraftSession do
       [{round, current_pack} | rest] ->
         if PackDistributor.card_in_pack?(current_pack, card_id) do
           updated_pack = PackDistributor.remove_card(current_pack, card_id)
-          direction   = if round == 2, do: :right, else: :left
-          neighbor    = PackDistributor.next_neighbor(user_id, state.player_positions, direction)
+          direction = if round == 2, do: :right, else: :left
+          neighbor = PackDistributor.next_neighbor(user_id, state.player_positions, direction)
 
           # get and bump pick number
           user_counters = Map.get(state.pick_counters, user_id, %{1 => 0, 2 => 0, 3 => 0})
-          pick_no       = user_counters[round] + 1
+          pick_no = user_counters[round] + 1
 
           # persist pick with tuple match for {:ok, pick}
-          {:ok, _pick} = Drafts.pick_card(
-            state.draft_id,
-            user_id,
-            card_id,
-            %{"pack_number" => round, "pick_number" => pick_no}
-          )
+          {:ok, _pick} =
+            Drafts.pick_card(
+              state.draft_id,
+              user_id,
+              card_id,
+              %{"pack_number" => round, "pick_number" => pick_no}
+            )
 
           Drafts.notify(state.draft_id, {:pack_updated, user_id, neighbor})
+
           if state.players[neighbor].ai do
             Process.send_after(self(), {:ai_pick, neighbor}, 500)
           end
@@ -539,7 +560,7 @@ defmodule MtgDraftServer.DraftSession do
             # broadcast completion
             MtgDraftServer.Drafts.notify(state.draft_id, {:draft_completed, state.draft_id})
           end
-                    
+
           # 3) Safely update pick_counters: if there's no entry for this user
           #    we default to a {1=>0,2=>0,3=>0} map, then put the new pick_no.
           new_counters =
@@ -567,6 +588,7 @@ defmodule MtgDraftServer.DraftSession do
       [{_, [_ | _] = pack} | _] ->
         card_id = Enum.random(pack) |> Map.get(:id)
         GenServer.cast(self(), {:pick, user_id, card_id})
+
       _ ->
         :ok
     end
@@ -581,7 +603,7 @@ end
 defmodule MtgDraftServer.DraftSession.PackDistributor do
   @moduledoc """
   Handles the distribution and manipulation of card packs during a draft session.
-  
+
   This module provides utility functions for:
   - Removing cards from packs
   - Checking if a card exists in a pack
@@ -629,15 +651,15 @@ end
 defmodule MtgDraftServer.DraftSession.TurnLogic do
   @moduledoc """
   Provides utility functions for managing turn order and player rotation in a draft.
-  
+
   This module handles the logic for determining the next player in a draft rotation,
   taking into account the direction of the draft (left or right) and ensuring proper
   wrapping around the table.
   """
-  
+
   @doc """
   Calculates the index of the next player in the draft rotation.
-  
+
   ## Parameters
     - current_index: The index of the current player
     - player_count: The total number of players in the draft
@@ -652,16 +674,17 @@ defmodule MtgDraftServer.DraftSession.TurnLogic do
   def next_index(current_index, player_count, :right),
     do: rem(player_count + current_index - 1, player_count)
 end
+
 === File: lib/mtg_draft_server/draft_session_supervisor.ex ===
 
 defmodule MtgDraftServer.DraftSessionSupervisor do
   @moduledoc """
   A dynamic supervisor for managing draft session processes.
-  
+
   This supervisor is responsible for starting and supervising individual draft session
   processes. Each draft session is a GenServer that manages the state and logic for
   a single Magic: The Gathering draft.
-  
+
   The supervisor uses a one-for-one strategy, meaning that if a draft session crashes,
   only that specific session will be restarted, without affecting other drafts.
   """
@@ -669,7 +692,7 @@ defmodule MtgDraftServer.DraftSessionSupervisor do
 
   @doc """
   Starts the DraftSessionSupervisor.
-  
+
   This function is called by the application supervisor during application startup.
   """
   def start_link(_args) do
@@ -806,9 +829,9 @@ defmodule MtgDraftServer.Drafts do
   @spec pick_card(binary(), String.t(), String.t(), map()) :: pick_result
   def pick_card(draft_id, user_id, card_id, extra_attrs \\ %{}) do
     Repo.transaction(fn ->
-        with {:ok, draft} <- get_draft(draft_id),
-             :ok <- validate_draft_active(draft),
-             {:ok, draft_player} <- get_draft_player(draft_id, user_id) do
+      with {:ok, draft} <- get_draft(draft_id),
+           :ok <- validate_draft_active(draft),
+           {:ok, draft_player} <- get_draft_player(draft_id, user_id) do
         now = DateTime.utc_now() |> DateTime.truncate(:second)
         expires_at = DateTime.add(now, @one_day_in_seconds, :second)
 
@@ -818,8 +841,8 @@ defmodule MtgDraftServer.Drafts do
             "draft_player_id" => draft_player.id,
             "card_id" => card_id,
             "expires_at" => expires_at,
-            "pack_number"        => extra_attrs["pack_number"]  || 1,
-            "pick_number"        => extra_attrs["pick_number"]  || 1
+            "pack_number" => extra_attrs["pack_number"] || 1,
+            "pick_number" => extra_attrs["pick_number"] || 1
           })
 
         %DraftPick{}
@@ -948,9 +971,10 @@ defmodule MtgDraftServer.Drafts do
   """
   def get_draft_players(draft_id) do
     from(dp in DraftPlayer,
-         where: dp.draft_id == ^draft_id,
-         order_by: dp.seat,
-         select: dp.user_id)
+      where: dp.draft_id == ^draft_id,
+      order_by: dp.seat,
+      select: dp.user_id
+    )
     |> Repo.all()
   end
 
@@ -1010,7 +1034,7 @@ defmodule MtgDraftServer.Drafts do
   """
   def list_available_sets do
     import Ecto.Query
-  
+
     from(c in MtgDraftServer.Cards.Card,
       distinct: true,
       select: c.set_code,
@@ -1201,18 +1225,21 @@ defmodule MtgDraftServer.Drafts.Draft do
   schema "drafts" do
     field :status, :string, default: "pending"
     field :pack_sets, {:array, :string}, default: []
-    field :allowed_rarities, {:array, :string}, default: ["basic","common","uncommon","rare","mythic"]
+
+    field :allowed_rarities, {:array, :string},
+      default: ["basic", "common", "uncommon", "rare", "mythic"]
+
     timestamps()
   end
 
   @type t :: %__MODULE__{
-    id: Ecto.UUID.t() | nil,
-    status: String.t() | nil,
-    pack_sets: [String.t()] | nil,
-    allowed_rarities: [String.t()] | nil,
-    inserted_at: DateTime.t() | nil,
-    updated_at: DateTime.t() | nil
-  }
+          id: Ecto.UUID.t() | nil,
+          status: String.t() | nil,
+          pack_sets: [String.t()] | nil,
+          allowed_rarities: [String.t()] | nil,
+          inserted_at: DateTime.t() | nil,
+          updated_at: DateTime.t() | nil
+        }
 
   def changeset(draft, attrs) do
     draft
@@ -1220,6 +1247,7 @@ defmodule MtgDraftServer.Drafts.Draft do
     |> validate_required([:status])
   end
 end
+
 === File: lib/mtg_draft_server/drafts/draft_pick.ex ===
 
 defmodule MtgDraftServer.Drafts.DraftPick do
@@ -1251,19 +1279,20 @@ defmodule MtgDraftServer.Drafts.DraftPick do
   end
 
   @type t :: %__MODULE__{
-    id: integer() | nil,
-    pack_number: integer() | nil,
-    pick_number: integer() | nil,
-    expires_at: DateTime.t() | nil,
-    draft_id: Ecto.UUID.t() | nil,
-    draft_player_id: integer() | nil, 
-    card_id: Ecto.UUID.t() | nil,
-    draft: MtgDraftServer.Drafts.Draft.t() | Ecto.Association.NotLoaded.t() | nil,
-    draft_player: MtgDraftServer.Drafts.DraftPlayer.t() | Ecto.Association.NotLoaded.t() | nil,
-    card: MtgDraftServer.Cards.Card.t() | Ecto.Association.NotLoaded.t() | nil,
-    inserted_at: DateTime.t() | nil,
-    updated_at: DateTime.t() | nil
-  }
+          id: integer() | nil,
+          pack_number: integer() | nil,
+          pick_number: integer() | nil,
+          expires_at: DateTime.t() | nil,
+          draft_id: Ecto.UUID.t() | nil,
+          draft_player_id: integer() | nil,
+          card_id: Ecto.UUID.t() | nil,
+          draft: MtgDraftServer.Drafts.Draft.t() | Ecto.Association.NotLoaded.t() | nil,
+          draft_player:
+            MtgDraftServer.Drafts.DraftPlayer.t() | Ecto.Association.NotLoaded.t() | nil,
+          card: MtgDraftServer.Cards.Card.t() | Ecto.Association.NotLoaded.t() | nil,
+          inserted_at: DateTime.t() | nil,
+          updated_at: DateTime.t() | nil
+        }
 
   def changeset(draft_pick, attrs) do
     draft_pick
@@ -1285,6 +1314,7 @@ defmodule MtgDraftServer.Drafts.DraftPick do
     ])
   end
 end
+
 === File: lib/mtg_draft_server/drafts/draft_player.ex ===
 
 defmodule MtgDraftServer.Drafts.DraftPlayer do
@@ -1303,15 +1333,15 @@ defmodule MtgDraftServer.Drafts.DraftPlayer do
   end
 
   @type t :: %__MODULE__{
-    id: integer() | nil,
-    user_id: String.t() | nil,
-    seat: integer() | nil,
-    connected: boolean() | nil,
-    draft_id: Ecto.UUID.t() | nil,
-    draft: MtgDraftServer.Drafts.Draft.t() | Ecto.Association.NotLoaded.t() | nil,
-    inserted_at: DateTime.t() | nil,
-    updated_at: DateTime.t() | nil
-  }
+          id: integer() | nil,
+          user_id: String.t() | nil,
+          seat: integer() | nil,
+          connected: boolean() | nil,
+          draft_id: Ecto.UUID.t() | nil,
+          draft: MtgDraftServer.Drafts.Draft.t() | Ecto.Association.NotLoaded.t() | nil,
+          inserted_at: DateTime.t() | nil,
+          updated_at: DateTime.t() | nil
+        }
 
   def changeset(draft_player, attrs) do
     draft_player
@@ -1325,12 +1355,18 @@ defmodule MtgDraftServer.Drafts.DraftPlayer do
     |> MtgDraftServer.Repo.insert()
   end
 end
+
 === File: lib/mtg_draft_server/firebase_token.ex ===
 
 defmodule MtgDraftServer.FirebaseToken do
   use Joken.Config
+  require Logger
 
   @firebase_jwks_url "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"
+  
+  # Get the Firebase project ID from config
+  # Store this in your config/config.exs or environment-specific configs
+  defp project_id, do: Application.get_env(:mtg_draft_server, :firebase_project_id)
 
   def verify_firebase_token(nil), do: {:error, :no_token_provided}
 
@@ -1342,11 +1378,16 @@ defmodule MtgDraftServer.FirebaseToken do
          %{"kid" => kid} = header,
          {:ok, jwk} <- get_jwk(certs, kid),
          {true, jose_jwt, _} <- JOSE.JWT.verify(jwk, token),
-         {_, claims} <- JOSE.JWT.to_map(jose_jwt) do
+         {_, claims} <- JOSE.JWT.to_map(jose_jwt),
+         :ok <- validate_claims(claims) do
       {:ok, claims}
     else
-      {:error, _} = err -> err
-      _ -> {:error, :invalid_token}
+      {:error, reason} = err -> 
+        Logger.warning("Token validation failed: #{inspect(reason)}")
+        err
+      _ -> 
+        Logger.warning("Token validation failed with unknown error")
+        {:error, :invalid_token}
     end
   end
 
@@ -1358,8 +1399,94 @@ defmodule MtgDraftServer.FirebaseToken do
       key -> {:ok, JOSE.JWK.from_map(key)}
     end
   end
-end
 
+  # Validate all required claims for a Firebase ID token
+  defp validate_claims(claims) do
+    with :ok <- validate_issuer(claims["iss"]),
+         :ok <- validate_audience(claims["aud"]),
+         :ok <- validate_expiration(claims["exp"]),
+         :ok <- validate_issued_at(claims["iat"]),
+         :ok <- validate_subject(claims["sub"]),
+         :ok <- validate_auth_time(claims["auth_time"]) do
+      :ok
+    end
+  end
+
+  # Issuer should be "https://securetoken.google.com/<project-id>"
+  defp validate_issuer(iss) do
+    expected_issuer = "https://securetoken.google.com/#{project_id()}"
+    if iss == expected_issuer do
+      :ok
+    else
+      {:error, {:invalid_issuer, "Expected #{expected_issuer}, got #{iss}"}}
+    end
+  end
+
+  # Audience should match the Firebase project ID
+  defp validate_audience(aud) when is_binary(aud) do
+    if aud == project_id() do
+      :ok
+    else
+      {:error, {:invalid_audience, "Expected #{project_id()}, got #{aud}"}}
+    end
+  end
+  
+  # Handle case where aud is a list (should contain project_id)
+  defp validate_audience(aud) when is_list(aud) do
+    if project_id() in aud do
+      :ok
+    else
+      {:error, {:invalid_audience, "Project ID not in audience list"}}
+    end
+  end
+  
+  defp validate_audience(_), do: {:error, {:invalid_audience, "Missing audience claim"}}
+
+  # Expiration time must be in the future
+  defp validate_expiration(nil), do: {:error, {:invalid_expiration, "Missing exp claim"}}
+  defp validate_expiration(exp) when is_integer(exp) do
+    now = DateTime.utc_now() |> DateTime.to_unix()
+    # Add a small leeway to account for clock skew (30 seconds)
+    if exp > now - 30 do
+      :ok
+    else
+      {:error, {:token_expired, "Token expired at #{exp}, current time is #{now}"}}
+    end
+  end
+  defp validate_expiration(_), do: {:error, {:invalid_expiration, "Invalid exp claim format"}}
+
+  # Issued at time must be in the past
+  defp validate_issued_at(nil), do: {:error, {:invalid_issued_at, "Missing iat claim"}}
+  defp validate_issued_at(iat) when is_integer(iat) do
+    now = DateTime.utc_now() |> DateTime.to_unix()
+    # Add a small leeway to account for clock skew (30 seconds)
+    if iat < now + 30 do
+      :ok
+    else
+      {:error, {:invalid_issued_at, "Token issued in the future"}}
+    end
+  end
+  defp validate_issued_at(_), do: {:error, {:invalid_issued_at, "Invalid iat claim format"}}
+
+  # Subject (user ID) must not be empty
+  defp validate_subject(nil), do: {:error, {:invalid_subject, "Missing sub claim"}}
+  defp validate_subject(""), do: {:error, {:invalid_subject, "Empty sub claim"}}
+  defp validate_subject(sub) when is_binary(sub), do: :ok
+  defp validate_subject(_), do: {:error, {:invalid_subject, "Invalid sub claim format"}}
+
+  # Auth time must be in the past
+  defp validate_auth_time(nil), do: {:error, {:invalid_auth_time, "Missing auth_time claim"}}
+  defp validate_auth_time(auth_time) when is_integer(auth_time) do
+    now = DateTime.utc_now() |> DateTime.to_unix()
+    # Add a small leeway to account for clock skew (30 seconds)
+    if auth_time < now + 30 do
+      :ok
+    else
+      {:error, {:invalid_auth_time, "Authentication time is in the future"}}
+    end
+  end
+  defp validate_auth_time(_), do: {:error, {:invalid_auth_time, "Invalid auth_time claim format"}}
+end
 === File: lib/mtg_draft_server/jwks_strategy.ex ===
 
 defmodule MtgDraftServer.JWKSStrategy do
@@ -1651,6 +1778,65 @@ defmodule MtgDraftServer.Drafts.PackGenerator do
   end
 end
 
+=== File: lib/mtg_draft_server/rate_limit.ex ===
+
+# lib/mtg_draft_server/rate_limit.ex
+defmodule MtgDraftServer.RateLimit do
+  @moduledoc """
+  Rate limiting functionality for the MTG Draft Server.
+
+  This module leverages Hammer to implement configurable rate limits
+  for various API operations.
+  """
+  use Hammer, backend: :ets
+
+  @doc """
+  Check if a request is allowed based on the rate limit settings.
+
+  ## Parameters
+    - bucket: String identifying the rate limit bucket (e.g. "login:123.45.67.89")
+    - scale_ms: Time window in milliseconds
+    - limit: Maximum number of requests allowed in the time window
+    
+  ## Returns
+    - {:allow, count} if allowed
+    - {:deny, retry_after} if denied
+  """
+  def check(bucket, scale_ms, limit) do
+    :telemetry.execute(
+      [:mtg_draft_server, :rate_limit, :hit],
+      %{count: 1},
+      %{bucket: bucket}
+    )
+
+    case hit(bucket, scale_ms, limit) do
+      {:allow, _count} = result ->
+        result
+
+      {:deny, retry_after} = result ->
+        :telemetry.execute(
+          [:mtg_draft_server, :rate_limit, :exceeded],
+          %{count: 1},
+          %{bucket: bucket, retry_after: retry_after}
+        )
+
+        result
+    end
+  end
+
+  @doc """
+  Add this to your application supervision tree.
+  """
+  def child_spec(opts) do
+    opts = Keyword.merge([clean_period: :timer.minutes(5)], opts)
+
+    %{
+      id: __MODULE__,
+      start: {__MODULE__, :start_link, [opts]}
+    }
+  end
+end
+
 === File: lib/mtg_draft_server/repo.ex ===
 
 defmodule MtgDraftServer.Repo do
@@ -1847,37 +2033,37 @@ defmodule MtgDraftServerWeb.DraftController do
   """
   def create(conn, params) do
     %{"uid" => uid} = conn.assigns.current_user
-  
+
     # Build a map with only atom keys
     args = %{
       creator: uid,
-      pack_sets:        Map.get(params, "pack_sets", []),
+      pack_sets: Map.get(params, "pack_sets", []),
       allowed_rarities: Map.get(params, "allowed_rarities", [])
     }
-  
+
     with {:ok, %{draft: draft, player: _human_player}} <- Drafts.create_and_join_draft(args) do
       # start GenServer and join players as before…
       {:ok, _pid} = DraftSessionSupervisor.start_new_session(draft.id)
       :ok = DraftSession.join(draft.id, %{"user_id" => uid, "ai" => false})
-    
+
       # render the new draft
       response =
         %{draft_id: draft.id, status: draft.status}
         |> Map.merge(if draft.pack_sets != [], do: %{pack_sets: draft.pack_sets}, else: %{})
-  
+
       conn
       |> put_status(:created)
       |> put_resp_header("location", "/api/drafts/#{draft.id}")
       |> json(response)
     end
-  end  
+  end
 
   @doc """
   Start the draft by updating its status to "active" and loading all players into session.
   """
   def start(conn, %{"id" => draft_id}) do
     %{"uid" => uid} = conn.assigns.current_user
-  
+
     with {:ok, draft} <- Drafts.get_draft(draft_id),
          {:ok, _} <- authorize_draft_action(draft, uid) do
       # 1) Ensure the session process exists
@@ -1885,34 +2071,34 @@ defmodule MtgDraftServerWeb.DraftController do
         case Registry.lookup(MtgDraftServer.DraftRegistry, draft_id) do
           [{pid, _}] ->
             pid
-  
+
           [] ->
             {:ok, pid} = DraftSessionSupervisor.start_new_session(draft_id)
             pid
         end
-  
+
       # 2) Join all players into the session
       Drafts.get_draft_players(draft_id)
       |> Enum.each(fn user_id ->
         is_ai = String.starts_with?(user_id, "AI_")
         :ok = DraftSession.join(draft_id, %{"user_id" => user_id, "ai" => is_ai})
       end)
-  
+
       # 3) Kick off booster generation with options
       opts = %{
-        set_codes:        draft.pack_sets,
+        set_codes: draft.pack_sets,
         allowed_rarities: draft.allowed_rarities
       }
-  
+
       case GenServer.call(pid, {:start_with_options, opts}) do
         {:ok, _state} ->
           conn
           |> json(%{
             draft_id: draft_id,
-            status:   "active",
-            message:  "Draft started with booster packs"
+            status: "active",
+            message: "Draft started with booster packs"
           })
-  
+
         {:error, reason} ->
           conn
           |> put_status(:bad_request)
@@ -1920,7 +2106,6 @@ defmodule MtgDraftServerWeb.DraftController do
       end
     end
   end
-  
 
   @doc """
   Persist a card pick.
@@ -1980,7 +2165,6 @@ defmodule MtgDraftServerWeb.DraftController do
         conn |> put_status(:not_found) |> json(%{error: reason})
     end
   end
-
 
   @doc """
   Generate booster packs and distribute them among players.
@@ -2405,12 +2589,20 @@ end
 defmodule MtgDraftServerWeb.AuthPlug do
   import Plug.Conn
   alias MtgDraftServer.FirebaseToken
+  require Logger
 
   def init(default), do: default
 
   def call(conn, _opts) do
-    if Application.get_env(:mtg_draft_server, :skip_auth, false) do
-      # In test (or any env where :skip_auth is true), bypass real auth
+    env = Application.get_env(:mtg_draft_server, :environment, :prod)
+    skip_auth = Application.get_env(:mtg_draft_server, :skip_auth, false)
+
+    # Never skip auth in production, regardless of config
+    if skip_auth && env != :prod do
+      # Log a warning that auth is being skipped
+      Logger.warning("⚠️ SECURITY WARNING: Authentication is bypassed in #{env} environment")
+
+      # Only bypass in dev/test environments
       assign(conn, :current_user, %{"uid" => "test_user"})
     else
       case get_req_header(conn, "authorization") do
@@ -2428,13 +2620,13 @@ defmodule MtgDraftServerWeb.AuthPlug do
   defp verify_token(conn, token) do
     case FirebaseToken.verify_firebase_token(token) do
       {:ok, claims} ->
-        IO.inspect(claims, label: "✅ Firebase Token Claims")
+        Logger.debug("✅ Firebase token verification successful")
         # Map "user_id" to "uid" so controllers can consistently use "uid"
         claims = Map.put(claims, "uid", claims["user_id"])
         assign(conn, :current_user, claims)
 
       {:error, reason} ->
-        IO.inspect(reason, label: "❌ Token Verification Failed")
+        Logger.warning("❌ Token verification failed: #{inspect(reason)}")
 
         conn
         |> send_resp(401, Jason.encode!(%{error: "Invalid token"}))
@@ -2443,12 +2635,137 @@ defmodule MtgDraftServerWeb.AuthPlug do
   end
 end
 
+=== File: lib/mtg_draft_server_web/plugs/rate_limit_plug.ex ===
+
+defmodule MtgDraftServerWeb.RateLimitPlug do
+  @moduledoc """
+  A plug that provides rate limiting for API endpoints.
+
+  This plug uses the MtgDraftServer.RateLimit module to enforce
+  rate limits based on IP address or user ID (when authenticated).
+  """
+
+  import Plug.Conn
+  require Logger
+
+  @doc """
+  Initialize the plug with options.
+
+  ## Options
+    - limit_type: Atom identifying which rate limit to use from config
+                  (e.g. :draft_creation, :api_standard)
+  """
+  def init(opts) do
+    limit_type = Keyword.fetch!(opts, :limit_type)
+    %{limit_type: limit_type}
+  end
+
+  @doc """
+  Call function that applies rate limiting to the connection.
+  """
+  def call(conn, %{limit_type: limit_type}) do
+    # Get rate limit settings from config
+    {limit, scale_ms} = get_limit_settings(limit_type)
+
+    # Get identifier (user_id or IP address)
+    identifier = get_identifier(conn)
+
+    # Create bucket name from rate limit type and identifier
+    bucket = "#{limit_type}:#{identifier}"
+
+    # Check rate limit
+    case MtgDraftServer.RateLimit.check(bucket, scale_ms, limit) do
+      {:allow, _count} ->
+        # Request is within limits
+        conn
+
+      {:deny, retry_after} ->
+        # Rate limit exceeded
+        Logger.warning("Rate limit exceeded for #{identifier} on #{limit_type}")
+
+        conn
+        |> put_resp_header("retry-after", "#{div(retry_after, 1000)}")
+        |> put_status(429)
+        |> Phoenix.Controller.json(%{
+          error: "Too many requests",
+          message: "Rate limit exceeded. Please try again later."
+        })
+        |> halt()
+    end
+  end
+
+  # Get rate limit settings from config
+  defp get_limit_settings(limit_type) do
+    case Application.get_env(:mtg_draft_server, :rate_limits)[limit_type] do
+      {limit, scale_ms} ->
+        {limit, scale_ms}
+
+      nil ->
+        Logger.warning("No rate limit configured for #{limit_type}, using defaults")
+        # Default: 60 requests per minute
+        {60, 60_000}
+    end
+  end
+
+  # Get a unique identifier for the request
+  defp get_identifier(conn) do
+    # First try to use user_id if authenticated
+    case conn.assigns[:current_user] do
+      %{"uid" => uid} when is_binary(uid) and uid != "" ->
+        "user:#{uid}"
+
+      _ ->
+        # Fall back to IP address
+        ip = get_client_ip(conn)
+        "ip:#{ip}"
+    end
+  end
+
+  # Get client IP address, handling potential proxies
+  defp get_client_ip(conn) do
+    # Try X-Forwarded-For header first
+    case get_req_header(conn, "x-forwarded-for") do
+      [forwarded_for | _] ->
+        String.split(forwarded_for, ",")
+        |> List.first()
+        |> String.trim()
+
+      [] ->
+        # Fall back to remote_ip
+        conn.remote_ip
+        |> Tuple.to_list()
+        |> Enum.join(".")
+    end
+  end
+end
+
 === File: lib/mtg_draft_server_web/router.ex ===
 
 defmodule MtgDraftServerWeb.Router do
   use MtgDraftServerWeb, :router
-  import Phoenix.LiveView.Router
 
+  # Define pipelines for different rate limit types
+  pipeline :limit_auth do
+    plug MtgDraftServerWeb.RateLimitPlug, limit_type: :auth_endpoints
+  end
+
+  pipeline :limit_draft_creation do
+    plug MtgDraftServerWeb.RateLimitPlug, limit_type: :draft_creation
+  end
+
+  pipeline :limit_draft_joining do
+    plug MtgDraftServerWeb.RateLimitPlug, limit_type: :draft_joining
+  end
+
+  pipeline :limit_draft_pick do
+    plug MtgDraftServerWeb.RateLimitPlug, limit_type: :draft_pick
+  end
+
+  pipeline :limit_standard do
+    plug MtgDraftServerWeb.RateLimitPlug, limit_type: :api_standard
+  end
+
+  # Your existing pipelines
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
@@ -2466,32 +2783,47 @@ defmodule MtgDraftServerWeb.Router do
     plug MtgDraftServerWeb.AuthPlug
   end
 
-  scope "/", MtgDraftServerWeb do
-    pipe_through :browser
+  # Apply the rate limits to your routes
 
-    get "/", DefaultController, :index
-  end
-
-  scope "/admin", MtgDraftServerWeb do
-    pipe_through :browser
-
-    live "/", DashboardLive, :index
-  end
-
+  # Routes with standard rate limits
   scope "/api", MtgDraftServerWeb, as: :api do
-    pipe_through :auth_api
+    pipe_through [:api, :limit_standard]
+
+    get "/drafts/pending", DraftController, :pending_drafts
+    get "/drafts/sets", DraftController, :sets
+  end
+
+  # Draft creation routes
+  scope "/api", MtgDraftServerWeb, as: :api do
+    pipe_through [:auth_api, :limit_draft_creation]
+
+    post "/drafts", DraftController, :create
+  end
+
+  # Draft joining routes
+  scope "/api", MtgDraftServerWeb, as: :api do
+    pipe_through [:auth_api, :limit_draft_joining]
+
+    post "/drafts/:id/join", DraftController, :join
+    post "/drafts/reconnect", DraftController, :reconnect
+  end
+
+  # Draft pick routes
+  scope "/api", MtgDraftServerWeb, as: :api do
+    pipe_through [:auth_api, :limit_draft_pick]
+
+    post "/drafts/:id/pick", DraftController, :pick
+  end
+
+  # Other API routes
+  scope "/api", MtgDraftServerWeb, as: :api do
+    pipe_through [:auth_api, :limit_standard]
 
     get "/drafts/:id/state", DraftController, :state
-    get "/drafts/pending", DraftController, :pending_drafts
     get "/drafts/:id/picks", DraftController, :picked_cards
-    post "/drafts", DraftController, :create
     post "/drafts/:id/start", DraftController, :start
-    post "/drafts/:id/pick", DraftController, :pick
-    post "/drafts/reconnect", DraftController, :reconnect
     post "/drafts/booster_packs", DraftController, :generate_booster_packs
     post "/drafts/:id/add_ai", DraftController, :add_ai
-    post "/drafts/:id/join", DraftController, :join
-    get "/drafts/sets", DraftController, :sets
     get "/drafts/:id/deck", DraftController, :deck
   end
 end
@@ -2540,25 +2872,26 @@ defmodule MtgDraftServer.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:phoenix, "~> 1.7.14"},
+      {:phoenix, "~> 1.7.21"},
       {:phoenix_ecto, "~> 4.5"},
       {:phoenix_live_view, "~> 1.0"},
       {:phoenix_html, "~> 4.2"},
       {:ecto_sql, "~> 3.10"},
       {:postgrex, ">= 0.0.0"},
-      {:swoosh, "~> 1.5"},
+      {:swoosh, "~> 1.19.0"},
       {:finch, "~> 0.13"},
       {:telemetry_metrics, "~> 1.0"},
-      {:telemetry_poller, "~> 1.0"},
+      {:telemetry_poller, "~> 1.2.0"},
       {:gettext, "~> 0.20"},
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.1.1"},
-      {:bandit, "~> 1.5"},
+      {:bandit, "~> 1.6.11"},
       {:cachex, "~> 3.6"},
       {:cors_plug, "~> 3.0"},
       {:joken, "~> 2.5"},
       {:joken_jwks, "~> 1.6"},
-      {:ex_doc, "~> 0.31", only: :dev, runtime: false}
+      {:ex_doc, "~> 0.31", only: :dev, runtime: false},
+      {:hammer, "~> 7.0"}
     ]
   end
 
@@ -2725,7 +3058,7 @@ defmodule MtgDraftServer.Repo.Migrations.AddAllowedRaritiesToDrafts do
   def change do
     alter table(:drafts) do
       add :allowed_rarities, {:array, :string},
-        default: ["basic","common","uncommon","rare","mythic"],
+        default: ["basic", "common", "uncommon", "rare", "mythic"],
         null: false
     end
   end

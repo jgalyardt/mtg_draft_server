@@ -1,3 +1,12 @@
 I am building an elixir phoenix server to host Magic the Gathering drafts.
 Players can join, and once the draft hits 8 players, it will start.
-I'd like to do a security pass on my server, which I eventually want to expose on the internet.
+I'm working on the front-end now. 
+I would like you to generate a concise endpoint summary with instructions for use.
+This should include:
+- Viewing the list of drafts
+- Creating and joining a draft
+- Reconnecting to a draft
+- Adding computer players to a draft
+- Picking a card
+- Getting the contents of picked cards so far
+- Anything else that makes sense for the front-end to know about
