@@ -26,6 +26,12 @@ config :mtg_draft_server, MtgDraftServerWeb.Endpoint,
   secret_key_base: "a0b8YEGw1hkSWLdHVUVedS9UnWbvqZiAUU94YqU0E4pQwXXOOfOhXxucnnlO8Hse",
   watchers: []
 
+
+# Specify dev environment
+config :mtg_draft_server,
+  environment: :dev,
+  skip_auth: true
+
 # ## SSL Support
 #
 # In order to use HTTPS in development, a self-signed

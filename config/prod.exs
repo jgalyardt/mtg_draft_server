@@ -1,5 +1,10 @@
 import Config
 
+# Specify dev environment
+config :mtg_draft_server,
+  environment: :prod,
+  skip_auth: false # This should never be true in prod!
+
 # Configures Swoosh API Client
 config :swoosh, api_client: Swoosh.ApiClient.Finch, finch_name: MtgDraftServer.Finch
 
@@ -13,5 +18,4 @@ config :logger, level: :info
 # of environment variables, is done on config/runtime.exs.
 config :mtg_draft_server, MtgDraftServerWeb.Endpoint,
   force_ssl: [rewrite_on: [:x_forwarded_proto]],
-  # TODO
   url: [scheme: "https", host: "yourdomain.com", port: 443]

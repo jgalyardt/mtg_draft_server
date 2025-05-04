@@ -28,3 +28,4 @@ mtg_draft_server-*.tar
 # Other
 /priv/repo/data
 export_tests*
+devfile.yaml

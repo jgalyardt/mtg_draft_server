@@ -1,148 +1,6 @@
 I am building an elixir phoenix server to host Magic the Gathering drafts.
 Players can join, and once the draft hits 8 players, it will start.
-
-Help me fix these docs errors:
-
-$ mix docs
-==> earmark_parser
-Compiling 2 files (.xrl)
-Compiling 1 file (.yrl)
-Compiling 3 files (.erl)
-Compiling 47 files (.ex)
-Generated earmark_parser app
-==> nimble_parsec
-Compiling 4 files (.ex)
-Generated nimble_parsec app
-==> makeup
-Compiling 15 files (.ex)
-Generated makeup app
-==> makeup_elixir
-Compiling 6 files (.ex)
-Compiling lib/makeup/lexers/elixir_lexer.ex (it's taking more than 10s)
-Generated makeup_elixir app
-==> makeup_erlang
-Compiling 4 files (.ex)
-Compiling lib/makeup/lexers/erlang_lexer.ex (it's taking more than 10s)
-Generated makeup_erlang app
-==> ex_doc
-Compiling 26 files (.ex)
-Generated ex_doc app
-==> mtg_draft_server
-Compiling 5 files (.ex)
-    warning: redefining @doc attribute previously set at line 10.     
-
-    Please remove the duplicate docs. If instead you want to override a previously defined @doc, attach the @doc attribute to a function head (the function signature not followed by any do-block). For example: 
-
-        @doc """
-        new docs
-        """
-        def next_index(...)        
-
-    │
- 24 │   @doc """
-    │   ~~~~~~~~
-    │
-    └─ lib/mtg_draft_server/draft_session/turn_logic.ex:24: MtgDraftServer.DraftSession.TurnLogic.next_index/3
-
-Generated mtg_draft_server app
-Generating docs...
-     warning: documentation references type "MtgDraftServer.Drafts.Draft.t()" but it is undefined or private
-     │
- 192 │   @doc """
-     │   ~~~~~~~~
-     │
-     └─ (mtg_draft_server 0.1.0) lib/mtg_draft_server/drafts.ex:192: MtgDraftServer.Drafts.complete_draft/1
-
-    warning: documentation references type "MtgDraftServer.Drafts.Draft.t()" but it is undefined or private
-    │
- 42 │   @doc """
-    │   ~~~~~~~~
-    │
-    └─ (mtg_draft_server 0.1.0) lib/mtg_draft_server/drafts.ex:42: MtgDraftServer.Drafts.create_and_join_draft/1
-
-    warning: documentation references type "MtgDraftServer.Drafts.Draft.t()" but it is undefined or private
-    │
- 19 │   @type draft_result :: {:ok, Draft.t()} | error
-    │   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    │
-    └─ lib/mtg_draft_server/drafts.ex:19: MtgDraftServer.Drafts (module)
-
-    warning: documentation references type "MtgDraftServer.Drafts.DraftPlayer.t()" but it is undefined or private
-    │
- 71 │   @doc """
-    │   ~~~~~~~~
-    │
-    └─ (mtg_draft_server 0.1.0) lib/mtg_draft_server/drafts.ex:71: MtgDraftServer.Drafts.get_active_draft_for_player/1
-
-     warning: documentation references type "MtgDraftServer.Drafts.DraftPick.t()" but it is undefined or private
-     │
- 137 │   @doc """
-     │   ~~~~~~~~
-     │
-     └─ (mtg_draft_server 0.1.0) lib/mtg_draft_server/drafts.ex:137: MtgDraftServer.Drafts.get_picked_cards/2
-
-    warning: documentation references type "MtgDraftServer.Drafts.DraftPick.t()" but it is undefined or private
-    │
- 20 │   @type pick_result :: {:ok, DraftPick.t()} | error
-    │   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    │
-    └─ lib/mtg_draft_server/drafts.ex:20: MtgDraftServer.Drafts (module)
-
-    warning: documentation references type "MtgDraftServer.Drafts.DraftPlayer.t()" but it is undefined or private
-    │
- 21 │   @type player_result :: {:ok, DraftPlayer.t()} | error
-    │   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    │
-    └─ lib/mtg_draft_server/drafts.ex:21: MtgDraftServer.Drafts (module)
-
-View "html" docs at "doc/index.html"
-     warning: documentation references type "MtgDraftServer.Drafts.Draft.t()" but it is undefined or private
-     │
- 192 │   @doc """
-     │   ~~~~~~~~
-     │
-     └─ (mtg_draft_server 0.1.0) lib/mtg_draft_server/drafts.ex:192: MtgDraftServer.Drafts.complete_draft/1
-
-    warning: documentation references type "MtgDraftServer.Drafts.Draft.t()" but it is undefined or private
-    │
- 42 │   @doc """
-    │   ~~~~~~~~
-    │
-    └─ (mtg_draft_server 0.1.0) lib/mtg_draft_server/drafts.ex:42: MtgDraftServer.Drafts.create_and_join_draft/1
-
-    warning: documentation references type "MtgDraftServer.Drafts.Draft.t()" but it is undefined or private
-    │
- 19 │   @type draft_result :: {:ok, Draft.t()} | error
-    │   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    │
-    └─ lib/mtg_draft_server/drafts.ex:19: MtgDraftServer.Drafts (module)
-
-    warning: documentation references type "MtgDraftServer.Drafts.DraftPlayer.t()" but     │
-    └─ (mtg_draft_server 0.1.0) lib/mtg_draft_server/drafts.ex:71: MtgDraftServer.Drafts.get_active_draft_for_player/1
-
-     warning: documentation references type "MtgDraftServer.Drafts.DraftPick.t()" but it is undefined or private
-     │
- 137 │   @doc """
-     │   ~~~~~~~~
-     │
-     └─ (mtg_draft_server 0.1.0) lib/mtg_draft_server/drafts.ex:137: MtgDraftServer.Drafts.get_picked_cards/2
-
-    warning: documentation references type "MtgDraftServer.Drafts.DraftPick.t()" but it is undefined or private
-    │
- 20 │   @type pick_result :: {:ok, DraftPick.t()} | error
-    │   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    │
-    └─ lib/mtg_draft_server/drafts.ex:20: MtgDraftServer.Drafts (module)
-
-    warning: documentation references type "MtgDraftServer.Drafts.DraftPlayer.t()" but it is undefined or private
-    │
- 21 │   @type player_result :: {:ok, DraftPlayer.t()} | error
-    │   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    │
-    └─ lib/mtg_draft_server/drafts.ex:21: MtgDraftServer.Drafts (module)
-
-View "epub" docs at "doc/MTG Draft Server.epub"
-
+I'd like to do a security pass on my server, which I eventually want to expose on the internet.
 
 Project Structure:
 /c/Users/jgaly/OneDrive/Code/Elixir/mtg_draft_server/ai/..
@@ -173,8 +31,8 @@ doc/dist/lato-latin-700-normal-2XVSBPG4.woff2
 doc/dist/lato-latin-ext-400-normal-N27NCBWW.woff2
 doc/dist/lato-latin-ext-700-normal-Q2L5DVMW.woff2
 doc/dist/remixicon-NKANDIL5.woff2
-doc/dist/search_data-73A91595.js
-doc/dist/sidebar_items-E89958C8.js
+doc/dist/search_data-5E48B226.js
+doc/dist/sidebar_items-DDF2570B.js
 doc/index.html
 doc/MTG Draft Server.epub
 doc/MtgDraftServer.Application.html
@@ -430,6 +288,27 @@ defmodule MtgDraftServer.Cards.Card do
 
     timestamps()
   end
+
+  @type t :: %__MODULE__{
+    id: Ecto.UUID.t() | nil,
+    oracle_id: Ecto.UUID.t() | nil,
+    name: String.t() | nil,
+    mana_cost: String.t() | nil,
+    cmc: float() | nil,
+    type_line: String.t() | nil,
+    oracle_text: String.t() | nil,
+    power: String.t() | nil,
+    toughness: String.t() | nil,
+    colors: [String.t()] | nil,
+    color_identity: [String.t()] | nil,
+    set_code: String.t() | nil,
+    rarity: String.t() | nil,
+    foil: boolean() | nil,
+    image_uris: map() | nil,
+    legalities: map() | nil,
+    inserted_at: DateTime.t() | nil,
+    updated_at: DateTime.t() | nil
+  }
 
   @doc false
   def changeset(card, attrs) do
@@ -770,23 +649,9 @@ defmodule MtgDraftServer.DraftSession.TurnLogic do
   @spec next_index(integer(), integer(), :left | :right) :: integer()
   def next_index(current_index, player_count, :left), do: rem(current_index + 1, player_count)
 
-  @doc """
-  Calculates the index of the next player when passing to the right.
-  
-  This is equivalent to moving to the previous player in the array, with wrapping.
-  
-  ## Parameters
-    - current_index: The index of the current player
-    - player_count: The total number of players in the draft
-    - :right: Indicates passing to the right
-    
-  ## Returns
-    The index of the next player, wrapping around if necessary
-  """
   def next_index(current_index, player_count, :right),
     do: rem(player_count + current_index - 1, player_count)
 end
-
 === File: lib/mtg_draft_server/draft_session_supervisor.ex ===
 
 defmodule MtgDraftServer.DraftSessionSupervisor do
@@ -1340,13 +1205,21 @@ defmodule MtgDraftServer.Drafts.Draft do
     timestamps()
   end
 
+  @type t :: %__MODULE__{
+    id: Ecto.UUID.t() | nil,
+    status: String.t() | nil,
+    pack_sets: [String.t()] | nil,
+    allowed_rarities: [String.t()] | nil,
+    inserted_at: DateTime.t() | nil,
+    updated_at: DateTime.t() | nil
+  }
+
   def changeset(draft, attrs) do
     draft
     |> cast(attrs, [:status, :pack_sets, :allowed_rarities])
     |> validate_required([:status])
   end
 end
-
 === File: lib/mtg_draft_server/drafts/draft_pick.ex ===
 
 defmodule MtgDraftServer.Drafts.DraftPick do
@@ -1377,6 +1250,21 @@ defmodule MtgDraftServer.Drafts.DraftPick do
     timestamps()
   end
 
+  @type t :: %__MODULE__{
+    id: integer() | nil,
+    pack_number: integer() | nil,
+    pick_number: integer() | nil,
+    expires_at: DateTime.t() | nil,
+    draft_id: Ecto.UUID.t() | nil,
+    draft_player_id: integer() | nil, 
+    card_id: Ecto.UUID.t() | nil,
+    draft: MtgDraftServer.Drafts.Draft.t() | Ecto.Association.NotLoaded.t() | nil,
+    draft_player: MtgDraftServer.Drafts.DraftPlayer.t() | Ecto.Association.NotLoaded.t() | nil,
+    card: MtgDraftServer.Cards.Card.t() | Ecto.Association.NotLoaded.t() | nil,
+    inserted_at: DateTime.t() | nil,
+    updated_at: DateTime.t() | nil
+  }
+
   def changeset(draft_pick, attrs) do
     draft_pick
     |> cast(attrs, [
@@ -1397,7 +1285,6 @@ defmodule MtgDraftServer.Drafts.DraftPick do
     ])
   end
 end
-
 === File: lib/mtg_draft_server/drafts/draft_player.ex ===
 
 defmodule MtgDraftServer.Drafts.DraftPlayer do
@@ -1415,6 +1302,17 @@ defmodule MtgDraftServer.Drafts.DraftPlayer do
     timestamps()
   end
 
+  @type t :: %__MODULE__{
+    id: integer() | nil,
+    user_id: String.t() | nil,
+    seat: integer() | nil,
+    connected: boolean() | nil,
+    draft_id: Ecto.UUID.t() | nil,
+    draft: MtgDraftServer.Drafts.Draft.t() | Ecto.Association.NotLoaded.t() | nil,
+    inserted_at: DateTime.t() | nil,
+    updated_at: DateTime.t() | nil
+  }
+
   def changeset(draft_player, attrs) do
     draft_player
     |> cast(attrs, [:draft_id, :user_id, :seat, :connected])
@@ -1427,7 +1325,6 @@ defmodule MtgDraftServer.Drafts.DraftPlayer do
     |> MtgDraftServer.Repo.insert()
   end
 end
-
 === File: lib/mtg_draft_server/firebase_token.ex ===
 
 defmodule MtgDraftServer.FirebaseToken do
