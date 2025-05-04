@@ -32,7 +32,12 @@ defmodule MtgDraftServer.DraftSessionSupervisor do
   Starts a new draft session.
   """
   def start_new_session(draft_id) do
-    spec = {MtgDraftServer.DraftSession, draft_id}
+    spec = %{
+      id: {MtgDraftServer.DraftSession, draft_id},
+      start: {MtgDraftServer.DraftSession, :start_link, [draft_id]},
+      restart: :temporary
+    }
+  
     DynamicSupervisor.start_child(__MODULE__, spec)
   end
 end

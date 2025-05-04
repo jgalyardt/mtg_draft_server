@@ -107,23 +107,39 @@ defmodule MtgDraftServerWeb.DraftController do
   end
 
   @doc """
-  Get all picks for the current user in a given draft.
+  Get all picks for the current user in a given draft,
+  but only return the minimal fields the front‑end needs.
   """
   def picked_cards(conn, %{"id" => draft_id}) do
-    case conn.assigns[:current_user] do
-      %{"uid" => uid} ->
-        with {:ok, draft} <- Drafts.get_draft(draft_id),
-             {:ok, _} <- authorize_draft_action(draft, uid) do
-          picks = Drafts.get_picked_cards(draft_id, uid)
-          json(conn, %{picks: picks})
-        end
+    %{"uid" => uid} = conn.assigns.current_user
 
-      _ ->
+    with {:ok, draft} <- Drafts.get_draft(draft_id),
+         {:ok, _}    <- authorize_draft_action(draft, uid) do
+      picks = Drafts.get_picked_cards(draft_id, uid)
+
+      slim_picks =
+        Enum.map(picks, fn pick ->
+          %{
+            pack_number: pick.pack_number,
+            pick_number: pick.pick_number,
+            card: %{
+              id:   pick.card.id,
+              name: pick.card.name,
+              cmc: pick.card.cmc,
+              image_uri: pick.card.image_uris["normal"]
+            }
+          }
+        end)
+
+      json(conn, %{picks: slim_picks})
+    else
+      {:error, reason} ->
         conn
-        |> put_status(:unauthorized)
-        |> json(%{"error" => "Authentication required"})
+        |> put_status(:bad_request)
+        |> json(%{error: reason})
     end
   end
+  
 
   @doc "Get your completed deck (all picks) once draft is done"
   def deck(conn, %{"id" => draft_id}) do
@@ -333,10 +349,10 @@ defmodule MtgDraftServerWeb.DraftController do
     {:ok, :joined}
   end
 
-  defp authorize_draft_action(draft, user_id) do
+  defp authorize_draft_action(%Drafts.Draft{} = draft, user_id) do
     case Drafts.get_draft_player(draft.id, user_id) do
       {:ok, _player} -> {:ok, true}
-      _ -> {:error, "Unauthorized"}
+      _              -> {:error, "Unauthorized"}
     end
   end
 end

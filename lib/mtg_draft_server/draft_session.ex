@@ -135,6 +135,7 @@ defmodule MtgDraftServer.DraftSession do
 
   @impl true
   def handle_cast({:pick, user_id, card_id}, state) do
+    draft_id = state.draft_id
     current_round = state.current_round
     user_queues = Map.get(state.booster_queues, user_id, %{})
     current_round_queue = Map.get(user_queues, current_round, [])
@@ -164,7 +165,7 @@ defmodule MtgDraftServer.DraftSession do
         # Persist pick
         {:ok, _pick} =
           Drafts.pick_card(
-            state.draft_id,
+            draft_id,
             user_id,
             card_id,
             %{"pack_number" => current_round, "pick_number" => pick_no}
@@ -214,35 +215,46 @@ defmodule MtgDraftServer.DraftSession do
           new_booster_queues
           |> Map.values()
           |> Enum.all?(fn user_queues ->
-            round_queue = Map.get(user_queues, current_round, [])
-            round_queue == []
+            Map.get(user_queues, current_round, []) == []
           end)
 
-        new_state =
-          cond do
-            round_complete && current_round < 3 ->
-              # Advance to next round
-              %{new_state | current_round: current_round + 1}
-
-            round_complete && current_round == 3 ->
-              # Draft is complete
-              {:ok, _} = MtgDraftServer.Drafts.complete_draft(state.draft_id)
-              MtgDraftServer.Drafts.notify(state.draft_id, {:draft_completed, state.draft_id})
-              %{new_state | status: "complete"}
-
-            true ->
-              # Stay on current round
+        cond do
+          # ———————————————————————————————————————————————
+          # 1) ADVANCE TO NEXT ROUND (1 → 2 or 2 → 3)
+          # ———————————————————————————————————————————————
+          round_complete && current_round < 3 ->
+            next_state = %{
               new_state
-          end
+              | current_round: current_round + 1
+            }
 
-        # Notify and schedule AI pick if needed
-        Drafts.notify(state.draft_id, {:pack_updated, user_id, neighbor})
+            # only broadcast the usual "pack_updated" and schedule AIs
+            Drafts.notify(draft_id, {:pack_updated, user_id, neighbor})
+            schedule_ai_for(neighbor, next_state)
 
-        if state.players[neighbor].ai do
-          Process.send_after(self(), {:ai_pick, neighbor}, 500)
+            {:noreply, next_state}
+
+          # ———————————————————————————————————————————————
+          # 2) COMPLETE DRAFT (end of round 3)
+          # ———————————————————————————————————————————————
+          round_complete && current_round == 3 ->
+            # 1) persist in the database
+            {:ok, _} = MtgDraftServer.Drafts.complete_draft(draft_id)
+
+            # 2) broadcast a concise “draft_completed” event
+            MtgDraftServer.Drafts.notify(draft_id, :draft_completed)
+
+            # 3) stop this GenServer (so it doesn’t restart)
+            {:stop, :normal, %{new_state | status: "complete"}}
+
+          # ———————————————————————————————————————————————
+          # 3) STILL IN THE MIDDLE OF A PACK
+          # ———————————————————————————————————————————————
+          true ->
+            Drafts.notify(draft_id, {:pack_updated, user_id, neighbor})
+            schedule_ai_for(neighbor, state)
+            {:noreply, new_state}
         end
-
-        {:noreply, new_state}
       else
         Logger.error("Invalid pick #{card_id} by #{user_id}")
         {:noreply, state}
@@ -292,6 +304,13 @@ defmodule MtgDraftServer.DraftSession do
   end
 
   # Private functions
+
+  defp schedule_ai_for(nil, _state), do: :ok
+  defp schedule_ai_for(neighbor, state) do
+    if state.players[neighbor].ai do
+      Process.send_after(self(), {:ai_pick, neighbor}, 50)
+    end
+  end
 
   defp ai_select_card(pack, default) do
     try do
