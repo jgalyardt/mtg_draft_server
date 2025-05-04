@@ -32,11 +32,16 @@ config :mtg_draft_server,
   skip_auth: true
 
 config :mtg_draft_server, :rate_limits,
-  draft_creation:   {60, 60_000},   # 60 requests per minute
-  draft_joining:    {120, 60_000},  # 120 requests per minute
-  draft_pick:       {180, 60_000},  # 180 requests per minute
-  api_standard:     {300, 60_000},  # 300 requests per minute
-  auth_endpoints:   {10, 60_000}    # 10 requests per minute
+  # 60 requests per minute
+  draft_creation: {60, 60_000},
+  # 120 requests per minute
+  draft_joining: {120, 60_000},
+  # 180 requests per minute
+  draft_pick: {180, 60_000},
+  # 300 requests per minute
+  api_standard: {300, 60_000},
+  # 10 requests per minute
+  auth_endpoints: {10, 60_000}
 
 # ## SSL Support
 #

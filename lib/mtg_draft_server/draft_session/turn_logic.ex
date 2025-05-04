@@ -1,15 +1,15 @@
 defmodule MtgDraftServer.DraftSession.TurnLogic do
   @moduledoc """
   Provides utility functions for managing turn order and player rotation in a draft.
-  
+
   This module handles the logic for determining the next player in a draft rotation,
   taking into account the direction of the draft (left or right) and ensuring proper
   wrapping around the table.
   """
-  
+
   @doc """
   Calculates the index of the next player in the draft rotation.
-  
+
   ## Parameters
     - current_index: The index of the current player
     - player_count: The total number of players in the draft

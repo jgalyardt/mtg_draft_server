@@ -48,25 +48,25 @@ defmodule MtgDraftServer.Cards.Card do
   end
 
   @type t :: %__MODULE__{
-    id: Ecto.UUID.t() | nil,
-    oracle_id: Ecto.UUID.t() | nil,
-    name: String.t() | nil,
-    mana_cost: String.t() | nil,
-    cmc: float() | nil,
-    type_line: String.t() | nil,
-    oracle_text: String.t() | nil,
-    power: String.t() | nil,
-    toughness: String.t() | nil,
-    colors: [String.t()] | nil,
-    color_identity: [String.t()] | nil,
-    set_code: String.t() | nil,
-    rarity: String.t() | nil,
-    foil: boolean() | nil,
-    image_uris: map() | nil,
-    legalities: map() | nil,
-    inserted_at: DateTime.t() | nil,
-    updated_at: DateTime.t() | nil
-  }
+          id: Ecto.UUID.t() | nil,
+          oracle_id: Ecto.UUID.t() | nil,
+          name: String.t() | nil,
+          mana_cost: String.t() | nil,
+          cmc: float() | nil,
+          type_line: String.t() | nil,
+          oracle_text: String.t() | nil,
+          power: String.t() | nil,
+          toughness: String.t() | nil,
+          colors: [String.t()] | nil,
+          color_identity: [String.t()] | nil,
+          set_code: String.t() | nil,
+          rarity: String.t() | nil,
+          foil: boolean() | nil,
+          image_uris: map() | nil,
+          legalities: map() | nil,
+          inserted_at: DateTime.t() | nil,
+          updated_at: DateTime.t() | nil
+        }
 
   @doc false
   def changeset(card, attrs) do

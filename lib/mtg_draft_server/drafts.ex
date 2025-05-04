@@ -109,9 +109,9 @@ defmodule MtgDraftServer.Drafts do
   @spec pick_card(binary(), String.t(), String.t(), map()) :: pick_result
   def pick_card(draft_id, user_id, card_id, extra_attrs \\ %{}) do
     Repo.transaction(fn ->
-        with {:ok, draft} <- get_draft(draft_id),
-             :ok <- validate_draft_active(draft),
-             {:ok, draft_player} <- get_draft_player(draft_id, user_id) do
+      with {:ok, draft} <- get_draft(draft_id),
+           :ok <- validate_draft_active(draft),
+           {:ok, draft_player} <- get_draft_player(draft_id, user_id) do
         now = DateTime.utc_now() |> DateTime.truncate(:second)
         expires_at = DateTime.add(now, @one_day_in_seconds, :second)
 
@@ -121,8 +121,8 @@ defmodule MtgDraftServer.Drafts do
             "draft_player_id" => draft_player.id,
             "card_id" => card_id,
             "expires_at" => expires_at,
-            "pack_number"        => extra_attrs["pack_number"]  || 1,
-            "pick_number"        => extra_attrs["pick_number"]  || 1
+            "pack_number" => extra_attrs["pack_number"] || 1,
+            "pick_number" => extra_attrs["pick_number"] || 1
           })
 
         %DraftPick{}
@@ -251,9 +251,10 @@ defmodule MtgDraftServer.Drafts do
   """
   def get_draft_players(draft_id) do
     from(dp in DraftPlayer,
-         where: dp.draft_id == ^draft_id,
-         order_by: dp.seat,
-         select: dp.user_id)
+      where: dp.draft_id == ^draft_id,
+      order_by: dp.seat,
+      select: dp.user_id
+    )
     |> Repo.all()
   end
 
@@ -313,7 +314,7 @@ defmodule MtgDraftServer.Drafts do
   """
   def list_available_sets do
     import Ecto.Query
-  
+
     from(c in MtgDraftServer.Cards.Card,
       distinct: true,
       select: c.set_code,

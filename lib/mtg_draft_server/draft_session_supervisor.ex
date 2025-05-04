@@ -1,11 +1,11 @@
 defmodule MtgDraftServer.DraftSessionSupervisor do
   @moduledoc """
   A dynamic supervisor for managing draft session processes.
-  
+
   This supervisor is responsible for starting and supervising individual draft session
   processes. Each draft session is a GenServer that manages the state and logic for
   a single Magic: The Gathering draft.
-  
+
   The supervisor uses a one-for-one strategy, meaning that if a draft session crashes,
   only that specific session will be restarted, without affecting other drafts.
   """
@@ -13,7 +13,7 @@ defmodule MtgDraftServer.DraftSessionSupervisor do
 
   @doc """
   Starts the DraftSessionSupervisor.
-  
+
   This function is called by the application supervisor during application startup.
   """
   def start_link(_args) do

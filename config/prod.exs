@@ -3,14 +3,16 @@ import Config
 # Specify dev environment
 config :mtg_draft_server,
   environment: :prod,
-  skip_auth: false # This should never be true in prod!
+  # This should never be true in prod!
+  skip_auth: false
 
 config :mtg_draft_server, :rate_limits,
-  draft_creation:   {30, 60_000},   # Stricter limits for production
-  draft_joining:    {60, 60_000},
-  draft_pick:       {90, 60_000},
-  api_standard:     {120, 60_000},
-  auth_endpoints:   {5, 60_000}
+  # Stricter limits for production
+  draft_creation: {30, 60_000},
+  draft_joining: {60, 60_000},
+  draft_pick: {90, 60_000},
+  api_standard: {120, 60_000},
+  auth_endpoints: {5, 60_000}
 
 # Configures Swoosh API Client
 config :swoosh, api_client: Swoosh.ApiClient.Finch, finch_name: MtgDraftServer.Finch

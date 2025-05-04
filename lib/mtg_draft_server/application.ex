@@ -1,16 +1,16 @@
 defmodule MtgDraftServer.Application do
   @moduledoc """
   The MtgDraftServer Application module.
-  
+
   This module is responsible for starting and supervising all the processes
   required by the MTG Draft Server application, including:
-  
+
   - The Phoenix endpoint
   - The Ecto repository
   - The PubSub system
   - The Registry for draft sessions
   - The DraftSessionSupervisor for managing draft sessions
-  
+
   It also handles cleaning up draft data on application restart.
   """
   use Application

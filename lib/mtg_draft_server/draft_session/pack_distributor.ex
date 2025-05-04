@@ -2,7 +2,7 @@
 defmodule MtgDraftServer.DraftSession.PackDistributor do
   @moduledoc """
   Handles the distribution and manipulation of card packs during a draft session.
-  
+
   This module provides utility functions for:
   - Removing cards from packs
   - Checking if a card exists in a pack

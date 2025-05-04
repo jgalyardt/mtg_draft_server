@@ -20,11 +20,12 @@ config :mtg_draft_server,
 
 # config/test.exs
 config :mtg_draft_server, :rate_limits,
-  draft_creation:   {1000, 60_000}, # Higher limits for testing
-  draft_joining:    {1000, 60_000}, 
-  draft_pick:       {1000, 60_000},
-  api_standard:     {1000, 60_000},
-  auth_endpoints:   {1000, 60_000}
+  # Higher limits for testing
+  draft_creation: {1000, 60_000},
+  draft_joining: {1000, 60_000},
+  draft_pick: {1000, 60_000},
+  api_standard: {1000, 60_000},
+  auth_endpoints: {1000, 60_000}
 
 # We don't run a server during test. If one is required,
 # you can enable the server option below.

@@ -26,8 +26,8 @@ config :joken, JokenJwks.DefaultStrategyTemplate,
 
 # Hammer (rate limiting) config
 config :hammer,
-  backend: {Hammer.Backend.ETS, [expiry_ms: :timer.minutes(60),
-                              clean_interval_ms: :timer.minutes(10)]}
+  backend:
+    {Hammer.Backend.ETS, [expiry_ms: :timer.minutes(60), clean_interval_ms: :timer.minutes(10)]}
 
 # Configures the endpoint
 config :mtg_draft_server, MtgDraftServerWeb.Endpoint,

@@ -13,7 +13,7 @@ defmodule MtgDraftServerWeb.AuthPlug do
     if skip_auth && env != :prod do
       # Log a warning that auth is being skipped
       Logger.warning("⚠️ SECURITY WARNING: Authentication is bypassed in #{env} environment")
-      
+
       # Only bypass in dev/test environments
       assign(conn, :current_user, %{"uid" => "test_user"})
     else

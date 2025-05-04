@@ -6,18 +6,21 @@ defmodule MtgDraftServer.Drafts.Draft do
   schema "drafts" do
     field :status, :string, default: "pending"
     field :pack_sets, {:array, :string}, default: []
-    field :allowed_rarities, {:array, :string}, default: ["basic","common","uncommon","rare","mythic"]
+
+    field :allowed_rarities, {:array, :string},
+      default: ["basic", "common", "uncommon", "rare", "mythic"]
+
     timestamps()
   end
 
   @type t :: %__MODULE__{
-    id: Ecto.UUID.t() | nil,
-    status: String.t() | nil,
-    pack_sets: [String.t()] | nil,
-    allowed_rarities: [String.t()] | nil,
-    inserted_at: DateTime.t() | nil,
-    updated_at: DateTime.t() | nil
-  }
+          id: Ecto.UUID.t() | nil,
+          status: String.t() | nil,
+          pack_sets: [String.t()] | nil,
+          allowed_rarities: [String.t()] | nil,
+          inserted_at: DateTime.t() | nil,
+          updated_at: DateTime.t() | nil
+        }
 
   def changeset(draft, attrs) do
     draft

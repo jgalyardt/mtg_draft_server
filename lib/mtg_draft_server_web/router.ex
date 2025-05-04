@@ -46,7 +46,7 @@ defmodule MtgDraftServerWeb.Router do
   # Routes with standard rate limits
   scope "/api", MtgDraftServerWeb, as: :api do
     pipe_through [:api, :limit_standard]
-    
+
     get "/drafts/pending", DraftController, :pending_drafts
     get "/drafts/sets", DraftController, :sets
   end
@@ -54,14 +54,14 @@ defmodule MtgDraftServerWeb.Router do
   # Draft creation routes
   scope "/api", MtgDraftServerWeb, as: :api do
     pipe_through [:auth_api, :limit_draft_creation]
-    
+
     post "/drafts", DraftController, :create
   end
 
   # Draft joining routes
   scope "/api", MtgDraftServerWeb, as: :api do
     pipe_through [:auth_api, :limit_draft_joining]
-    
+
     post "/drafts/:id/join", DraftController, :join
     post "/drafts/reconnect", DraftController, :reconnect
   end
@@ -69,7 +69,7 @@ defmodule MtgDraftServerWeb.Router do
   # Draft pick routes
   scope "/api", MtgDraftServerWeb, as: :api do
     pipe_through [:auth_api, :limit_draft_pick]
-    
+
     post "/drafts/:id/pick", DraftController, :pick
   end
 

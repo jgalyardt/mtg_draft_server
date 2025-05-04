@@ -62,13 +62,18 @@ defmodule MtgDraftServer.DraftSession do
   @impl true
   def init(draft_id) do
     {:ok, db_draft} = Drafts.get_draft(draft_id)
+
     state = %{
-      draft_id:         draft_id,
-      status:           db_draft.status,
-      players:          %{},    # user_id => %{ai: boolean}
-      booster_queues:   %{},    # user_id => [{round_number, pack_list}, ...]
-      player_positions: [],    # seating order by user_id
-      pick_counters:    %{}    # %{user_id => %{1 => 0, 2 => 0, 3 => 0}}
+      draft_id: draft_id,
+      status: db_draft.status,
+      # user_id => %{ai: boolean}
+      players: %{},
+      # user_id => [{round_number, pack_list}, ...]
+      booster_queues: %{},
+      # seating order by user_id
+      player_positions: [],
+      # %{user_id => %{1 => 0, 2 => 0, 3 => 0}}
+      pick_counters: %{}
     }
 
     {:ok, state}
@@ -76,8 +81,8 @@ defmodule MtgDraftServer.DraftSession do
 
   @impl true
   def handle_call({:join, uid, ai_flag}, _from, state) do
-    players  = Map.put(state.players, uid, %{ai: ai_flag})
-    queues   = Map.put_new(state.booster_queues, uid, [])
+    players = Map.put(state.players, uid, %{ai: ai_flag})
+    queues = Map.put_new(state.booster_queues, uid, [])
     counters = Map.put_new(state.pick_counters, uid, %{1 => 0, 2 => 0, 3 => 0})
 
     {:reply, :ok, %{state | players: players, booster_queues: queues, pick_counters: counters}}
@@ -85,7 +90,6 @@ defmodule MtgDraftServer.DraftSession do
 
   @impl true
   def handle_call(:start_draft_with_boosters, _from, _state) do
-
   end
 
   @impl true
@@ -102,22 +106,25 @@ defmodule MtgDraftServer.DraftSession do
           packs
           |> Enum.with_index(1)
           |> Enum.map(fn {pack, round} -> {round, pack} end)
+
         {uid, indexed}
       end)
       |> Enum.into(%{})
 
     # 3) Persist draft status and update in-memory state
     {:ok, _updated} = Drafts.start_draft(state.draft_id)
+
     new_state = %{
       state
-      | booster_queues:   wrapped_queues,
-        status:           "active",
+      | booster_queues: wrapped_queues,
+        status: "active",
         player_positions: player_ids,
-        pick_counters:    Enum.into(player_ids, %{}, fn uid -> {uid, %{1 => 0, 2 => 0, 3 => 0}} end)
+        pick_counters: Enum.into(player_ids, %{}, fn uid -> {uid, %{1 => 0, 2 => 0, 3 => 0}} end)
     }
 
     # 4) Broadcast and schedule AI
     Drafts.notify(state.draft_id, {:draft_started, state.draft_id, []})
+
     Enum.each(player_ids, fn uid ->
       if state.players[uid].ai do
         Process.send_after(self(), {:ai_pick, uid}, 500)
@@ -138,22 +145,24 @@ defmodule MtgDraftServer.DraftSession do
       [{round, current_pack} | rest] ->
         if PackDistributor.card_in_pack?(current_pack, card_id) do
           updated_pack = PackDistributor.remove_card(current_pack, card_id)
-          direction   = if round == 2, do: :right, else: :left
-          neighbor    = PackDistributor.next_neighbor(user_id, state.player_positions, direction)
+          direction = if round == 2, do: :right, else: :left
+          neighbor = PackDistributor.next_neighbor(user_id, state.player_positions, direction)
 
           # get and bump pick number
           user_counters = Map.get(state.pick_counters, user_id, %{1 => 0, 2 => 0, 3 => 0})
-          pick_no       = user_counters[round] + 1
+          pick_no = user_counters[round] + 1
 
           # persist pick with tuple match for {:ok, pick}
-          {:ok, _pick} = Drafts.pick_card(
-            state.draft_id,
-            user_id,
-            card_id,
-            %{"pack_number" => round, "pick_number" => pick_no}
-          )
+          {:ok, _pick} =
+            Drafts.pick_card(
+              state.draft_id,
+              user_id,
+              card_id,
+              %{"pack_number" => round, "pick_number" => pick_no}
+            )
 
           Drafts.notify(state.draft_id, {:pack_updated, user_id, neighbor})
+
           if state.players[neighbor].ai do
             Process.send_after(self(), {:ai_pick, neighbor}, 500)
           end
@@ -176,7 +185,7 @@ defmodule MtgDraftServer.DraftSession do
             # broadcast completion
             MtgDraftServer.Drafts.notify(state.draft_id, {:draft_completed, state.draft_id})
           end
-                    
+
           # 3) Safely update pick_counters: if there's no entry for this user
           #    we default to a {1=>0,2=>0,3=>0} map, then put the new pick_no.
           new_counters =
@@ -204,6 +213,7 @@ defmodule MtgDraftServer.DraftSession do
       [{_, [_ | _] = pack} | _] ->
         card_id = Enum.random(pack) |> Map.get(:id)
         GenServer.cast(self(), {:pick, user_id, card_id})
+
       _ ->
         :ok
     end
