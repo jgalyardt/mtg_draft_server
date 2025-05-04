@@ -1,15 +1,20 @@
 I am building an elixir phoenix server to host Magic the Gathering drafts.
 Players can join, and once the draft hits 8 players, it will start.
-I'm working on the front-end now. 
-I would like you to generate a concise endpoint summary with instructions for use.
-This should include:
-- Viewing the list of drafts
-- Creating and joining a draft
-- Reconnecting to a draft
-- Adding computer players to a draft
-- Picking a card
-- Getting the contents of picked cards so far
-- Anything else that makes sense for the front-end to know about
+Help me resolve this error:
+
+$ mix phx.server
+Compiling 1 file (.ex)
+
+== Compilation error in file lib/mtg_draft_server/draft_session.ex ==
+** (SyntaxError) invalid syntax found on lib/mtg_draft_server/draft_session.ex:258:1:
+     error: unexpected reserved word: end
+     hint: the "end" on line 257 may not have a matching "do" defined before it (based on indentation)
+     │
+ 258 │ end
+     │ ^
+     │
+     └─ lib/mtg_draft_server/draft_session.ex:258:1
+    (elixir 1.18.2) lib/kernel/parallel_compiler.ex:428: anonymous fn/5 in Kernel.ParallelCompiler.spawn_workers/8   
 
 Project Structure:
 /c/Users/jgaly/OneDrive/Code/Elixir/mtg_draft_server/ai/..
@@ -519,7 +524,11 @@ defmodule MtgDraftServer.DraftSession do
     case Map.get(state.booster_queues, user_id, []) do
       [{round, current_pack} | rest] ->
         if PackDistributor.card_in_pack?(current_pack, card_id) do
+          # Log before and after removing the card from the pack
+          Logger.debug("Removing card #{card_id} from pack of size #{length(current_pack)}")
           updated_pack = PackDistributor.remove_card(current_pack, card_id)
+          Logger.debug("Pack size after removal: #{length(updated_pack)}")
+
           direction = if round == 2, do: :right, else: :left
           neighbor = PackDistributor.next_neighbor(user_id, state.player_positions, direction)
 
@@ -585,14 +594,45 @@ defmodule MtgDraftServer.DraftSession do
   @impl true
   def handle_info({:ai_pick, user_id}, state) do
     case Map.get(state.booster_queues, user_id, []) do
-      [{_, [_ | _] = pack} | _] ->
-        card_id = Enum.random(pack) |> Map.get(:id)
-        GenServer.cast(self(), {:pick, user_id, card_id})
-
-      _ ->
+      [{round, [head | _] = pack} | _] ->
+        # Select a random card - use head as fallback if random selection fails
+        card = 
+          try
+            Enum.random(pack)
+          rescue
+            _e -> 
+              Logger.warning("Enum.random failed, using first card")
+              head
+          end
+        
+        # Extract the card ID safely
+        card_id = cond do
+          is_map(card) && Map.has_key?(card, :id) -> card.id
+          is_map(card) && Map.has_key?(card, "id") -> card["id"] 
+          is_binary(card) -> card
+          true -> nil
+        end
+        
+        # Log the pick for debugging
+        Logger.info("AI #{user_id} picking card #{inspect(card_id)} " <>
+                   "from pack of size #{length(pack)} in round #{round}")
+                   
+        # Make the pick if we have a valid card ID
+        if card_id do
+          GenServer.cast(self(), {:pick, user_id, card_id})
+        else
+          Logger.error("AI pick failed: Invalid card format: #{inspect(card)}")
+        end
+  
+      [] ->
+        Logger.info("AI #{user_id} has no packs to pick from")
+        :ok
+          
+      other ->
+        Logger.info("AI #{user_id} has unexpected queue state: #{inspect(other)}")
         :ok
     end
-
+  
     {:noreply, state}
   end
 end

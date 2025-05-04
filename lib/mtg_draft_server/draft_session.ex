@@ -32,14 +32,6 @@ defmodule MtgDraftServer.DraftSession do
   end
 
   @doc """
-  Kick off the draft by generating booster packs and loading them into state.
-  Call this once all players have joined.
-  """
-  def start_with_boosters(draft_id) do
-    GenServer.call(via_tuple(draft_id), :start_draft_with_boosters)
-  end
-
-  @doc """
   Submit a pick for a given user and card ID.
   """
   def pick(draft_id, user_id, card_id) do
@@ -86,10 +78,6 @@ defmodule MtgDraftServer.DraftSession do
     counters = Map.put_new(state.pick_counters, uid, %{1 => 0, 2 => 0, 3 => 0})
 
     {:reply, :ok, %{state | players: players, booster_queues: queues, pick_counters: counters}}
-  end
-
-  @impl true
-  def handle_call(:start_draft_with_boosters, _from, _state) do
   end
 
   @impl true
@@ -144,7 +132,11 @@ defmodule MtgDraftServer.DraftSession do
     case Map.get(state.booster_queues, user_id, []) do
       [{round, current_pack} | rest] ->
         if PackDistributor.card_in_pack?(current_pack, card_id) do
+          # Log before and after removing the card from the pack
+          Logger.debug("Removing card #{card_id} from pack of size #{length(current_pack)}")
           updated_pack = PackDistributor.remove_card(current_pack, card_id)
+          Logger.debug("Pack size after removal: #{length(updated_pack)}")
+
           direction = if round == 2, do: :right, else: :left
           neighbor = PackDistributor.next_neighbor(user_id, state.player_positions, direction)
 
@@ -209,15 +201,59 @@ defmodule MtgDraftServer.DraftSession do
 
   @impl true
   def handle_info({:ai_pick, user_id}, state) do
-    case Map.get(state.booster_queues, user_id, []) do
-      [{_, [_ | _] = pack} | _] ->
-        card_id = Enum.random(pack) |> Map.get(:id)
-        GenServer.cast(self(), {:pick, user_id, card_id})
-
-      _ ->
-        :ok
+    queue = Map.get(state.booster_queues, user_id, [])
+  
+    # Handle empty queue case
+    if queue == [] do
+      Logger.info("AI #{user_id} has no packs to pick from")
+      {:noreply, state}
+    else
+      # Check first item in queue
+      case List.first(queue) do
+        {round, pack} when is_list(pack) and length(pack) > 0 ->
+          # Get card to pick (first card or random)
+          head = List.first(pack)
+          card = ai_select_card(pack, head)
+          card_id = extract_card_id(card)
+          
+          # Log the pick
+          Logger.info("AI #{user_id} picking card #{inspect(card_id)} " <>
+                    "from pack of size #{length(pack)} in round #{round}")
+          
+          # Make the pick if we have a valid card ID
+          if card_id do
+            GenServer.cast(self(), {:pick, user_id, card_id})
+          else
+            Logger.error("AI pick failed: Invalid card format: #{inspect(card)}")
+          end
+          
+          {:noreply, state}
+          
+        other ->
+          Logger.info("AI #{user_id} has unexpected queue state: #{inspect(other)}")
+          {:noreply, state}
+      end
     end
+  end
 
-    {:noreply, state}
+  # Private functions
+
+  defp ai_select_card(pack, default) do
+    try do
+      Enum.random(pack)
+    rescue
+      _ -> 
+        Logger.warning("Enum.random failed, using first card")
+        default
+    end
+  end
+
+  defp extract_card_id(card) do
+    cond do
+      is_map(card) && Map.has_key?(card, :id) -> card.id
+      is_map(card) && Map.has_key?(card, "id") -> card["id"] 
+      is_binary(card) -> card
+      true -> nil
+    end
   end
 end

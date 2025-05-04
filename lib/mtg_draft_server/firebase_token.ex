@@ -3,7 +3,7 @@ defmodule MtgDraftServer.FirebaseToken do
   require Logger
 
   @firebase_jwks_url "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"
-  
+
   # Get the Firebase project ID from config
   # Store this in your config/config.exs or environment-specific configs
   defp project_id, do: Application.get_env(:mtg_draft_server, :firebase_project_id)
@@ -22,10 +22,11 @@ defmodule MtgDraftServer.FirebaseToken do
          :ok <- validate_claims(claims) do
       {:ok, claims}
     else
-      {:error, reason} = err -> 
+      {:error, reason} = err ->
         Logger.warning("Token validation failed: #{inspect(reason)}")
         err
-      _ -> 
+
+      _ ->
         Logger.warning("Token validation failed with unknown error")
         {:error, :invalid_token}
     end
@@ -55,6 +56,7 @@ defmodule MtgDraftServer.FirebaseToken do
   # Issuer should be "https://securetoken.google.com/<project-id>"
   defp validate_issuer(iss) do
     expected_issuer = "https://securetoken.google.com/#{project_id()}"
+
     if iss == expected_issuer do
       :ok
     else
@@ -70,7 +72,7 @@ defmodule MtgDraftServer.FirebaseToken do
       {:error, {:invalid_audience, "Expected #{project_id()}, got #{aud}"}}
     end
   end
-  
+
   # Handle case where aud is a list (should contain project_id)
   defp validate_audience(aud) when is_list(aud) do
     if project_id() in aud do
@@ -79,11 +81,12 @@ defmodule MtgDraftServer.FirebaseToken do
       {:error, {:invalid_audience, "Project ID not in audience list"}}
     end
   end
-  
+
   defp validate_audience(_), do: {:error, {:invalid_audience, "Missing audience claim"}}
 
   # Expiration time must be in the future
   defp validate_expiration(nil), do: {:error, {:invalid_expiration, "Missing exp claim"}}
+
   defp validate_expiration(exp) when is_integer(exp) do
     now = DateTime.utc_now() |> DateTime.to_unix()
     # Add a small leeway to account for clock skew (30 seconds)
@@ -93,10 +96,12 @@ defmodule MtgDraftServer.FirebaseToken do
       {:error, {:token_expired, "Token expired at #{exp}, current time is #{now}"}}
     end
   end
+
   defp validate_expiration(_), do: {:error, {:invalid_expiration, "Invalid exp claim format"}}
 
   # Issued at time must be in the past
   defp validate_issued_at(nil), do: {:error, {:invalid_issued_at, "Missing iat claim"}}
+
   defp validate_issued_at(iat) when is_integer(iat) do
     now = DateTime.utc_now() |> DateTime.to_unix()
     # Add a small leeway to account for clock skew (30 seconds)
@@ -106,6 +111,7 @@ defmodule MtgDraftServer.FirebaseToken do
       {:error, {:invalid_issued_at, "Token issued in the future"}}
     end
   end
+
   defp validate_issued_at(_), do: {:error, {:invalid_issued_at, "Invalid iat claim format"}}
 
   # Subject (user ID) must not be empty
@@ -116,6 +122,7 @@ defmodule MtgDraftServer.FirebaseToken do
 
   # Auth time must be in the past
   defp validate_auth_time(nil), do: {:error, {:invalid_auth_time, "Missing auth_time claim"}}
+
   defp validate_auth_time(auth_time) when is_integer(auth_time) do
     now = DateTime.utc_now() |> DateTime.to_unix()
     # Add a small leeway to account for clock skew (30 seconds)
@@ -125,5 +132,6 @@ defmodule MtgDraftServer.FirebaseToken do
       {:error, {:invalid_auth_time, "Authentication time is in the future"}}
     end
   end
+
   defp validate_auth_time(_), do: {:error, {:invalid_auth_time, "Invalid auth_time claim format"}}
 end
