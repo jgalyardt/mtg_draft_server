@@ -252,45 +252,45 @@ defmodule MtgDraftServerWeb.DraftController do
   Get the current state of the draft, including your queue and current pack.
   """
   def state(conn, %{"id" => draft_id}) do
-    case conn.assigns[:current_user] do
-      %{"uid" => uid} ->
-        with {:ok, draft} <- Drafts.get_draft(draft_id),
-             {:ok, _} <- authorize_draft_action(draft, uid),
-             [{pid, _}] <- Registry.lookup(MtgDraftServer.DraftRegistry, draft_id) do
-          # Get the current state
-          state = GenServer.call(pid, :get_state)
-
-          # Access the user's queue using the new structure
-          user_queues = Map.get(state.booster_queues, uid, %{})
-          current_round = state.current_round
-          current_round_queue = Map.get(user_queues, current_round, [])
-          current_pack = List.first(current_round_queue)
-
-          json(conn, %{
-            status: state.status,
-            current_round: current_round,
-            has_pack: current_pack != nil && current_pack != [],
-            queue_length: length(current_round_queue),
-            current_pack: current_pack
-          })
-        else
-          [] ->
-            conn
-            |> put_status(:not_found)
-            |> json(%{error: "Draft session not found"})
-
-          _ ->
-            conn
-            |> put_status(:unauthorized)
-            |> json(%{error: "Authentication required"})
-        end
-
+    %{"uid" => uid} = conn.assigns.current_user
+  
+    with {:ok, draft} <- Drafts.get_draft(draft_id),
+         {:ok, _}    <- authorize_draft_action(draft, uid),
+         [{pid, _}]  <- Registry.lookup(MtgDraftServer.DraftRegistry, draft_id) do
+  
+      state = GenServer.call(pid, :get_state)
+  
+      if state.status == "complete" do
+        # when done, hand back the deck
+        picks = Drafts.get_picked_cards(draft_id, uid)
+        cards = Enum.map(picks, & &1.card)
+        json(conn, %{status: "complete", deck: cards})
+  
+      else
+        user_queues        = Map.get(state.booster_queues, uid, %{})
+        current_queue      = Map.get(user_queues, state.current_round, [])
+        current_pack       = List.first(current_queue)
+  
+        json(conn, %{
+          status:       state.status,
+          current_round: state.current_round,
+          has_pack:     current_pack not in [nil, []],
+          queue_length: length(current_queue),
+          current_pack: current_pack
+        })
+      end
+    else
+      [] ->
+        conn
+        |> put_status(:not_found)
+        |> json(%{error: "Draft session not found"})
       _ ->
         conn
         |> put_status(:unauthorized)
         |> json(%{error: "Authentication required"})
     end
   end
+  
 
   @doc """
   Reconnects the user to their active draft and returns lobby state.

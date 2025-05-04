@@ -1,5 +1,53 @@
-Here's my backend. Can you help me make those changes?
+I am building an elixir phoenix server to host Magic the Gathering drafts.
+Players can join, and once the draft hits 8 players, it will start. 
 
+I need your help with the "draft end" piece of logic.
+Right now, once the last pick is made, the front-end starts spitting out:
+{error: "Draft session not found"} from /state
+
+I want to double check on the server draft end implementation.
+Ultimately what needs to happen is the user receives the final list of cards in their deck, and the client can handle it from there.
+
+Here are detailed rules:
+MTG Draft Technical Specification: Core Rules
+Draft Structure
+
+3 rounds total
+1 booster pack per player per round
+Each pack contains a predetermined number of cards (typically 15)
+
+Draft Flow
+
+Round Initialization
+
+Each player receives one booster pack
+Pack contents are revealed to the player holding the pack
+
+
+Pick Sequence
+
+Each player simultaneously selects one card from their current pack
+Selected cards go to the player's draft pool
+After picking, players pass their packs to adjacent players
+
+
+Pack Passing Logic
+
+Round 1: Pass to the LEFT (clockwise)
+Round 2: Pass to the RIGHT (counterclockwise)
+Round 3: Pass to the LEFT (clockwise)
+
+
+Round Completion
+
+A round ends when all cards from all packs have been drafted
+The next round begins with new packs
+
+
+Draft Completion
+
+Draft ends when all three rounds are complete
+Each player's final pool consists of all cards they picked
 
 
 Project Structure:
@@ -501,6 +549,7 @@ defmodule MtgDraftServer.DraftSession do
 
   @impl true
   def handle_cast({:pick, user_id, card_id}, state) do
+    draft_id = state.draft_id
     current_round = state.current_round
     user_queues = Map.get(state.booster_queues, user_id, %{})
     current_round_queue = Map.get(user_queues, current_round, [])
@@ -530,7 +579,7 @@ defmodule MtgDraftServer.DraftSession do
         # Persist pick
         {:ok, _pick} =
           Drafts.pick_card(
-            state.draft_id,
+            draft_id,
             user_id,
             card_id,
             %{"pack_number" => current_round, "pick_number" => pick_no}
@@ -580,35 +629,46 @@ defmodule MtgDraftServer.DraftSession do
           new_booster_queues
           |> Map.values()
           |> Enum.all?(fn user_queues ->
-            round_queue = Map.get(user_queues, current_round, [])
-            round_queue == []
+            Map.get(user_queues, current_round, []) == []
           end)
 
-        new_state =
-          cond do
-            round_complete && current_round < 3 ->
-              # Advance to next round
-              %{new_state | current_round: current_round + 1}
-
-            round_complete && current_round == 3 ->
-              # Draft is complete
-              {:ok, _} = MtgDraftServer.Drafts.complete_draft(state.draft_id)
-              MtgDraftServer.Drafts.notify(state.draft_id, {:draft_completed, state.draft_id})
-              %{new_state | status: "complete"}
-
-            true ->
-              # Stay on current round
+        cond do
+          # ———————————————————————————————————————————————
+          # 1) ADVANCE TO NEXT ROUND (1 → 2 or 2 → 3)
+          # ———————————————————————————————————————————————
+          round_complete && current_round < 3 ->
+            next_state = %{
               new_state
-          end
+              | current_round: current_round + 1
+            }
 
-        # Notify and schedule AI pick if needed
-        Drafts.notify(state.draft_id, {:pack_updated, user_id, neighbor})
+            # only broadcast the usual "pack_updated" and schedule AIs
+            Drafts.notify(draft_id, {:pack_updated, user_id, neighbor})
+            schedule_ai_for(neighbor, next_state)
 
-        if state.players[neighbor].ai do
-          Process.send_after(self(), {:ai_pick, neighbor}, 500)
+            {:noreply, next_state}
+
+          # ———————————————————————————————————————————————
+          # 2) COMPLETE DRAFT (end of round 3)
+          # ———————————————————————————————————————————————
+          round_complete && current_round == 3 ->
+            # 1) persist in the database
+            {:ok, _} = MtgDraftServer.Drafts.complete_draft(draft_id)
+
+            # 2) broadcast a concise “draft_completed” event
+            MtgDraftServer.Drafts.notify(draft_id, :draft_completed)
+
+            # 3) stop this GenServer (so it doesn’t restart)
+            {:stop, :normal, %{new_state | status: "complete"}}
+
+          # ———————————————————————————————————————————————
+          # 3) STILL IN THE MIDDLE OF A PACK
+          # ———————————————————————————————————————————————
+          true ->
+            Drafts.notify(draft_id, {:pack_updated, user_id, neighbor})
+            schedule_ai_for(neighbor, state)
+            {:noreply, new_state}
         end
-
-        {:noreply, new_state}
       else
         Logger.error("Invalid pick #{card_id} by #{user_id}")
         {:noreply, state}
@@ -658,6 +718,13 @@ defmodule MtgDraftServer.DraftSession do
   end
 
   # Private functions
+
+  defp schedule_ai_for(nil, _state), do: :ok
+  defp schedule_ai_for(neighbor, state) do
+    if state.players[neighbor].ai do
+      Process.send_after(self(), {:ai_pick, neighbor}, 50)
+    end
+  end
 
   defp ai_select_card(pack, default) do
     try do
@@ -793,7 +860,12 @@ defmodule MtgDraftServer.DraftSessionSupervisor do
   Starts a new draft session.
   """
   def start_new_session(draft_id) do
-    spec = {MtgDraftServer.DraftSession, draft_id}
+    spec = %{
+      id: {MtgDraftServer.DraftSession, draft_id},
+      start: {MtgDraftServer.DraftSession, :start_link, [draft_id]},
+      restart: :temporary
+    }
+  
     DynamicSupervisor.start_child(__MODULE__, spec)
   end
 end
@@ -2219,23 +2291,39 @@ defmodule MtgDraftServerWeb.DraftController do
   end
 
   @doc """
-  Get all picks for the current user in a given draft.
+  Get all picks for the current user in a given draft,
+  but only return the minimal fields the front‑end needs.
   """
   def picked_cards(conn, %{"id" => draft_id}) do
-    case conn.assigns[:current_user] do
-      %{"uid" => uid} ->
-        with {:ok, draft} <- Drafts.get_draft(draft_id),
-             {:ok, _} <- authorize_draft_action(draft, uid) do
-          picks = Drafts.get_picked_cards(draft_id, uid)
-          json(conn, %{picks: picks})
-        end
+    %{"uid" => uid} = conn.assigns.current_user
 
-      _ ->
+    with {:ok, draft} <- Drafts.get_draft(draft_id),
+         {:ok, _}    <- authorize_draft_action(draft, uid) do
+      picks = Drafts.get_picked_cards(draft_id, uid)
+
+      slim_picks =
+        Enum.map(picks, fn pick ->
+          %{
+            pack_number: pick.pack_number,
+            pick_number: pick.pick_number,
+            card: %{
+              id:   pick.card.id,
+              name: pick.card.name,
+              cmc: pick.card.cmc,
+              image_uri: pick.card.image_uris["normal"]
+            }
+          }
+        end)
+
+      json(conn, %{picks: slim_picks})
+    else
+      {:error, reason} ->
         conn
-        |> put_status(:unauthorized)
-        |> json(%{"error" => "Authentication required"})
+        |> put_status(:bad_request)
+        |> json(%{error: reason})
     end
   end
+  
 
   @doc "Get your completed deck (all picks) once draft is done"
   def deck(conn, %{"id" => draft_id}) do
@@ -2445,10 +2533,10 @@ defmodule MtgDraftServerWeb.DraftController do
     {:ok, :joined}
   end
 
-  defp authorize_draft_action(draft, user_id) do
+  defp authorize_draft_action(%Drafts.Draft{} = draft, user_id) do
     case Drafts.get_draft_player(draft.id, user_id) do
       {:ok, _player} -> {:ok, true}
-      _ -> {:error, "Unauthorized"}
+      _              -> {:error, "Unauthorized"}
     end
   end
 end

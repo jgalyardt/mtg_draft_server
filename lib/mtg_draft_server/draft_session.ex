@@ -245,7 +245,7 @@ defmodule MtgDraftServer.DraftSession do
             MtgDraftServer.Drafts.notify(draft_id, :draft_completed)
 
             # 3) stop this GenServer (so it doesn’t restart)
-            {:stop, :normal, %{new_state | status: "complete"}}
+            {:noreply, %{new_state | status: "complete"}}
 
           # ———————————————————————————————————————————————
           # 3) STILL IN THE MIDDLE OF A PACK

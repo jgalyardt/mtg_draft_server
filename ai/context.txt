@@ -1,2 +1,50 @@
-Here's my backend. Can you help me make those changes?
+I am building an elixir phoenix server to host Magic the Gathering drafts.
+Players can join, and once the draft hits 8 players, it will start. 
 
+I need your help with the "draft end" piece of logic.
+Right now, once the last pick is made, the front-end starts spitting out:
+{error: "Draft session not found"} from /state
+
+I want to double check on the server draft end implementation.
+Ultimately what needs to happen is the user receives the final list of cards in their deck, and the client can handle it from there.
+
+Here are detailed rules:
+MTG Draft Technical Specification: Core Rules
+Draft Structure
+
+3 rounds total
+1 booster pack per player per round
+Each pack contains a predetermined number of cards (typically 15)
+
+Draft Flow
+
+Round Initialization
+
+Each player receives one booster pack
+Pack contents are revealed to the player holding the pack
+
+
+Pick Sequence
+
+Each player simultaneously selects one card from their current pack
+Selected cards go to the player's draft pool
+After picking, players pass their packs to adjacent players
+
+
+Pack Passing Logic
+
+Round 1: Pass to the LEFT (clockwise)
+Round 2: Pass to the RIGHT (counterclockwise)
+Round 3: Pass to the LEFT (clockwise)
+
+
+Round Completion
+
+A round ends when all cards from all packs have been drafted
+The next round begins with new packs
+
+
+Draft Completion
+
+Draft ends when all three rounds are complete
+Each player's final pool consists of all cards they picked

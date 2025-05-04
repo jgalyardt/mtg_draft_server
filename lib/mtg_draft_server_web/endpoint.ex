@@ -1,6 +1,11 @@
 defmodule MtgDraftServerWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :mtg_draft_server
 
+  # Mount Phoenix Channels socket
+  socket "/socket", MtgDraftServerWeb.UserSocket,
+    websocket: [connect_info: [:peer_data, :x_headers]],
+    longpoll: false
+
   plug CORSPlug,
     origin: ["http://localhost:5173"],
     methods: ["GET", "POST"],
