@@ -1,4 +1,4 @@
-defmodule MtgDraftServer.Telemetry do
+defmodule MtgDraftServerWeb.Telemetry do
   use Supervisor
   import Telemetry.Metrics
 
@@ -72,16 +72,16 @@ defmodule MtgDraftServer.Telemetry do
           "The time the connection spent waiting before being checked out for the query"
       ),
 
-      # Rate Limit Metrics
-      counter("mtg_draft_server.rate_limit.hit.count",
+      # Add Rate Limit Metrics
+      counter("mtg_draft_server.rate_limit.hit.count", 
         tags: [:bucket],
         description: "Number of rate limit checks"
       ),
-      counter("mtg_draft_server.rate_limit.exceeded.count",
+      counter("mtg_draft_server.rate_limit.exceeded.count", 
         tags: [:bucket],
         description: "Number of rate limit violations"
       ),
-
+      
       # VM Metrics
       summary("vm.memory.total", unit: {:byte, :kilobyte}),
       summary("vm.total_run_queue_lengths.total"),
