@@ -241,18 +241,20 @@ defmodule MtgDraftServerWeb.DraftController do
         with {:ok, draft} <- Drafts.get_draft(draft_id),
              {:ok, _} <- authorize_draft_action(draft, uid),
              [{pid, _}] <- Registry.lookup(MtgDraftServer.DraftRegistry, draft_id) do
-          # fetch our new queue‑based state
+          # Get the current state
           state = GenServer.call(pid, :get_state)
-          user_queue = Map.get(state.booster_queues, uid, [])
-
-          # head of our queue is {round, pack}
-          {current_round, current_pack} = List.first(user_queue) || {nil, []}
-
+          
+          # Access the user's queue using the new structure
+          user_queues = Map.get(state.booster_queues, uid, %{})
+          current_round = state.current_round
+          current_round_queue = Map.get(user_queues, current_round, [])
+          current_pack = List.first(current_round_queue)
+          
           json(conn, %{
             status: state.status,
-            has_pack: current_pack != [],
-            round: current_round,
-            queue_length: length(user_queue),
+            current_round: current_round,
+            has_pack: current_pack != nil && current_pack != [],
+            queue_length: length(current_round_queue),
             current_pack: current_pack
           })
         else
@@ -260,13 +262,13 @@ defmodule MtgDraftServerWeb.DraftController do
             conn
             |> put_status(:not_found)
             |> json(%{error: "Draft session not found"})
-
+  
           _ ->
             conn
             |> put_status(:unauthorized)
             |> json(%{error: "Authentication required"})
         end
-
+  
       _ ->
         conn
         |> put_status(:unauthorized)

@@ -1,2 +1,52 @@
 I am building an elixir phoenix server to host Magic the Gathering drafts.
-Players can join, and once the draft hits 8 players, it will start.
+Players can join, and once the draft hits 8 players, it will start. Here are detailed rules:
+
+MTG Draft Technical Specification: Core Rules
+Draft Structure
+
+3 rounds total
+1 booster pack per player per round
+Each pack contains a predetermined number of cards (typically 15)
+
+Draft Flow
+
+Round Initialization
+
+Each player receives one booster pack
+Pack contents are revealed to the player holding the pack
+
+
+Pick Sequence
+
+Each player simultaneously selects one card from their current pack
+Selected cards go to the player's draft pool
+After picking, players pass their packs to adjacent players
+
+
+Pack Passing Logic
+
+Round 1: Pass to the LEFT (clockwise)
+Round 2: Pass to the RIGHT (counterclockwise)
+Round 3: Pass to the LEFT (clockwise)
+
+
+Round Completion
+
+A round ends when all cards from all packs have been drafted
+The next round begins with new packs
+
+
+Draft Completion
+
+Draft ends when all three rounds are complete
+Each player's final pool consists of all cards they picked
+
+
+
+Technical Implementation Requirements
+
+Track current round number to determine pass direction
+Queue remaining packs for each player
+Remove selected cards from packs before passing
+Handle empty packs (removing them from circulation)
+Provide mechanism for AI players to make automated picks
