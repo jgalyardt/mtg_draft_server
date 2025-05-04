@@ -24,6 +24,11 @@ config :joken, JokenJwks.DefaultStrategyTemplate,
   jwks_url:
     "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"
 
+# Hammer (rate limiting) config
+config :hammer,
+  backend: {Hammer.Backend.ETS, [expiry_ms: :timer.minutes(60),
+                              clean_interval_ms: :timer.minutes(10)]}
+
 # Configures the endpoint
 config :mtg_draft_server, MtgDraftServerWeb.Endpoint,
   url: [host: "localhost"],

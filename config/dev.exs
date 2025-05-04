@@ -26,11 +26,17 @@ config :mtg_draft_server, MtgDraftServerWeb.Endpoint,
   secret_key_base: "a0b8YEGw1hkSWLdHVUVedS9UnWbvqZiAUU94YqU0E4pQwXXOOfOhXxucnnlO8Hse",
   watchers: []
 
-
 # Specify dev environment
 config :mtg_draft_server,
   environment: :dev,
   skip_auth: true
+
+config :mtg_draft_server, :rate_limits,
+  draft_creation:   {60, 60_000},   # 60 requests per minute
+  draft_joining:    {120, 60_000},  # 120 requests per minute
+  draft_pick:       {180, 60_000},  # 180 requests per minute
+  api_standard:     {300, 60_000},  # 300 requests per minute
+  auth_endpoints:   {10, 60_000}    # 10 requests per minute
 
 # ## SSL Support
 #

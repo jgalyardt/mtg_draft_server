@@ -25,7 +25,8 @@ defmodule MtgDraftServer.Application do
       {Finch, name: MtgDraftServer.Finch},
       MtgDraftServerWeb.Endpoint,
       {Registry, keys: :unique, name: MtgDraftServer.DraftRegistry},
-      MtgDraftServer.DraftSessionSupervisor
+      MtgDraftServer.DraftSessionSupervisor,
+      MtgDraftServer.RateLimit
     ]
 
     opts = [strategy: :one_for_one, name: MtgDraftServer.Supervisor]
